@@ -53,6 +53,11 @@
     --danger:#ff3b3b;
     --shadow:rgba(0,0,0,0.6);
     --bg-grad:rgba(20,230,255,0.10);
+    --hover-tint:rgba(255,255,255,0.02);
+    --vignette:rgba(0,0,0,0.55);
+    --logo-glow:rgba(20,230,255,0.35);
+    --header-bg:rgba(3,3,7,0.92);
+    --app-zoom:1;
     --radius-s:2px;
     --radius-m:2px;
     --radius-l:2px;
@@ -80,7 +85,7 @@
   body::after{
     content:"";
     position:fixed; inset:0; z-index:9999; pointer-events:none;
-    background:radial-gradient(ellipse at 50% 50%, transparent 55%, rgba(0,0,0,0.55) 100%);
+    background:radial-gradient(ellipse at 50% 50%, transparent 55%, var(--vignette) 100%);
   }
   @media (prefers-reduced-motion: reduce){
     *{animation-duration:0.001ms !important; animation-iteration-count:1 !important; transition-duration:0.001ms !important;}
@@ -95,9 +100,9 @@
   /* ---------- Header ---------- */
   header.hud{
     position:sticky; top:0; z-index:40;
-    background:rgba(3,3,7,0.92);
+    background:var(--header-bg);
     border-bottom:1px solid var(--border);
-    box-shadow:0 1px 0 rgba(255,46,166,0.15), 0 12px 24px -12px rgba(0,0,0,0.6);
+    box-shadow:0 1px 0 var(--gold-glow), 0 12px 24px -12px var(--shadow);
     backdrop-filter:blur(6px);
     padding:14px 0 0;
   }
@@ -111,7 +116,7 @@
     display:flex;align-items:center;justify-content:center; color:var(--gold);
     background:rgba(255,46,166,0.1); box-shadow:0 0 12px rgba(255,46,166,0.35); flex:none;
   }
-  .brand h1{font-family:var(--font-display); font-weight:700; font-size:19px; letter-spacing:0.09em; margin:0; color:var(--text); text-shadow:0 0 14px rgba(20,230,255,0.35);}
+  .brand h1{font-family:var(--font-display); font-weight:700; font-size:19px; letter-spacing:0.09em; margin:0; color:var(--text); text-shadow:0 0 14px var(--logo-glow);}
   .brand .sub{font-size:11px; color:var(--text-faint); letter-spacing:0.08em; text-transform:uppercase; margin-top:1px;}
 
   .stat-row{display:flex; align-items:center; gap:10px; flex-wrap:wrap;}
@@ -147,7 +152,7 @@
     font-size:13px; font-weight:600; cursor:pointer; margin-bottom:-1px;
     transition:color .15s, background .15s;
   }
-  .tab:hover{color:var(--text-dim); background:rgba(255,255,255,0.02);}
+  .tab:hover{color:var(--text-dim); background:var(--hover-tint);}
   .tab.active{background:var(--surface); border-color:var(--border); color:var(--text);}
   .tab.active::after{content:""; position:absolute;}
   .tab svg{width:15px;height:15px;}
@@ -249,7 +254,7 @@
   .quest-item{background:var(--surface-2); border:1px solid var(--border-soft); border-radius:var(--radius-m); overflow:hidden;}
   .quest-item.done{opacity:0.6;}
   .quest-head{display:flex; align-items:center; gap:11px; padding:10px; cursor:pointer;}
-  .quest-head:hover{background:rgba(255,255,255,0.015);}
+  .quest-head:hover{background:var(--hover-tint);}
   .wchev{color:var(--text-faint); flex:none; transition:transform .18s; display:flex;}
   .wchev svg{width:12px;height:12px;}
   .quest-item.open .wchev{transform:rotate(90deg);}
@@ -289,7 +294,7 @@
   .fld{background:var(--bg-2); border:1px solid var(--border); color:var(--text); border-radius:var(--radius-s); padding:8px 10px; font-size:12.5px; font-family:inherit; width:100%;}
   .add-form .row2{display:grid; grid-template-columns:1fr 1fr; gap:8px;}
   .add-form .actions{display:flex; gap:8px; justify-content:flex-end;}
-  .btn-primary{background:var(--gold); color:var(--bg-2); border:none; border-radius:var(--radius-s); padding:8px 14px; font-size:12.5px; font-weight:700; letter-spacing:0.03em; text-transform:uppercase; cursor:pointer; box-shadow:0 0 14px rgba(255,46,166,0.4); transition:filter .15s, transform .1s, box-shadow .15s;}
+  .btn-primary{background:var(--gold); color:var(--bg-2); border:none; border-radius:var(--radius-s); padding:8px 14px; font-size:12.5px; font-weight:700; letter-spacing:0.03em; text-transform:uppercase; cursor:pointer; box-shadow:0 0 14px var(--gold-glow); transition:filter .15s, transform .1s, box-shadow .15s;}
   .btn-primary:hover{box-shadow:0 0 22px rgba(255,46,166,0.65);}
   .btn-primary:hover{filter:brightness(1.08);}
   .btn-primary:active{transform:translateY(1px);}
@@ -823,6 +828,43 @@
   #bgScrim{position:fixed; inset:0; z-index:-1; pointer-events:none; display:none;
     background:linear-gradient(180deg, rgba(5,5,7,0.62) 0%, rgba(5,5,7,0.44) 45%, rgba(5,5,7,0.62) 100%);}
   #bgScrim.on{display:block;}
+
+  /* Bright background → dark text. The whole palette flips rather than just the
+     text, because dark text on the dark card surfaces would be unreadable. Every
+     colour in the app already comes from these variables, so this is the lot. */
+  html.light-bg{
+    --bg:#e9ecf3;
+    --bg-2:#ffffff;
+    --surface:rgba(255,255,255,0.90);
+    --surface-2:rgba(255,255,255,0.95);
+    --surface-3:#ffffff;
+    --border:#bcc1d0;
+    --border-soft:#d6d9e3;
+    --text:#11131b;
+    --text-dim:#414761;
+    --text-faint:#6b7189;
+    --shadow:rgba(20,24,40,0.18);
+    --hover-tint:rgba(0,0,0,0.045);
+    --vignette:rgba(255,255,255,0.45);
+    --logo-glow:transparent;
+    --header-bg:rgba(255,255,255,0.92);
+    --teal:#0b7f92;
+    --success:#127a37;
+    --danger:#c02626;
+  }
+  html.light-bg #bgScrim{
+    background:linear-gradient(180deg, rgba(255,255,255,0.60) 0%, rgba(255,255,255,0.40) 45%, rgba(255,255,255,0.60) 100%);
+  }
+
+  /* Text scaling is applied to the app itself, never to the settings page —
+     otherwise pressing Apply would re-scale the surface you are standing on. */
+  body.app-scaled > header,
+  body.app-scaled > .wrap,
+  body.app-scaled > footer,
+  body.app-scaled > .toast-stack,
+  body.app-scaled > .modal-veil,
+  body.app-scaled > .level-up-veil,
+  body.app-scaled > .widget-ui{ zoom:var(--app-zoom); }
 
   .set-veil{position:fixed; inset:0; background:var(--bg); display:none; z-index:300; overflow-y:auto;}
   .set-veil.open{display:block;}
@@ -1447,7 +1489,7 @@ function freshState(){
  * image/video itself does not — that stays device-local in IndexedDB, since it
  * can be tens of megabytes. */
 function defaultAppearance(){
-  return { accent:'#ff2ea6', accent2:'#14e6ff', bgOpacity:100, bgBlur:0, font:'', textScale:100 };
+  return { accent:'#ff2ea6', accent2:'#14e6ff', bgOpacity:100, bgBlur:0, font:'', textScale:100, contrast:'auto' };
 }
 
 function unescapeAmp(s){
@@ -4356,13 +4398,64 @@ function shade(hex, pct){
   return '#'+[f(c.r),f(c.g),f(c.b)].map(v=>v.toString(16).padStart(2,'0')).join('');
 }
 
+/* Average brightness of whatever the user set as the background, 0–1. Measured
+ * once on upload and stored with the media, since decoding a video to sample a
+ * frame is far too slow to repeat on every render. */
+const APP_BG_LUMINANCE = 0.02;      // the app's own near-black background
+let bgLuminance = null;
+
+function canvasLuminance(source, w, h){
+  const c = document.createElement('canvas');
+  c.width = 48; c.height = Math.max(1, Math.round(48 * (h||1) / (w||1)));
+  const ctx = c.getContext('2d', {willReadFrequently:true});
+  ctx.drawImage(source, 0, 0, c.width, c.height);
+  const d = ctx.getImageData(0, 0, c.width, c.height).data;
+  let sum = 0, n = 0;
+  for(let i=0; i<d.length; i+=4){
+    // Rec. 709 relative luminance, which tracks perceived brightness.
+    sum += (0.2126*d[i] + 0.7152*d[i+1] + 0.0722*d[i+2]) / 255;
+    n++;
+  }
+  return n ? sum/n : APP_BG_LUMINANCE;
+}
+
+function measureLuminance(blob, type){
+  return new Promise((resolve)=>{
+    const url = URL.createObjectURL(blob);
+    const done = (v)=>{ URL.revokeObjectURL(url); resolve(v); };
+    const bail = setTimeout(()=>done(null), 8000);
+    if(String(type||'').startsWith('video')){
+      const v = document.createElement('video');
+      v.muted = true; v.playsInline = true; v.preload = 'auto'; v.src = url;
+      v.addEventListener('loadeddata', ()=>{
+        // A frame a little way in is more representative than a black first frame.
+        try{ v.currentTime = Math.min(1.5, (v.duration||0)/3); }catch(e){}
+      });
+      v.addEventListener('seeked', ()=>{
+        clearTimeout(bail);
+        try{ done(canvasLuminance(v, v.videoWidth, v.videoHeight)); }catch(e){ done(null); }
+      });
+      v.addEventListener('error', ()=>{ clearTimeout(bail); done(null); });
+    }else{
+      const img = new Image();
+      img.onload = ()=>{ clearTimeout(bail); try{ done(canvasLuminance(img, img.naturalWidth, img.naturalHeight)); }catch(e){ done(null); } };
+      img.onerror = ()=>{ clearTimeout(bail); done(null); };
+      img.src = url;
+    }
+  });
+}
+
+/* What the eye actually lands on: the media faded against the app's own dark
+   background by the opacity slider. A bright photo at 20% is still a dark page. */
+function effectiveLuminance(opacity){
+  if(bgLuminance == null) return APP_BG_LUMINANCE;
+  const o = Math.max(0, Math.min(100, opacity))/100;
+  return bgLuminance*o + APP_BG_LUMINANCE*(1-o);
+}
+
 function applyAppearance(){
   const a = Object.assign(defaultAppearance(), state.appearance||{});
   const root = document.documentElement.style;
-  root.setProperty('--gold', a.accent);
-  root.setProperty('--gold-soft', shade(a.accent, -12));
-  root.setProperty('--gold-glow', rgba(a.accent, 0.35));
-  root.setProperty('--bg-grad', rgba(a.accent2, 0.10));
 
   const media = document.getElementById('bgMedia');
   if(media){
@@ -4373,12 +4466,27 @@ function applyAppearance(){
     media.style.inset = over ? (-over)+'px' : '0';
   }
 
+  const light = a.contrast==='dark' ? true
+              : a.contrast==='light' ? false
+              : effectiveLuminance(a.bgOpacity) > 0.5;
+  document.documentElement.classList.toggle('light-bg', light);
+
+  // A neon accent that sings on black turns to mush on white, so it is darkened
+  // for light mode — buttons keep their white label, and accent text stays read.
+  const accent = light ? shade(a.accent, -30) : a.accent;
+  root.setProperty('--gold', accent);
+  root.setProperty('--gold-soft', shade(accent, -12));
+  root.setProperty('--gold-glow', rgba(accent, light ? 0.18 : 0.35));
+  root.setProperty('--bg-grad', rgba(a.accent2, light ? 0.16 : 0.10));
+
   if(a.font){
     root.setProperty('--font-body', '"'+String(a.font).replace(/["\\]/g,'')+'", sans-serif');
-    document.body.style.zoom = Math.max(50, Math.min(200, a.textScale))/100;
+    root.setProperty('--app-zoom', Math.max(50, Math.min(200, a.textScale))/100);
+    document.body.classList.add('app-scaled');
   }else{
     root.removeProperty('--font-body');
-    document.body.style.zoom = '';
+    root.removeProperty('--app-zoom');
+    document.body.classList.remove('app-scaled');
   }
 }
 
@@ -4431,7 +4539,8 @@ async function renderBgMedia(){
   host.innerHTML = '';
   const scrim = document.getElementById('bgScrim');
   if(scrim) scrim.classList.toggle('on', !!(rec && rec.blob));
-  if(!rec || !rec.blob) return;
+  bgLuminance = (rec && typeof rec.lum === 'number') ? rec.lum : null;
+  if(!rec || !rec.blob){ applyAppearance(); return; }
   bgObjectUrl = URL.createObjectURL(rec.blob);
   let el;
   if(String(rec.type||'').startsWith('video')){
@@ -4442,6 +4551,10 @@ async function renderBgMedia(){
   }
   el.src = bgObjectUrl;
   host.appendChild(el);
+  // The stored brightness is only known once the record is read, so the
+  // light/dark decision has to be made again here — not just when there is
+  // no media to show.
+  applyAppearance();
 }
 
 /* ---- Font list. queryLocalFonts needs a real click behind it, which opening
@@ -4489,7 +4602,16 @@ function openSettings(tab){
   document.getElementById('setVeil').classList.add('open');
   renderSettings();
 }
+/* Leaving the Appearance tab throws away whatever wasn't applied — say so,
+   rather than letting the edits vanish silently. */
+function dropUnapplied(){
+  if(activeSettingsTab==='appearance' && typeof apDirty==='function' && apDirty()){
+    showToast({title:'Unapplied changes discarded', sub:'Press Apply to keep them next time.'});
+  }
+  apDraft = null; apMediaAction = null;
+}
 function closeSettings(){
+  dropUnapplied();
   document.getElementById('setVeil').classList.remove('open');
 }
 
@@ -4508,8 +4630,29 @@ function renderSettings(){
   else if(tab==='advanced')   renderAdvancedTab(body);
 }
 
+let apDraft = null;          // staged appearance edits, committed by Apply
+let apMediaAction = null;    // {file} to set, or {clear:true}, applied alongside
+
+function apDirty(){
+  if(!apDraft) return false;
+  if(apMediaAction) return true;
+  const cur = Object.assign(defaultAppearance(), state.appearance||{});
+  return Object.keys(cur).some(k=>String(cur[k]) !== String(apDraft[k]));
+}
+function apSyncButtons(){
+  const apply = document.getElementById('apApply');
+  const revert = document.getElementById('apRevert');
+  if(!apply) return;
+  const dirty = apDirty();
+  apply.disabled = !dirty;
+  if(revert) revert.style.visibility = dirty ? 'visible' : 'hidden';
+}
+
 function renderAppearanceTab(host){
   const a = Object.assign(defaultAppearance(), state.appearance||{});
+  apDraft = Object.assign({}, a);
+  apMediaAction = null;
+
   host.innerHTML = '<div class="set-panel-title">Appearance</div>'+
     settingsGroup('colors', 'Colors',
       settingsRow('Accent color', 'The main color for buttons, highlights, and icons.',
@@ -4521,6 +4664,7 @@ function renderAppearanceTab(host){
     )+
     settingsGroup('background', 'Background',
       settingsRow('Background media', 'Use your own image, GIF, or video as the background.',
+        '<span class="set-hex" id="apMediaState"></span>'+
         '<button class="ghost-btn" id="apUpload">Upload</button>'+
         '<button class="btn-ghost-sm" id="apClear">Clear</button>'+
         '<input type="file" id="apFile" accept="image/*,video/*" style="display:none">')+
@@ -4536,64 +4680,93 @@ function renderAppearanceTab(host){
         '<select class="set-select" id="apFont"><option value="">Default (Rajdhani)</option></select>')+
       settingsRow('Text size', 'Scales the chosen font to match the app&rsquo;s default sizing. Only applies with a custom font.',
         '<input type="range" class="set-range" id="apScale" min="70" max="140" step="1" value="'+a.textScale+'">'+
-        '<span class="set-val" id="apScaleVal">'+a.textScale+'%</span>')
+        '<span class="set-val" id="apScaleVal">'+a.textScale+'%</span>')+
+      settingsRow('Text contrast', 'On a bright background the text and panels switch to dark automatically. Override it here if you disagree.',
+        '<select class="set-select" id="apContrast">'+
+          '<option value="auto"'+(a.contrast==='auto'?' selected':'')+'>Auto</option>'+
+          '<option value="light"'+(a.contrast==='light'?' selected':'')+'>Always light text</option>'+
+          '<option value="dark"'+(a.contrast==='dark'?' selected':'')+'>Always dark text</option>'+
+        '</select>')
     )+
-    '<div class="set-note">Colors, font and sizing follow you to your other devices. The background image or video stays on this device only &mdash; it never goes near the sync server.</div>'+
-    '<div class="actions" style="justify-content:flex-start"><button class="btn-text" id="apReset">Reset appearance</button></div>';
+    '<div class="set-note">Nothing changes until you press Apply. Colors, font and sizing follow you to your other devices; the background image or video stays on this device only &mdash; it never goes near the sync server.</div>'+
+    '<div class="actions" style="justify-content:flex-start">'+
+      '<button class="btn-primary" id="apApply" disabled>Apply</button>'+
+      '<button class="btn-text" id="apRevert" style="visibility:hidden">Revert</button>'+
+      '<button class="btn-text" id="apReset">Reset appearance</button>'+
+    '</div>';
 
-  const save = (patch)=>{
-    state.appearance = Object.assign(defaultAppearance(), state.appearance||{}, patch);
-    applyAppearance();
-    saveState();
-  };
+  // Editing only updates the draft and its own read-out. The app itself is left
+  // alone until Apply, so dragging a slider can never reflow this page.
+  const stage = (patch)=>{ Object.assign(apDraft, patch); apSyncButtons(); };
 
-  const accent = document.getElementById('apAccent');
-  accent.addEventListener('input', e=>{
+  document.getElementById('apAccent').addEventListener('input', e=>{
     document.getElementById('apAccentHex').textContent = e.target.value.toUpperCase();
-    save({accent: e.target.value});
+    stage({accent: e.target.value});
   });
-  const accent2 = document.getElementById('apAccent2');
-  accent2.addEventListener('input', e=>{
+  document.getElementById('apAccent2').addEventListener('input', e=>{
     document.getElementById('apAccent2Hex').textContent = e.target.value.toUpperCase();
-    save({accent2: e.target.value});
+    stage({accent2: e.target.value});
   });
-
-  const opacity = document.getElementById('apOpacity');
-  opacity.addEventListener('input', e=>{
+  document.getElementById('apOpacity').addEventListener('input', e=>{
     document.getElementById('apOpacityVal').textContent = e.target.value+'%';
-    save({bgOpacity: parseInt(e.target.value,10)});
+    stage({bgOpacity: parseInt(e.target.value,10)});
   });
-  const blur = document.getElementById('apBlur');
-  blur.addEventListener('input', e=>{
+  document.getElementById('apBlur').addEventListener('input', e=>{
     document.getElementById('apBlurVal').textContent = e.target.value+'px';
-    save({bgBlur: parseInt(e.target.value,10)});
+    stage({bgBlur: parseInt(e.target.value,10)});
   });
-  const scale = document.getElementById('apScale');
-  scale.addEventListener('input', e=>{
+  document.getElementById('apScale').addEventListener('input', e=>{
     document.getElementById('apScaleVal').textContent = e.target.value+'%';
-    save({textScale: parseInt(e.target.value,10)});
+    stage({textScale: parseInt(e.target.value,10)});
   });
+  document.getElementById('apContrast').addEventListener('change', e=>stage({contrast: e.target.value}));
 
+  const mediaState = document.getElementById('apMediaState');
   const file = document.getElementById('apFile');
   document.getElementById('apUpload').addEventListener('click', ()=>file.click());
-  file.addEventListener('change', async ()=>{
+  file.addEventListener('change', ()=>{
     const f = file.files && file.files[0];
+    file.value = '';
     if(!f) return;
     if(f.size > 120*1024*1024){ showToast({title:'That file is very large', sub:'Pick something under 120 MB.'}); return; }
+    apMediaAction = {file:f};
+    mediaState.textContent = f.name.length>28 ? f.name.slice(0,26)+'\u2026' : f.name;
+    apSyncButtons();
+  });
+  document.getElementById('apClear').addEventListener('click', ()=>{
+    apMediaAction = {clear:true};
+    mediaState.textContent = 'will be cleared';
+    apSyncButtons();
+  });
+
+  document.getElementById('apApply').addEventListener('click', async ()=>{
+    const btn = document.getElementById('apApply');
+    btn.disabled = true; btn.textContent = 'Applying\u2026';
     try{
-      await bgPut({blob:f, type:f.type || (/\.(mp4|webm|mov)$/i.test(f.name)?'video/mp4':'image/png')});
-      await renderBgMedia();
+      if(apMediaAction && apMediaAction.clear){
+        await bgDelete();
+        await renderBgMedia();
+      }else if(apMediaAction && apMediaAction.file){
+        const f = apMediaAction.file;
+        const type = f.type || (/\.(mp4|webm|mov)$/i.test(f.name) ? 'video/mp4' : 'image/png');
+        const lum = await measureLuminance(f, type);
+        await bgPut({blob:f, type:type, lum:lum});
+        await renderBgMedia();
+      }
+      state.appearance = Object.assign(defaultAppearance(), apDraft);
       applyAppearance();
-      showToast({title:'Background set', sub:f.name});
+      saveState();
+      apMediaAction = null;
+      if(mediaState) mediaState.textContent = '';
+      showToast({title:'Appearance applied'});
     }catch(err){
-      showToast({title:'Could not save that file', sub:String(err && err.message || err)});
+      showToast({title:'Could not apply that', sub:String(err && err.message || err)});
     }
-    file.value = '';
+    btn.textContent = 'Apply';
+    apSyncButtons();
   });
-  document.getElementById('apClear').addEventListener('click', async ()=>{
-    await bgDelete(); await renderBgMedia();
-    showToast({title:'Background cleared'});
-  });
+
+  document.getElementById('apRevert').addEventListener('click', ()=>renderSettings());
 
   document.getElementById('apReset').addEventListener('click', ()=>{
     openConfirm({
@@ -4620,7 +4793,7 @@ function renderAppearanceTab(host){
       sel.appendChild(o);
     });
   });
-  sel.addEventListener('change', e=>save({font: e.target.value}));
+  sel.addEventListener('change', e=>stage({font: e.target.value}));
 }
 
 function renderAdvancedTab(host){
@@ -4648,6 +4821,7 @@ function renderAdvancedTab(host){
 
 document.getElementById('setTabs').addEventListener('click', e=>{
   const b = e.target.closest('.set-tab'); if(!b) return;
+  if(b.dataset.tab !== activeSettingsTab) dropUnapplied();
   activeSettingsTab = b.dataset.tab;
   renderSettings();
 });
