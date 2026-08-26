@@ -166,11 +166,30 @@ app.whenReady().then(() => {
  * install. A no-op in dev (`npm start`), since an unpackaged app has no
  * update feed to check against.
  * ------------------------------------------------------------------ */
+/* The update repo is private, so the updater needs a token to read it. It is
+   kept in update-token.json — gitignored, bundled into the packaged app at
+   build time — and is a fine-grained GitHub token with read-only Contents
+   access to this one repo, so it can fetch releases and do nothing else. */
+function updateToken() {
+  try { return require('./update-token.json').token || null; }
+  catch (e) { return process.env.GH_TOKEN || null; }
+}
+
 function setupAutoUpdate() {
   if (!app.isPackaged) return;
   const { autoUpdater } = require('electron-updater');
   autoUpdater.autoDownload = true;
   autoUpdater.autoInstallOnAppQuit = true;
+
+  const token = updateToken();
+  if (!token) {
+    console.warn('No update token bundled — skipping update checks.');
+    return;
+  }
+  autoUpdater.setFeedURL({
+    provider: 'github', owner: 'mebingoo', repo: 'questline',
+    private: true, token
+  });
 
   autoUpdater.on('update-downloaded', (info) => {
     dialog.showMessageBox({
