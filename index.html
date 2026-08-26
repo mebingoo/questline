@@ -2536,6 +2536,9 @@ function mountPlayer(v){
   const host = document.getElementById('playerWrap');
   host.innerHTML = '<div id="ytplayer"></div>';
   ytPlayer = new YT.Player('ytplayer', {
+    // Play through the no-cookie host so watching a tutorial doesn't leave
+    // YouTube tracking cookies in the app's own session.
+    host: 'https://www.youtube-nocookie.com',
     videoId: v.videoId,
     playerVars: { rel:0, modestbranding:1, playsinline:1, start: Math.max(0, Math.floor(v.lastPos)-3) },
     events: {
