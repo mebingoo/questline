@@ -37,7 +37,8 @@
         "provider": "github",
         "owner": "mebingoo",
         "repo": "questline",
-        "releaseType": "release"
+        "releaseType": "release",
+        "private": true
       }
     ]
   },
