@@ -36,7 +36,8 @@
       {
         "provider": "github",
         "owner": "mebingoo",
-        "repo": "questline"
+        "repo": "questline",
+        "releaseType": "release"
       }
     ]
   },
