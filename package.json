@@ -1,6 +1,6 @@
 {
   "name": "questline",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "Questline - a personal RPG-style quest tracker for grand goals, daily and weekly quests, XP, streaks, achievements and a reward shop.",
   "main": "main.js",
   "author": "Phuc",
@@ -18,8 +18,7 @@
       "main.js",
       "preload.js",
       "index.html",
-      "package.json",
-      "update-token.json"
+      "package.json"
     ],
     "directories": {
       "output": "dist"
@@ -38,8 +37,7 @@
         "provider": "github",
         "owner": "mebingoo",
         "repo": "questline",
-        "releaseType": "release",
-        "private": true
+        "releaseType": "release"
       }
     ]
   },

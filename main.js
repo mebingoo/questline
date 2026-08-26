@@ -22,7 +22,8 @@ function hardenWindow(win) {
   // Only what the app actually uses: copying the transcript, and letting the
   // video player go fullscreen. Camera, mic, location, notifications and the
   // rest are refused outright.
-  const ALLOWED_PERMISSIONS = new Set(['clipboard-sanitized-write', 'fullscreen']);
+  // 'local-fonts' powers the Appearance font picker (listing fonts installed here).
+  const ALLOWED_PERMISSIONS = new Set(['clipboard-sanitized-write', 'fullscreen', 'local-fonts']);
   wc.session.setPermissionRequestHandler((_wc, permission, cb) => cb(ALLOWED_PERMISSIONS.has(permission)));
 }
 
@@ -170,30 +171,16 @@ app.whenReady().then(() => {
  * install. A no-op in dev (`npm start`), since an unpackaged app has no
  * update feed to check against.
  * ------------------------------------------------------------------ */
-/* The update repo is private, so the updater needs a token to read it. It is
-   kept in update-token.json — gitignored, bundled into the packaged app at
-   build time — and is a fine-grained GitHub token with read-only Contents
-   access to this one repo, so it can fetch releases and do nothing else. */
-function updateToken() {
-  try { return require('./update-token.json').token || null; }
-  catch (e) { return process.env.GH_TOKEN || null; }
-}
-
 function setupAutoUpdate() {
   if (!app.isPackaged) return;
   const { autoUpdater } = require('electron-updater');
   autoUpdater.autoDownload = true;
   autoUpdater.autoInstallOnAppQuit = true;
 
-  const token = updateToken();
-  if (!token) {
-    console.warn('No update token bundled — skipping update checks.');
-    return;
-  }
-  autoUpdater.setFeedURL({
-    provider: 'github', owner: 'mebingoo', repo: 'questline',
-    private: true, token
-  });
+  // Public release repo: no credential needed, and blockmap-based differential
+  // downloads work, so an update pulls a few hundred KB instead of the whole
+  // installer.
+  autoUpdater.setFeedURL({ provider: 'github', owner: 'mebingoo', repo: 'questline' });
 
   autoUpdater.on('update-downloaded', (info) => {
     dialog.showMessageBox({

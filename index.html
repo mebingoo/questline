@@ -11,8 +11,8 @@
   script-src 'self' 'unsafe-inline' https://www.youtube.com https://s.ytimg.com;
   style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
   font-src 'self' https://fonts.gstatic.com;
-  img-src 'self' data: https:;
-  media-src 'self' https:;
+  img-src 'self' data: blob: https:;
+  media-src 'self' blob: https:;
   frame-src https://www.youtube.com https://www.youtube-nocookie.com;
   connect-src 'self' https:;
   worker-src 'self';
@@ -52,6 +52,7 @@
     --success:#39ff6a;
     --danger:#ff3b3b;
     --shadow:rgba(0,0,0,0.6);
+    --bg-grad:rgba(20,230,255,0.10);
     --radius-s:2px;
     --radius-m:2px;
     --radius-l:2px;
@@ -66,6 +67,7 @@
     margin:0;
     background:
       repeating-linear-gradient(0deg, rgba(20,230,255,0.025) 0px, rgba(20,230,255,0.025) 1px, transparent 1px, transparent 3px),
+      radial-gradient(125% 95% at 12% 0%, var(--bg-grad) 0%, transparent 62%),
       var(--bg);
     color:var(--text);
     font-family:var(--font-body);
@@ -810,9 +812,75 @@
   .qtimer-btn svg{width:13px;height:13px;}
   .quest-head:hover .qtimer-btn{opacity:0.6;}
   .qtimer-btn:hover{opacity:1 !important; color:var(--gold);}
+
+  /* ============ SETTINGS OVERLAY ============ */
+  /* Sits behind everything the user has chosen as a background, and above the app. */
+  #bgMedia{position:fixed; inset:0; z-index:-2; overflow:hidden; pointer-events:none;}
+  #bgMedia img, #bgMedia video{width:100%; height:100%; object-fit:cover; display:block;}
+  /* Keeps text readable over a bright photo or video. Only present when the
+     user has actually set a background; the opacity slider still governs how
+     strongly the media itself reads through. */
+  #bgScrim{position:fixed; inset:0; z-index:-1; pointer-events:none; display:none;
+    background:linear-gradient(180deg, rgba(5,5,7,0.62) 0%, rgba(5,5,7,0.44) 45%, rgba(5,5,7,0.62) 100%);}
+  #bgScrim.on{display:block;}
+
+  .set-veil{position:fixed; inset:0; background:var(--bg); display:none; z-index:300; overflow-y:auto;}
+  .set-veil.open{display:block;}
+  .set-head{position:relative; padding:26px 20px 0; text-align:center;}
+  .set-head h2{font-family:var(--font-display); font-size:19px; letter-spacing:0.06em; margin:0 0 18px; color:var(--text);}
+  .set-close{position:absolute; top:20px; right:22px; background:none; border:none; color:var(--text-dim); cursor:pointer; padding:6px; line-height:1;}
+  .set-close svg{width:19px; height:19px;}
+  .set-close:hover{color:var(--gold);}
+  .set-tabs{display:flex; gap:10px; justify-content:center; flex-wrap:wrap; padding:0 20px 18px;}
+  .set-tab{font-family:var(--font-display); font-size:11.5px; letter-spacing:0.06em; padding:9px 18px;
+    background:var(--surface); color:var(--text-dim); border:1px solid var(--border); border-radius:var(--radius-m); cursor:pointer;}
+  .set-tab:hover{color:var(--text);}
+  .set-tab.active{color:var(--gold); border-color:var(--gold); box-shadow:0 0 0 1px var(--gold-glow);}
+  .set-body{max-width:1180px; margin:0 auto; padding:22px 26px 60px; border-top:1px solid var(--border-soft);}
+  .set-panel-title{font-family:var(--font-display); font-size:13px; letter-spacing:0.05em; color:var(--text); margin:0 0 22px;}
+
+  .set-group{margin-bottom:30px;}
+  .set-group-head{display:flex; align-items:center; gap:7px; background:none; border:none; padding:0; cursor:pointer;
+    font-family:var(--font-display); font-size:11px; letter-spacing:0.09em; color:var(--teal); margin-bottom:14px;}
+  .set-group-head svg{width:12px; height:12px; transition:transform .18s;}
+  .set-group.collapsed .set-group-head svg{transform:rotate(180deg);}
+  .set-group.collapsed .set-rows{display:none;}
+
+  .set-row{display:flex; align-items:center; gap:24px; padding:13px 0;}
+  .set-row + .set-row{border-top:1px solid var(--border-soft);}
+  .set-row-main{flex:1; min-width:0;}
+  .set-row-main .t{font-family:var(--font-display); font-size:14px; color:var(--text); letter-spacing:0.02em;}
+  .set-row-main .d{font-size:11.5px; color:var(--text-dim); margin-top:3px; line-height:1.45;}
+  .set-row-ctl{flex:none; display:flex; align-items:center; gap:11px;}
+
+  .set-swatch{width:34px; height:28px; padding:0; border:1px solid var(--border); border-radius:var(--radius-s);
+    background:none; cursor:pointer; overflow:hidden;}
+  .set-swatch::-webkit-color-swatch-wrapper{padding:2px;}
+  .set-swatch::-webkit-color-swatch{border:none; border-radius:1px;}
+  .set-hex{font-family:var(--font-mono); font-size:11.5px; color:var(--text-dim); min-width:66px;}
+
+  .set-range{-webkit-appearance:none; appearance:none; width:150px; height:3px; background:var(--border); border-radius:2px; outline:none;}
+  .set-range::-webkit-slider-thumb{-webkit-appearance:none; appearance:none; width:13px; height:13px; border-radius:50%;
+    background:var(--teal); cursor:pointer; border:none;}
+  .set-range::-moz-range-thumb{width:13px; height:13px; border-radius:50%; background:var(--teal); cursor:pointer; border:none;}
+  .set-val{font-family:var(--font-mono); font-size:11.5px; color:var(--text-dim); min-width:46px; text-align:right;}
+
+  .set-select{background:var(--surface-2); color:var(--text); border:1px solid var(--border); border-radius:var(--radius-m);
+    padding:9px 12px; font-family:var(--font-body); font-size:12.5px; min-width:210px; cursor:pointer;}
+  .set-note{font-size:11.5px; color:var(--text-faint); margin-top:16px; line-height:1.5;}
+  .set-sub{margin-top:20px;}
+
+  @media(max-width:720px){
+    .set-row{flex-direction:column; align-items:flex-start; gap:10px;}
+    .set-row-ctl{width:100%;}
+    .set-range{flex:1; width:auto;}
+    .set-body{padding:20px 16px 50px;}
+  }
 </style>
 </head>
 <body>
+<div id="bgMedia"></div>
+<div id="bgScrim"></div>
 
 <div class="widget-ui normal" id="widgetUI">
   <div class="widget-drag" id="widgetDrag">
@@ -1068,12 +1136,21 @@
 
 <footer>
   <div class="foot-row">
-    <button class="foot-link neutral" id="syncBtn">Device sync</button>
-    <button class="foot-link neutral" id="widgetSettingsBtn">Desktop widget</button>
-    <button class="foot-link" id="resetBtn">Reset all progress</button>
+    <button class="foot-link neutral" id="settingsBtn">Settings</button>
   </div>
   <div class="save-note" id="saveNote">Saved automatically on this device</div>
 </footer>
+
+<div class="set-veil" id="setVeil">
+  <div class="set-head">
+    <h2>Settings</h2>
+    <button class="set-close" id="setClose" aria-label="Close settings">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+    </button>
+    <div class="set-tabs" id="setTabs"></div>
+  </div>
+  <div class="set-body" id="setBody"></div>
+</div>
 
 <div class="toast-stack" id="toastStack"></div>
 <canvas id="burst"></canvas>
@@ -1155,51 +1232,51 @@ function subjectColor(code){
 
 /* ============ DEFAULTS ============ */
 const DEFAULT_GOALS = [
-  { id:'blender', name:'3D & Blender', icon:'cube', color:'#d97d4a',
-    flavor:'Become a true generalist — aiming, one day, at director-level craft.' },
-  { id:'python', name:'Python & TD Craft', icon:'terminal', color:'#4fb8b0',
-    flavor:'Sharp enough scripting to take on TD roles and ship your own Blender add-ons.' },
-  { id:'market', name:'Market Mastery', icon:'chart', color:'#6fa86f',
-    flavor:'Learn the stock market well enough to run a real investment strategy.' },
-  { id:'german', name:'German Fluency', icon:'globe', color:'#5b87c7',
-    flavor:'Fluent in every aspect — the goal is native-level, or better.' },
-  { id:'physique', name:'Physique & Calisthenics', icon:'flame', color:'#d66b5e',
-    flavor:'Greek-god, built-different physique — earned through calisthenics.' },
+  { id:'creative', name:'Creative Craft', icon:'cube', color:'#d97d4a',
+    flavor:'Get genuinely good at a craft you make things with.' },
+  { id:'code', name:'Code & Build', icon:'terminal', color:'#4fb8b0',
+    flavor:'Write software well enough to build whatever you need.' },
+  { id:'finance', name:'Money Skills', icon:'chart', color:'#6fa86f',
+    flavor:'Understand saving and investing well enough to plan ahead.' },
+  { id:'language', name:'Language Learning', icon:'globe', color:'#5b87c7',
+    flavor:'Reach real fluency in a second language.' },
+  { id:'fitness', name:'Fitness', icon:'flame', color:'#d66b5e',
+    flavor:'Build strength and condition that hold up for the long run.' },
   { id:'business', name:'Business Builder', icon:'briefcase', color:'#8b7fc9',
-    flavor:'Understand business well enough to launch your own, one day.' },
-  { id:'english', name:'English Mastery', icon:'quill', color:'#c77fa8',
-    flavor:'Exceptional English, held to the same bar as your German.' },
-  { id:'school', name:'School & Abitur', icon:'medal', color:'#c9a227',
-    flavor:'Homework, revision, and the Seminarfacharbeit — the nearest deadline of them all.' }
+    flavor:'Learn how businesses actually work, from the inside out.' },
+  { id:'writing', name:'Writing', icon:'quill', color:'#c77fa8',
+    flavor:'Write clearly enough that people want to keep reading.' },
+  { id:'school', name:'School & Study', icon:'medal', color:'#c9a227',
+    flavor:'Homework, revision, and whatever deadline is nearest.' }
 ];
 
 const DEFAULT_DAILIES = [
-  {goal:'blender', title:'One tutorial chapter or one small practice model', xp:14},
-  {goal:'python', title:'Solve one scripting problem or write one function', xp:14},
-  {goal:'german', title:'One Anki session or one article read aloud', xp:12},
-  {goal:'physique', title:'Training session (or mobility on a rest day)', xp:16},
-  {goal:'english', title:'Read 10 pages or write 200 words', xp:12},
+  {goal:'creative', title:'One tutorial chapter or one small practice piece', xp:14},
+  {goal:'code', title:'Solve one problem or write one function', xp:14},
+  {goal:'language', title:'One flashcard session or one article read aloud', xp:12},
+  {goal:'fitness', title:'Training session (or mobility on a rest day)', xp:16},
+  {goal:'writing', title:'Read 10 pages or write 200 words', xp:12},
   {goal:'school', title:'Clear today\'s homework', xp:14},
-  {goal:'market', title:'Read one market piece and note the takeaway', xp:10},
+  {goal:'finance', title:'Read one article and note the takeaway', xp:10},
   {goal:'business', title:'One chapter or one case study', xp:10}
 ];
 
 const DEFAULT_WEEKLIES = [
-  {goal:'blender', title:'Finish one complete scene', xp:60, steps:['Block out the scene','Materials & texturing','Lighting pass','Final render + post']},
-  {goal:'python', title:'Ship one small add-on feature', xp:60, steps:['Sketch what it should do','Write the operator','Test it inside Blender','Clean up and save a version']},
-  {goal:'german', title:'One hour of real conversation', xp:50, steps:['30 min speaking practice','Write down new words','Review them once more']},
-  {goal:'physique', title:'Hit every planned session', xp:55, steps:['Session 1','Session 2','Session 3','Log measurements / PRs']},
-  {goal:'school', title:'Seminarfacharbeit progress', xp:60, steps:['Re-read what you wrote last week','Draft one new section','Fix the sources / citations']},
-  {goal:'english', title:'Write one full page, then edit it', xp:45, steps:['Write the draft','Edit it the next day','Read it out loud']},
-  {goal:'market', title:'Review portfolio & thesis', xp:40, steps:['Check positions','Write down what changed','Adjust the plan if needed']},
-  {goal:'business', title:'One hour on your own business idea', xp:45, steps:['Pick the question to answer','Research it','Write the conclusion down']}
+  {goal:'creative', title:'Finish one complete piece', xp:60, steps:['Block it out','Refine the details','Polish pass','Final export']},
+  {goal:'code', title:'Ship one small feature', xp:60, steps:['Sketch what it should do','Write it','Test it','Clean up and commit']},
+  {goal:'language', title:'One hour of real conversation', xp:50, steps:['30 min speaking practice','Write down new words','Review them once more']},
+  {goal:'fitness', title:'Hit every planned session', xp:55, steps:['Session 1','Session 2','Session 3','Log measurements / PRs']},
+  {goal:'school', title:'Move the big assignment forward', xp:60, steps:['Re-read last week\'s work','Draft one new section','Fix the sources / citations']},
+  {goal:'writing', title:'Write one full page, then edit it', xp:45, steps:['Write the draft','Edit it the next day','Read it out loud']},
+  {goal:'finance', title:'Review the plan', xp:40, steps:['Check where things stand','Write down what changed','Adjust the plan if needed']},
+  {goal:'business', title:'One hour on your own idea', xp:45, steps:['Pick the question to answer','Research it','Write the conclusion down']}
 ];
 
 const DEFAULT_REWARDS = [
   {name:'20 min guilt-free gaming', cost:25},
   {name:'Watch an episode of something', cost:40},
   {name:'A treat / good snack', cost:20},
-  {name:'New Blender asset or plugin', cost:120},
+  {name:'Something new for your hobby', cost:120},
   {name:'A full rest day, no guilt', cost:60}
 ];
 
@@ -1208,28 +1285,9 @@ function defaultSchool(){
   return { mon:[], tue:[], wed:[], thu:[], fri:[], sat:[], sun:[] };
 }
 
-/* Study focus blocks — mostly evenings, since school owns the daytime */
+/* Study focus blocks — empty by default; fill them in on the Timetable tab. */
 function defaultFocus(){
-  const empty = ()=>({});
-  const f = {}; DAYS.forEach(d=>f[d]=empty());
-  f.mon.E1 = {goal:'school', note:'Homework'};
-  f.mon.E2 = {goal:'blender', note:''};
-  f.tue.P5 = {goal:'python', note:'Free period'};
-  f.tue.E1 = {goal:'physique', note:'Training'};
-  f.tue.E2 = {goal:'blender', note:''};
-  f.wed.E1 = {goal:'school', note:'Seminarfach'};
-  f.wed.E2 = {goal:'german', note:''};
-  f.thu.P5 = {goal:'school', note:'EN entfällt'};
-  f.thu.E1 = {goal:'physique', note:'Training'};
-  f.thu.E2 = {goal:'python', note:''};
-  f.fri.P5 = {goal:'market', note:'Free period'};
-  f.fri.E1 = {goal:'business', note:''};
-  f.sat.P3 = {goal:'blender', note:'Long session'};
-  f.sat.P5 = {goal:'blender', note:''};
-  f.sat.E1 = {goal:'physique', note:'Training'};
-  f.sun.P3 = {goal:'english', note:'Writing'};
-  f.sun.E1 = {goal:'german', note:'Light review'};
-  f.sun.E2 = {goal:'school', note:'Plan the week'};
+  const f = {}; DAYS.forEach(d=>f[d]={});
   return f;
 }
 
@@ -1379,9 +1437,17 @@ function freshState(){
     focusSessions: [], questFavorites: [],
     activeTimer: null,
     ai:{ model:'', count:8 },
+    appearance: defaultAppearance(),
     activeTab:'overview',
     showAllQuests:false
   };
+}
+
+/* Look and feel. Small enough to ride along in the synced blob; the background
+ * image/video itself does not — that stays device-local in IndexedDB, since it
+ * can be tens of megabytes. */
+function defaultAppearance(){
+  return { accent:'#ff2ea6', accent2:'#14e6ff', bgOpacity:100, bgBlur:0, font:'', textScale:100 };
 }
 
 function unescapeAmp(s){
@@ -1484,6 +1550,7 @@ function migrate(s){
   }
   if(!s.activeTab) s.activeTab = 'overview';
   if(typeof s.showAllQuests !== 'boolean') s.showAllQuests = false;
+  s.appearance = Object.assign(defaultAppearance(), s.appearance || {});
   return s;
 }
 
@@ -2117,10 +2184,11 @@ async function autoSync(){
   }
 }
 
-function openUntis(){
+function openUntis(host){
+  const standalone = !host;
   const u = untisCfg;
   const available = !!(window.untis && window.untis.sync) || syncOn();
-  const body = document.getElementById('modalBody');
+  const body = host || document.getElementById('modalBody');
   body.innerHTML =
     '<h3>WebUntis Sync</h3>'+
     '<p>Pull your real timetable straight from your school\'s WebUntis.</p>'+
@@ -2148,8 +2216,8 @@ function openUntis(){
       '<button class="btn-text" id="mCancel">Close</button>'+
       '<button class="btn-primary" id="unSync"'+(available?'':' disabled')+'>Sync this week</button>'+
     '</div>';
-  document.getElementById('modalVeil').classList.add('open');
-  document.getElementById('mCancel').addEventListener('click', closeModal);
+  if(standalone) document.getElementById('modalVeil').classList.add('open');
+  { const c = document.getElementById('mCancel'); if(c) c.addEventListener('click', closeModal); }
   if(!available) return;
 
   const errBox = document.getElementById('unError');
@@ -2439,7 +2507,7 @@ function renderLibrary(){
   document.getElementById('tabLearnCount').textContent = state.videos.length;
   const goalSel = document.getElementById('vidGoal');
   const keep = goalSel.value;                       // don't clobber what's picked
-  goalSel.innerHTML = goalOptionsHtml(keep || 'blender');
+  goalSel.innerHTML = goalOptionsHtml(keep || (state.goals[0] && state.goals[0].id));
   if(keep) goalSel.value = keep;
 
   const done = state.videos.filter(v=>watchPct(v)>=90).length;
@@ -2884,9 +2952,10 @@ function renderQuizResult(){
 }
 
 /* ---------- AI settings ---------- */
-function openAiSettings(){
+function openAiSettings(host){
+  const standalone = !host;
   const a = state.ai || {};
-  const m = document.getElementById('modalBody');
+  const m = host || document.getElementById('modalBody');
   m.innerHTML = '<h3>AI Settings</h3>'+
     '<p>Questline uses your own API key to write summaries and quiz questions. Works with Anthropic or OpenAI &mdash; it picks the right one from the key.</p>'+
     '<label>API key</label>'+
@@ -2898,9 +2967,9 @@ function openAiSettings(){
       '<div><label>Questions</label><input type="number" class="fld" id="aiCount" min="3" max="20" value="'+(a.count||8)+'"></div>'+
     '</div>'+
     '<div class="hint">Leave the model blank for a sensible cheap default. Swap in a stronger model for harder questions.</div>'+
-    '<div class="actions"><button class="btn-text" id="mCancel">Cancel</button><button class="btn-primary" id="aiSave">Save</button></div>';
-  document.getElementById('modalVeil').classList.add('open');
-  document.getElementById('mCancel').addEventListener('click', closeModal);
+    '<div class="actions">'+(standalone?'<button class="btn-text" id="mCancel">Cancel</button>':'')+'<button class="btn-primary" id="aiSave">Save</button></div>';
+  if(standalone) document.getElementById('modalVeil').classList.add('open');
+  { const c = document.getElementById('mCancel'); if(c) c.addEventListener('click', closeModal); }
   document.getElementById('aiSave').addEventListener('click', ()=>{
     aiKey = document.getElementById('aiKey').value.trim();
     saveAiKey();
@@ -3067,6 +3136,7 @@ if(isWidget){
   });
 }
 function renderAll(){
+  applyAppearance();      // a pull from the other device can bring new theme settings
   renderHeader();
   renderRadar();
   renderTodayStrip();
@@ -4187,8 +4257,9 @@ document.getElementById('focusToggle').addEventListener('click', ()=>{
 document.getElementById('batchLogBtn').addEventListener('click', openBatchLog);
 document.getElementById('planTomorrowBtn').addEventListener('click', openPlanTomorrow);
 /* ---------- Sync settings ---------- */
-function openSyncSettings(){
-  const m = document.getElementById('modalBody');
+function openSyncSettings(host){
+  const standalone = !host;
+  const m = host || document.getElementById('modalBody');
   m.innerHTML = '<h3>Device Sync</h3>'+
     '<p>Point this device at your Questline server and everything &mdash; XP, quests, timetable, videos &mdash; stays in step with your other devices.</p>'+
     '<label>Server address</label>'+
@@ -4199,11 +4270,11 @@ function openSyncSettings(){
     '<div id="syMsg"></div>'+
     '<div class="actions">'+
       (syncOn()?'<button class="btn-text" id="syOff">Disconnect</button>':'')+
-      '<button class="btn-text" id="mCancel">Cancel</button>'+
+      (standalone?'<button class="btn-text" id="mCancel">Cancel</button>':'')+
       '<button class="btn-primary" id="sySave">Connect</button>'+
     '</div>';
-  document.getElementById('modalVeil').classList.add('open');
-  document.getElementById('mCancel').addEventListener('click', closeModal);
+  if(standalone) document.getElementById('modalVeil').classList.add('open');
+  { const c = document.getElementById('mCancel'); if(c) c.addEventListener('click', closeModal); }
   const msg = document.getElementById('syMsg');
   const off = document.getElementById('syOff');
   if(off) off.addEventListener('click', ()=>{
@@ -4238,16 +4309,16 @@ function openSyncSettings(){
   });
 }
 document.getElementById('syncBadge').addEventListener('click', openSyncSettings);
-document.getElementById('syncBtn').addEventListener('click', openSyncSettings);
 
-async function openWidgetSettings(){
-  const m = document.getElementById('modalBody');
+async function openWidgetSettings(host){
+  const standalone = !host;
+  const m = host || document.getElementById('modalBody');
   if(!window.widgetCtl){
     m.innerHTML = '<h3>Desktop Widget</h3>'+
       '<p>The pinned widget only runs in the Questline desktop app (started with <code>npm start</code> or the built .exe) — not in a plain browser tab.</p>'+
-      '<div class="actions"><button class="btn-primary" id="mCancel">Close</button></div>';
-    document.getElementById('mCancel').addEventListener('click', closeModal);
-    document.getElementById('modalVeil').classList.add('open');
+      (standalone?'<div class="actions"><button class="btn-primary" id="mCancel">Close</button></div>':'');
+    { const c = document.getElementById('mCancel'); if(c) c.addEventListener('click', closeModal); }
+    if(standalone) document.getElementById('modalVeil').classList.add('open');
     return;
   }
   const [prefs, widgetOpen] = await Promise.all([window.widgetCtl.getPrefs(), window.widgetCtl.isWidgetOpen()]);
@@ -4260,28 +4331,340 @@ async function openWidgetSettings(){
     '<label style="display:flex;align-items:center;gap:7px;text-transform:none;letter-spacing:0;font-size:12px;color:var(--text-dim);margin:2px 0 10px;">'+
       '<input type="checkbox" id="wsWidgetOnly"'+(prefs.widgetOnly?' checked':'')+'> On autostart, open only the widget</label>'+
     '<div class="hint">The widget reads the same save as the main window — whatever you check off in one shows up in the other.</div>'+
-    '<div class="actions"><button class="btn-primary" id="mCancel">Done</button></div>';
-  document.getElementById('mCancel').addEventListener('click', closeModal);
+    (standalone?'<div class="actions"><button class="btn-primary" id="mCancel">Done</button></div>':'');
+  { const c = document.getElementById('mCancel'); if(c) c.addEventListener('click', closeModal); }
   document.getElementById('wsShow').addEventListener('change', e=>{
     if(e.target.checked) window.widgetCtl.openWidget(); else window.widgetCtl.closeWidget();
   });
   document.getElementById('wsAutostart').addEventListener('change', e=>{ window.widgetCtl.setPrefs({autostart:e.target.checked}); });
   document.getElementById('wsWidgetOnly').addEventListener('change', e=>{ window.widgetCtl.setPrefs({widgetOnly:e.target.checked}); });
-  document.getElementById('modalVeil').classList.add('open');
+  if(standalone) document.getElementById('modalVeil').classList.add('open');
 }
-document.getElementById('widgetSettingsBtn').addEventListener('click', openWidgetSettings);
 
-document.getElementById('resetBtn').addEventListener('click', ()=>{
-  openConfirm({
-    title:'Reset all progress?',
-    body:'This clears your levels, streak, gold, quests, timetable and achievements, and restores the defaults. This cannot be undone.',
-    confirmLabel:'Reset everything',
-    onConfirm:()=>{ state = freshState(); saveState(); setTab('overview'); renderAll(); showToast({title:'Progress reset', sub:'Starting fresh.'}); }
+
+/* ============ APPEARANCE ============ */
+function hexToRgb(hex){
+  const h = String(hex||'').replace('#','');
+  const f = h.length===3 ? h.split('').map(c=>c+c).join('') : h;
+  const n = parseInt(f,16);
+  return Number.isFinite(n) ? {r:(n>>16)&255, g:(n>>8)&255, b:n&255} : {r:255,g:46,b:166};
+}
+function rgba(hex, a){ const c = hexToRgb(hex); return 'rgba('+c.r+','+c.g+','+c.b+','+a+')'; }
+function shade(hex, pct){
+  const c = hexToRgb(hex);
+  const f = v=>Math.max(0, Math.min(255, Math.round(v + (pct/100)*255)));
+  return '#'+[f(c.r),f(c.g),f(c.b)].map(v=>v.toString(16).padStart(2,'0')).join('');
+}
+
+function applyAppearance(){
+  const a = Object.assign(defaultAppearance(), state.appearance||{});
+  const root = document.documentElement.style;
+  root.setProperty('--gold', a.accent);
+  root.setProperty('--gold-soft', shade(a.accent, -12));
+  root.setProperty('--gold-glow', rgba(a.accent, 0.35));
+  root.setProperty('--bg-grad', rgba(a.accent2, 0.10));
+
+  const media = document.getElementById('bgMedia');
+  if(media){
+    media.style.opacity = Math.max(0, Math.min(100, a.bgOpacity))/100;
+    media.style.filter = a.bgBlur ? 'blur('+a.bgBlur+'px)' : '';
+    // Blur samples past the edges, so grow the layer enough to avoid pale borders.
+    const over = a.bgBlur ? a.bgBlur*2 : 0;
+    media.style.inset = over ? (-over)+'px' : '0';
+  }
+
+  if(a.font){
+    root.setProperty('--font-body', '"'+String(a.font).replace(/["\\]/g,'')+'", sans-serif');
+    document.body.style.zoom = Math.max(50, Math.min(200, a.textScale))/100;
+  }else{
+    root.removeProperty('--font-body');
+    document.body.style.zoom = '';
+  }
+}
+
+/* ---- Background media: device-local, in IndexedDB (a video is far too big
+   for localStorage and must never enter the synced state blob). ---- */
+const BG_DB = 'questline-bg', BG_STORE = 'media';
+function bgDb(){
+  return new Promise((res, rej)=>{
+    const r = indexedDB.open(BG_DB, 1);
+    r.onupgradeneeded = ()=>{ if(!r.result.objectStoreNames.contains(BG_STORE)) r.result.createObjectStore(BG_STORE); };
+    r.onsuccess = ()=>res(r.result);
+    r.onerror = ()=>rej(r.error);
   });
+}
+async function bgPut(rec){
+  const db = await bgDb();
+  return new Promise((res, rej)=>{
+    const tx = db.transaction(BG_STORE, 'readwrite');
+    tx.objectStore(BG_STORE).put(rec, 'bg');
+    tx.oncomplete = ()=>res(true); tx.onerror = ()=>rej(tx.error);
+  });
+}
+async function bgGet(){
+  try{
+    const db = await bgDb();
+    return await new Promise((res)=>{
+      const tx = db.transaction(BG_STORE, 'readonly');
+      const q = tx.objectStore(BG_STORE).get('bg');
+      q.onsuccess = ()=>res(q.result || null); q.onerror = ()=>res(null);
+    });
+  }catch(e){ return null; }
+}
+async function bgDelete(){
+  try{
+    const db = await bgDb();
+    await new Promise((res)=>{
+      const tx = db.transaction(BG_STORE, 'readwrite');
+      tx.objectStore(BG_STORE).delete('bg');
+      tx.oncomplete = ()=>res(); tx.onerror = ()=>res();
+    });
+  }catch(e){}
+}
+
+let bgObjectUrl = null;
+async function renderBgMedia(){
+  const host = document.getElementById('bgMedia');
+  if(!host) return;
+  const rec = await bgGet();
+  if(bgObjectUrl){ URL.revokeObjectURL(bgObjectUrl); bgObjectUrl = null; }
+  host.innerHTML = '';
+  const scrim = document.getElementById('bgScrim');
+  if(scrim) scrim.classList.toggle('on', !!(rec && rec.blob));
+  if(!rec || !rec.blob) return;
+  bgObjectUrl = URL.createObjectURL(rec.blob);
+  let el;
+  if(String(rec.type||'').startsWith('video')){
+    el = document.createElement('video');
+    el.autoplay = true; el.loop = true; el.muted = true; el.playsInline = true;
+  }else{
+    el = document.createElement('img'); el.alt = '';
+  }
+  el.src = bgObjectUrl;
+  host.appendChild(el);
+}
+
+/* ---- Font list. queryLocalFonts needs a real click behind it, which opening
+   this tab provides; anywhere it isn't available we fall back to a safe list. ---- */
+const FALLBACK_FONTS = ['Arial','Calibri','Cambria','Comic Sans MS','Consolas','Courier New','Georgia',
+  'Impact','Lucida Console','Segoe UI','Tahoma','Times New Roman','Trebuchet MS','Verdana'];
+let cachedFonts = null;
+async function listFonts(){
+  if(cachedFonts) return cachedFonts;
+  try{
+    if(window.queryLocalFonts){
+      const found = await window.queryLocalFonts();
+      const fams = Array.from(new Set(found.map(f=>f.family))).sort((a,b)=>a.localeCompare(b));
+      if(fams.length){ cachedFonts = fams; return fams; }
+    }
+  }catch(e){ /* denied or unsupported — fall through */ }
+  cachedFonts = FALLBACK_FONTS;
+  return cachedFonts;
+}
+
+/* ============ SETTINGS ============ */
+const SETTINGS_TABS = [
+  {id:'appearance', label:'Appearance'},
+  {id:'sync',       label:'Sync'},
+  {id:'learn',      label:'Learn'},
+  {id:'timetable',  label:'Timetable'},
+  {id:'advanced',   label:'Advanced'}
+];
+let activeSettingsTab = 'appearance';
+
+const CHEV = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M18 15l-6-6-6 6"/></svg>';
+
+function settingsRow(title, desc, ctlHtml){
+  return '<div class="set-row"><div class="set-row-main"><div class="t">'+title+'</div>'+
+    '<div class="d">'+desc+'</div></div><div class="set-row-ctl">'+ctlHtml+'</div></div>';
+}
+function settingsGroup(id, label, rowsHtml){
+  return '<div class="set-group" id="grp_'+id+'">'+
+    '<button type="button" class="set-group-head" data-group="'+id+'">'+label+' '+CHEV+'</button>'+
+    '<div class="set-rows">'+rowsHtml+'</div></div>';
+}
+
+function openSettings(tab){
+  activeSettingsTab = tab || activeSettingsTab || 'appearance';
+  document.getElementById('setVeil').classList.add('open');
+  renderSettings();
+}
+function closeSettings(){
+  document.getElementById('setVeil').classList.remove('open');
+}
+
+function renderSettings(){
+  const tabs = document.getElementById('setTabs');
+  tabs.innerHTML = SETTINGS_TABS.map(t=>
+    '<button class="set-tab'+(t.id===activeSettingsTab?' active':'')+'" data-tab="'+t.id+'">'+t.label+'</button>'
+  ).join('');
+  const body = document.getElementById('setBody');
+  body.innerHTML = '';
+  const tab = activeSettingsTab;
+  if(tab==='appearance')      renderAppearanceTab(body);
+  else if(tab==='sync')       { body.innerHTML = '<div class="set-panel-title">Sync</div><div id="setHost"></div>'; openSyncSettings(document.getElementById('setHost')); }
+  else if(tab==='learn')      { body.innerHTML = '<div class="set-panel-title">Learn</div><div id="setHost"></div>'; openAiSettings(document.getElementById('setHost')); }
+  else if(tab==='timetable')  { body.innerHTML = '<div class="set-panel-title">Timetable</div><div id="setHost"></div>'; openUntis(document.getElementById('setHost')); }
+  else if(tab==='advanced')   renderAdvancedTab(body);
+}
+
+function renderAppearanceTab(host){
+  const a = Object.assign(defaultAppearance(), state.appearance||{});
+  host.innerHTML = '<div class="set-panel-title">Appearance</div>'+
+    settingsGroup('colors', 'Colors',
+      settingsRow('Accent color', 'The main color for buttons, highlights, and icons.',
+        '<input type="color" class="set-swatch" id="apAccent" value="'+esc(a.accent)+'">'+
+        '<span class="set-hex" id="apAccentHex">'+esc(a.accent.toUpperCase())+'</span>')+
+      settingsRow('Background Gradient', 'The second color in the background gradient.',
+        '<input type="color" class="set-swatch" id="apAccent2" value="'+esc(a.accent2)+'">'+
+        '<span class="set-hex" id="apAccent2Hex">'+esc(a.accent2.toUpperCase())+'</span>')
+    )+
+    settingsGroup('background', 'Background',
+      settingsRow('Background media', 'Use your own image, GIF, or video as the background.',
+        '<button class="ghost-btn" id="apUpload">Upload</button>'+
+        '<button class="btn-ghost-sm" id="apClear">Clear</button>'+
+        '<input type="file" id="apFile" accept="image/*,video/*" style="display:none">')+
+      settingsRow('Background opacity', 'How see-through the background is.',
+        '<input type="range" class="set-range" id="apOpacity" min="0" max="100" step="1" value="'+a.bgOpacity+'">'+
+        '<span class="set-val" id="apOpacityVal">'+a.bgOpacity+'%</span>')+
+      settingsRow('Background blur', 'How blurry the background is.',
+        '<input type="range" class="set-range" id="apBlur" min="0" max="40" step="1" value="'+a.bgBlur+'">'+
+        '<span class="set-val" id="apBlurVal">'+a.bgBlur+'px</span>')
+    )+
+    settingsGroup('text', 'Text',
+      settingsRow('App font', 'Pick any font installed on this PC. Each option previews in its own font. The logo is unaffected.',
+        '<select class="set-select" id="apFont"><option value="">Default (Rajdhani)</option></select>')+
+      settingsRow('Text size', 'Scales the chosen font to match the app&rsquo;s default sizing. Only applies with a custom font.',
+        '<input type="range" class="set-range" id="apScale" min="70" max="140" step="1" value="'+a.textScale+'">'+
+        '<span class="set-val" id="apScaleVal">'+a.textScale+'%</span>')
+    )+
+    '<div class="set-note">Colors, font and sizing follow you to your other devices. The background image or video stays on this device only &mdash; it never goes near the sync server.</div>'+
+    '<div class="actions" style="justify-content:flex-start"><button class="btn-text" id="apReset">Reset appearance</button></div>';
+
+  const save = (patch)=>{
+    state.appearance = Object.assign(defaultAppearance(), state.appearance||{}, patch);
+    applyAppearance();
+    saveState();
+  };
+
+  const accent = document.getElementById('apAccent');
+  accent.addEventListener('input', e=>{
+    document.getElementById('apAccentHex').textContent = e.target.value.toUpperCase();
+    save({accent: e.target.value});
+  });
+  const accent2 = document.getElementById('apAccent2');
+  accent2.addEventListener('input', e=>{
+    document.getElementById('apAccent2Hex').textContent = e.target.value.toUpperCase();
+    save({accent2: e.target.value});
+  });
+
+  const opacity = document.getElementById('apOpacity');
+  opacity.addEventListener('input', e=>{
+    document.getElementById('apOpacityVal').textContent = e.target.value+'%';
+    save({bgOpacity: parseInt(e.target.value,10)});
+  });
+  const blur = document.getElementById('apBlur');
+  blur.addEventListener('input', e=>{
+    document.getElementById('apBlurVal').textContent = e.target.value+'px';
+    save({bgBlur: parseInt(e.target.value,10)});
+  });
+  const scale = document.getElementById('apScale');
+  scale.addEventListener('input', e=>{
+    document.getElementById('apScaleVal').textContent = e.target.value+'%';
+    save({textScale: parseInt(e.target.value,10)});
+  });
+
+  const file = document.getElementById('apFile');
+  document.getElementById('apUpload').addEventListener('click', ()=>file.click());
+  file.addEventListener('change', async ()=>{
+    const f = file.files && file.files[0];
+    if(!f) return;
+    if(f.size > 120*1024*1024){ showToast({title:'That file is very large', sub:'Pick something under 120 MB.'}); return; }
+    try{
+      await bgPut({blob:f, type:f.type || (/\.(mp4|webm|mov)$/i.test(f.name)?'video/mp4':'image/png')});
+      await renderBgMedia();
+      applyAppearance();
+      showToast({title:'Background set', sub:f.name});
+    }catch(err){
+      showToast({title:'Could not save that file', sub:String(err && err.message || err)});
+    }
+    file.value = '';
+  });
+  document.getElementById('apClear').addEventListener('click', async ()=>{
+    await bgDelete(); await renderBgMedia();
+    showToast({title:'Background cleared'});
+  });
+
+  document.getElementById('apReset').addEventListener('click', ()=>{
+    openConfirm({
+      title:'Reset appearance?',
+      body:'Puts the colors, background and font back the way they started. Your quests and progress are untouched.',
+      confirmLabel:'Reset appearance',
+      onConfirm: async ()=>{
+        state.appearance = defaultAppearance();
+        await bgDelete(); await renderBgMedia();
+        applyAppearance(); saveState(); renderSettings();
+        showToast({title:'Appearance reset'});
+      }
+    });
+  });
+
+  // Fill the font list, previewing each family in itself.
+  const sel = document.getElementById('apFont');
+  listFonts().then(fonts=>{
+    if(!document.getElementById('apFont')) return;      // tab changed while loading
+    fonts.forEach(f=>{
+      const o = document.createElement('option');
+      o.value = f; o.textContent = f; o.style.fontFamily = '"'+f+'", sans-serif';
+      if(f === a.font) o.selected = true;
+      sel.appendChild(o);
+    });
+  });
+  sel.addEventListener('change', e=>save({font: e.target.value}));
+}
+
+function renderAdvancedTab(host){
+  host.innerHTML = '<div class="set-panel-title">Advanced</div><div id="setHost"></div>'+
+    '<div class="set-sub"><div class="set-row"><div class="set-row-main">'+
+      '<div class="t">Reset all progress</div>'+
+      '<div class="d">Clears your levels, streak, gold, quests, timetable and achievements, and restores the defaults. This cannot be undone.</div>'+
+    '</div><div class="set-row-ctl"><button class="btn-danger" id="setReset">Reset everything</button></div></div></div>';
+  openWidgetSettings(document.getElementById('setHost'));
+  document.getElementById('setReset').addEventListener('click', ()=>{
+    openConfirm({
+      title:'Reset all progress?',
+      body:'This clears your levels, streak, gold, quests, timetable and achievements, and restores the defaults. This cannot be undone.',
+      confirmLabel:'Reset everything',
+      onConfirm:()=>{
+        const keepAppearance = state.appearance;
+        state = freshState();
+        state.appearance = keepAppearance;      // a reset of progress is not a reset of theme
+        saveState(); closeSettings(); setTab('overview'); renderAll();
+        showToast({title:'Progress reset', sub:'Starting fresh.'});
+      }
+    });
+  });
+}
+
+document.getElementById('setTabs').addEventListener('click', e=>{
+  const b = e.target.closest('.set-tab'); if(!b) return;
+  activeSettingsTab = b.dataset.tab;
+  renderSettings();
+});
+document.getElementById('setBody').addEventListener('click', e=>{
+  const h = e.target.closest('.set-group-head'); if(!h) return;
+  document.getElementById('grp_'+h.dataset.group).classList.toggle('collapsed');
+});
+document.getElementById('setClose').addEventListener('click', closeSettings);
+document.getElementById('settingsBtn').addEventListener('click', ()=>openSettings());
+document.addEventListener('keydown', e=>{
+  if(e.key==='Escape' && document.getElementById('setVeil').classList.contains('open')) closeSettings();
 });
 
 /* ============ INIT ============ */
 reconcile();
+applyAppearance();
+renderBgMedia();
 setTab(state.activeTab || 'overview');
 renderAll();
 saveState(false);
