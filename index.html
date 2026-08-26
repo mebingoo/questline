@@ -1524,6 +1524,52 @@ let syncCfg = (function(){
   catch(e){ return {url:'',token:'',rev:0}; }
 })();
 function saveSyncCfg(){ try{ localStorage.setItem(SYNC_KEY, JSON.stringify(syncCfg)); }catch(e){} }
+
+/* ---------------- End-to-end encryption ----------------
+ * The state blob is encrypted on this device before it is uploaded, with a
+ * key derived from the sync token. The token never leaves the device, so the
+ * server (and anyone who reaches the KV store behind it) only ever holds
+ * ciphertext. Reads still accept an old plaintext blob, so an upgrade rolls
+ * out without the two devices having to change over at the same moment. */
+const ENC_SALT = 'questline-sync-v1';
+const PBKDF2_ROUNDS = 200000;
+let keyCache = { token:null, key:null };
+
+async function syncCryptoKey(){
+  const token = syncCfg.token || '';
+  if(keyCache.token === token && keyCache.key) return keyCache.key;
+  const te = new TextEncoder();
+  const base = await crypto.subtle.importKey('raw', te.encode(token), 'PBKDF2', false, ['deriveKey']);
+  const key = await crypto.subtle.deriveKey(
+    { name:'PBKDF2', salt:te.encode(ENC_SALT), iterations:PBKDF2_ROUNDS, hash:'SHA-256' },
+    base, { name:'AES-GCM', length:256 }, false, ['encrypt','decrypt']
+  );
+  keyCache = { token, key };
+  return key;
+}
+function toB64(buf){
+  const b = new Uint8Array(buf); let s = '';
+  for(let i=0;i<b.length;i++) s += String.fromCharCode(b[i]);
+  return btoa(s);
+}
+function fromB64(s){
+  const bin = atob(s), b = new Uint8Array(bin.length);
+  for(let i=0;i<bin.length;i++) b[i] = bin.charCodeAt(i);
+  return b;
+}
+async function encryptState(obj){
+  const key = await syncCryptoKey();
+  const iv = crypto.getRandomValues(new Uint8Array(12));
+  const ct = await crypto.subtle.encrypt({name:'AES-GCM', iv}, key,
+    new TextEncoder().encode(JSON.stringify(obj)));
+  return { __enc:1, iv:toB64(iv), ct:toB64(ct) };
+}
+async function decryptState(payload){
+  if(!payload || payload.__enc !== 1) return payload;      // legacy plaintext blob
+  const key = await syncCryptoKey();
+  const pt = await crypto.subtle.decrypt({name:'AES-GCM', iv:fromB64(payload.iv)}, key, fromB64(payload.ct));
+  return JSON.parse(new TextDecoder().decode(pt));
+}
 const syncOn = ()=> !!(syncCfg.url && syncCfg.token);
 
 let pushTimer = null, syncBusy = false;
@@ -1572,11 +1618,23 @@ async function pullState(silent){
       await pushState(true);
       return;
     }
+    let incoming;
+    try{
+      incoming = await decryptState(r.data);
+    }catch(err){
+      // Wrong key — normally because the sync token was just rotated. Keep this
+      // device's data and re-upload it rather than losing anything.
+      setSyncBadge('re-keying','warn');
+      if(!silent) showToast({title:'Synced copy was unreadable', sub:'Kept this device’s data and re-uploaded it.'});
+      await pushState(true);
+      return;
+    }
+
     const serverNewer = (r.rev||0) > (syncCfg.rev||0) ||
                         ((r.updatedAt||0) > (state.updatedAt||0) && (r.rev||0) >= (syncCfg.rev||0));
     if(serverNewer){
       const wasTab = state.activeTab;
-      state = migrate(r.data);
+      state = migrate(incoming);
       state.activeTab = wasTab || state.activeTab;
       syncCfg.rev = r.rev||0; saveSyncCfg();
       try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }catch(e){}
@@ -1599,12 +1657,15 @@ async function pushState(force){
   try{
     setSyncBadge('saving…');
     const r = await apiCall('/api/state', {
-      rev:(syncCfg.rev||0)+1, updatedAt: state.updatedAt||Date.now(), data: state, force: !!force
+      rev:(syncCfg.rev||0)+1, updatedAt: state.updatedAt||Date.now(),
+      data: await encryptState(state), force: !!force
     }, 'PUT');
     if(r.conflictStatus){
       // Another device wrote first. Newest edit wins; ours is only re-sent if it is newer.
-      if((r.updatedAt||0) > (state.updatedAt||0)){
-        state = migrate(r.data);
+      let theirs = null;
+      try{ theirs = await decryptState(r.data); }catch(e){ theirs = null; }
+      if(theirs && (r.updatedAt||0) > (state.updatedAt||0)){
+        state = migrate(theirs);
         syncCfg.rev = r.rev||0; saveSyncCfg();
         try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }catch(e){}
         renderAll();
