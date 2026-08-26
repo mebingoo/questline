@@ -1,0 +1,16 @@
+name = "questline"
+main = "src/worker.js"
+compatibility_date = "2024-11-06"
+
+# The app itself (index.html, manifest, service worker, icons) is uploaded
+# from ./public and served for every non-/api path.
+[assets]
+directory = "./public"
+binding = "ASSETS"
+
+# Shared state lives here. Create it once with:
+#   npx wrangler kv namespace create STATE
+# then paste the printed id below.
+[[kv_namespaces]]
+binding = "STATE"
+id = "14dc9d83ae954d748a8bb8d8c72b7b9d"

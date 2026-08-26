@@ -1,0 +1,50 @@
+{
+  "name": "questline",
+  "version": "1.0.0",
+  "description": "Questline - a personal RPG-style quest tracker for grand goals, daily and weekly quests, XP, streaks, achievements and a reward shop.",
+  "main": "main.js",
+  "author": "Phuc",
+  "license": "MIT",
+  "private": true,
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder",
+    "release": "electron-builder --publish always"
+  },
+  "build": {
+    "appId": "com.phuc.questline",
+    "productName": "Questline",
+    "files": [
+      "main.js",
+      "preload.js",
+      "index.html",
+      "package.json"
+    ],
+    "directories": {
+      "output": "dist"
+    },
+    "win": {
+      "target": "nsis"
+    },
+    "nsis": {
+      "oneClick": true,
+      "perMachine": false,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true
+    },
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "TBD_GITHUB_OWNER",
+        "repo": "questline"
+      }
+    ]
+  },
+  "devDependencies": {
+    "electron": "^44.0.0",
+    "electron-builder": "^24.13.3"
+  },
+  "dependencies": {
+    "electron-updater": "^6.3.9"
+  }
+}

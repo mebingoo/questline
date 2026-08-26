@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Level Up — Your Quest Log</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=DM+Mono&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar">
+        <a class="brand" href="#"><span>✦</span> LEVEL UP</a>
+        <nav>
+          <button class="nav-link active"><span>⌖</span> Quest log</button>
+          <button class="nav-link"><span>♜</span> Achievements</button>
+          <button class="nav-link"><span>◒</span> History</button>
+        </nav>
+        <div class="sidebar-bottom">
+          <div class="mini-streak"><span>🔥</span><div><b id="sideStreak">3 day streak</b><small>Keep your flame alive</small></div></div>
+          <button class="settings">⚙ Settings</button>
+        </div>
+      </aside>
+
+      <main>
+        <header>
+          <div><p class="eyebrow" id="dateLabel">MONDAY, AUGUST 16</p><h1>Good morning, Alex <span>✦</span></h1></div>
+          <button class="add-button" id="openModal">+ New quest</button>
+        </header>
+
+        <section class="hero-card">
+          <div class="hero-copy"><p class="eyebrow">TODAY'S PROGRESS</p><h2><span id="doneCount">0</span> of <span id="totalCount">0</span> quests complete</h2><div class="progress-track"><div class="progress-fill" id="progressFill"></div></div><p class="motivator" id="motivator">Every small win gets you closer to legendary.</p></div>
+          <div class="xp-orb"><div class="orb-inner"><b id="xpTotal">0</b><small>XP</small></div></div>
+        </section>
+
+        <section class="quest-section">
+          <div class="section-heading"><div><h2>Daily quests <span class="count" id="dailyCount">0</span></h2><p>Reset tomorrow at midnight</p></div><span class="section-icon">☀</span></div>
+          <div class="quest-list" id="dailyList"></div>
+        </section>
+        <section class="quest-section weekly">
+          <div class="section-heading"><div><h2>Weekly quests <span class="count" id="weeklyCount">0</span></h2><p>Reset Sunday at midnight</p></div><span class="section-icon">◈</span></div>
+          <div class="quest-list" id="weeklyList"></div>
+        </section>
+      </main>
+    </div>
+
+    <div class="toast" id="toast"><span>✦</span><div><b>Quest complete!</b><p id="toastText">Experience gained</p></div></div>
+    <dialog id="questModal"><form method="dialog" id="questForm"><div class="modal-top"><div><p class="eyebrow">NEW ADVENTURE</p><h2>Create a quest</h2></div><button class="close" value="cancel">×</button></div><label>Quest name<input required id="questName" placeholder="e.g. Read 20 pages" maxlength="48" /></label><div class="form-row"><label>Frequency<select id="questType"><option value="daily">Daily</option><option value="weekly">Weekly</option></select></label><label>XP reward<select id="questXp"><option value="10">10 XP</option><option value="20" selected>20 XP</option><option value="30">30 XP</option><option value="50">50 XP</option></select></label></div><label>Icon <div class="icons" id="iconPicker"><button type="button" class="chosen">⚡</button><button type="button">✦</button><button type="button">☘</button><button type="button">◉</button><button type="button">♜</button><button type="button">♥</button></div></label><button class="create" value="default">Add to quest log <span>→</span></button></form></dialog>
+    <script src="app.js"></script>
+  </body>
+</html>
