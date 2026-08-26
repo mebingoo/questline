@@ -19,7 +19,11 @@ function hardenWindow(win) {
     if (!url.startsWith('file://')) { e.preventDefault(); external(url); }
   });
   wc.on('will-attach-webview', (e) => e.preventDefault());
-  wc.session.setPermissionRequestHandler((_wc, _perm, cb) => cb(false));
+  // Only what the app actually uses: copying the transcript, and letting the
+  // video player go fullscreen. Camera, mic, location, notifications and the
+  // rest are refused outright.
+  const ALLOWED_PERMISSIONS = new Set(['clipboard-sanitized-write', 'fullscreen']);
+  wc.session.setPermissionRequestHandler((_wc, permission, cb) => cb(ALLOWED_PERMISSIONS.has(permission)));
 }
 
 /* ------------------------------------------------------------------ *
