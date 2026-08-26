@@ -7,6 +7,10 @@ compatibility_date = "2024-11-06"
 [assets]
 directory = "./public"
 binding = "ASSETS"
+# Route every request through the Worker instead of letting the CDN answer
+# static files directly, so security headers (frame-ancestors, nosniff) are
+# actually attached to the app's own HTML.
+run_worker_first = true
 
 # Shared state lives here. Create it once with:
 #   npx wrangler kv namespace create STATE

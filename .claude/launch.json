@@ -4,11 +4,14 @@
     {
       "name": "start",
       "runtimeExecutable": "npm",
-      "runtimeArgs": [
-        "run",
-        "start"
-      ],
+      "runtimeArgs": ["run", "start"],
       "port": 3000
+    },
+    {
+      "name": "pwa",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["-m", "http.server", "5599", "--directory", "server/public"],
+      "port": 5599
     }
   ]
 }

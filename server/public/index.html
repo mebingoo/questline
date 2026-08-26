@@ -2,6 +2,25 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+<!-- Locks down where code and data may come from and, more importantly, where
+     they may go: no remote scripts except YouTube's player API, no plugins, no
+     form posts, and outbound requests limited to https (the sync server address
+     is user-supplied, so it can't be pinned to one host). -->
+<meta http-equiv="Content-Security-Policy" content="
+  default-src 'none';
+  script-src 'self' 'unsafe-inline' https://www.youtube.com https://s.ytimg.com;
+  style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
+  font-src 'self' https://fonts.gstatic.com;
+  img-src 'self' data: https:;
+  media-src 'self' https:;
+  frame-src https://www.youtube.com https://www.youtube-nocookie.com;
+  connect-src 'self' https:;
+  worker-src 'self';
+  manifest-src 'self';
+  object-src 'none';
+  base-uri 'none';
+  form-action 'none'">
+<meta name="referrer" content="no-referrer">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="theme-color" content="#050507">
 <meta name="mobile-web-app-capable" content="yes">
@@ -1287,6 +1306,14 @@ let untisCfg = (function(){
 })();
 function saveUntisCfg(){ try{ localStorage.setItem(UNTIS_KEY, JSON.stringify(untisCfg)); }catch(e){} }
 
+/* The AI provider key is a billable credential, so it lives device-local too —
+ * only the harmless model/count prefs travel in the synced state blob. */
+const AI_KEY_STORE = 'questline_aikey_v1';
+let aiKey = (function(){
+  try{ return localStorage.getItem(AI_KEY_STORE) || ''; }catch(e){ return ''; }
+})();
+function saveAiKey(){ try{ localStorage.setItem(AI_KEY_STORE, aiKey); }catch(e){} }
+
 function defaultResource(){
   return { type:'none', url:'', title:'', thumbnail:'', durationSeconds:null, startTimestamp:null };
 }
@@ -1351,7 +1378,7 @@ function freshState(){
     videos: [],
     focusSessions: [], questFavorites: [],
     activeTimer: null,
-    ai:{ apiKey:'', model:'', count:8 },
+    ai:{ model:'', count:8 },
     activeTab:'overview',
     showAllQuests:false
   };
@@ -1449,7 +1476,12 @@ function migrate(s){
     if(!Array.isArray(v.cues)) v.cues = [];
     if(!Array.isArray(v.keyPoints)) v.keyPoints = [];
   });
-  if(!s.ai) s.ai = { apiKey:'', model:'', count:8 };
+  if(!s.ai) s.ai = { model:'', count:8 };
+  if(s.ai.apiKey !== undefined){
+    // Legacy saves synced the AI key inside the state blob. Move it device-local once.
+    if(!aiKey && s.ai.apiKey){ aiKey = String(s.ai.apiKey); saveAiKey(); }
+    delete s.ai.apiKey;
+  }
   if(!s.activeTab) s.activeTab = 'overview';
   if(typeof s.showAllQuests !== 'boolean') s.showAllQuests = false;
   return s;
@@ -2617,7 +2649,7 @@ function genPromptHtml(what){
   if(!learnAvailable()) return '<div class="gen-box">This needs the desktop app, or sync set up on this device.</div>';
   if(!v.cues.length) return '<div class="gen-box">Grab the transcript first &mdash; the '+what+
     ' is built from what\'s actually said in the video.<br><button class="btn-primary" id="goTr">Get transcript</button></div>';
-  if(!state.ai.apiKey) return '<div class="gen-box">Add an AI API key and Questline will write the summary and quiz for you.'+
+  if(!aiKey) return '<div class="gen-box">Add an AI API key and Questline will write the summary and quiz for you.'+
     '<br><button class="btn-primary" id="goAi">Add API key</button></div>';
   return '<div class="gen-box">Ready to generate from '+v.cues.length+' transcript lines.'+
     '<br><button class="btn-primary" id="goGen">Generate summary &amp; quiz</button></div>';
@@ -2630,7 +2662,7 @@ function wireGenButton(){
 async function generateAll(force){
   const v = currentVideo; if(!v) return;
   if(!v.cues.length){ setSubTab('transcript'); fetchTranscript(); return; }
-  if(!state.ai.apiKey){ openAiSettings(); return; }
+  if(!aiKey){ openAiSettings(); return; }
   if(v.questions.length && !force){
     openConfirm({
       title:'Replace summary & quiz?',
@@ -2649,7 +2681,7 @@ async function generateAll(force){
   const transcript = v.cues.map(c=>c.t+'s: '+c.text).join('\n');
   try{
     const r = await api.aiGenerate({
-      apiKey: state.ai.apiKey, model: state.ai.model, count: state.ai.count,
+      apiKey: aiKey, model: state.ai.model, count: state.ai.count,
       title: v.title, transcript
     });
     if(!r || !r.ok) throw new Error((r && r.error) || 'Unknown error');
@@ -2794,7 +2826,7 @@ function openAiSettings(){
   m.innerHTML = '<h3>AI Settings</h3>'+
     '<p>Questline uses your own API key to write summaries and quiz questions. Works with Anthropic or OpenAI &mdash; it picks the right one from the key.</p>'+
     '<label>API key</label>'+
-    '<input type="password" class="fld" id="aiKey" placeholder="sk-ant-… or sk-…" value="'+esc(a.apiKey||'')+'">'+
+    '<input type="password" class="fld" id="aiKey" placeholder="sk-ant-… or sk-…" value="'+esc(aiKey)+'">'+
     '<div class="hint">Anthropic keys start <b>sk-ant-</b> (console.anthropic.com), OpenAI keys start <b>sk-</b> (platform.openai.com). '+
     'Stored only on this computer and sent only to that provider. A typical tutorial costs well under a cent to process.</div>'+
     '<div class="row2">'+
@@ -2806,8 +2838,9 @@ function openAiSettings(){
   document.getElementById('modalVeil').classList.add('open');
   document.getElementById('mCancel').addEventListener('click', closeModal);
   document.getElementById('aiSave').addEventListener('click', ()=>{
+    aiKey = document.getElementById('aiKey').value.trim();
+    saveAiKey();
     state.ai = {
-      apiKey: document.getElementById('aiKey').value.trim(),
       model: document.getElementById('aiModel').value.trim(),
       count: Math.max(3, Math.min(20, parseInt(document.getElementById('aiCount').value,10)||8))
     };

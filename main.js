@@ -1,7 +1,26 @@
-const { app, BrowserWindow, Menu, ipcMain, session, globalShortcut, dialog } = require('electron');
+const { app, BrowserWindow, Menu, ipcMain, session, globalShortcut, dialog, shell } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const https = require('https');
+
+/* ------------------------------------------------------------------ *
+ * Window hardening
+ *
+ * preload.js exposes the untis/learn/widget bridges to whatever page a
+ * window is showing, so an app window must never end up on a remote
+ * page. Anything that tries to navigate away is cancelled and handed to
+ * the real browser instead.
+ * ------------------------------------------------------------------ */
+function hardenWindow(win) {
+  const wc = win.webContents;
+  const external = (url) => { if (/^https:\/\//i.test(url)) shell.openExternal(url); };
+  wc.setWindowOpenHandler(({ url }) => { external(url); return { action: 'deny' }; });
+  wc.on('will-navigate', (e, url) => {
+    if (!url.startsWith('file://')) { e.preventDefault(); external(url); }
+  });
+  wc.on('will-attach-webview', (e) => e.preventDefault());
+  wc.session.setPermissionRequestHandler((_wc, _perm, cb) => cb(false));
+}
 
 /* ------------------------------------------------------------------ *
  * Window
@@ -26,6 +45,7 @@ function createWindow() {
     }
   });
   mainWin = win;
+  hardenWindow(win);
   win.on('closed', () => { if (mainWin === win) mainWin = null; });
 
   Menu.setApplicationMenu(null);
@@ -88,6 +108,7 @@ function createWidgetWindow() {
     }
   });
   widgetWin = win;
+  hardenWindow(win);
   win.setAlwaysOnTop(true, 'screen-saver');
   win.loadFile(path.join(__dirname, 'index.html'), { query: { widget: '1' } });
   const persist = () => { if (widgetWin === win && !win.isDestroyed()) saveWidgetBounds(win.getBounds()); };
@@ -235,8 +256,20 @@ function post(host, path, payload, cookie) {
   });
 }
 
+/* The school password is POSTed to whatever host this resolves to, so it is
+   pinned to WebUntis' own domain — a tampered or mistyped server field can
+   never send the credentials somewhere else. */
+function untisHost(server) {
+  const h = String(server || '').trim().replace(/^https?:\/\//i, '').replace(/[/?#].*$/, '').toLowerCase();
+  if (!/^[a-z0-9.-]+$/.test(h)) throw new Error('That server address is not a valid hostname.');
+  if (h !== 'webuntis.com' && !h.endsWith('.webuntis.com')) {
+    throw new Error('For safety Questline only signs in to *.webuntis.com servers (got "' + h + '").');
+  }
+  return h;
+}
+
 function rpc(server, schoolQuery, method, params, cookie) {
-  return post(server, '/WebUntis/jsonrpc.do?school=' + encodeURIComponent(schoolQuery),
+  return post(untisHost(server), '/WebUntis/jsonrpc.do?school=' + encodeURIComponent(schoolQuery),
     { id: 'questline', method, params: params || {}, jsonrpc: '2.0' }, cookie);
 }
 
@@ -383,9 +416,13 @@ ipcMain.handle('yt-meta', async (event, videoId) => {
 /* ---- Transcript: loaded inside a real (hidden) browser window.
    YouTube blocks plain HTTP clients, but this IS Chromium, with cookies
    and a real JS context, so it reads the page the way a browser does. ---- */
+// YouTube is scraped in its own in-memory session, so its cookies never mix
+// with the app's own session and nothing it sets survives the fetch.
+const ytSession = () => session.fromPartition('yt-scrape');
+
 async function primeConsentCookies() {
   // Germany/EU: without a consent cookie YouTube serves a wall instead of the page.
-  const jar = session.defaultSession.cookies;
+  const jar = ytSession().cookies;
   const cookies = [
     { url: 'https://www.youtube.com', name: 'CONSENT', value: 'YES+cb.20240101-00-p0.en+FX+000', domain: '.youtube.com' },
     { url: 'https://www.youtube.com', name: 'SOCS', value: 'CAISEwgDEgk0ODE3Nzk3MjQaAmVuIAEaBgiA_LyaBg', domain: '.youtube.com' }
@@ -400,9 +437,15 @@ ipcMain.handle('yt-transcript', async (event, videoId) => {
   let win = null;
   try {
     await primeConsentCookies();
+    // No preload here on purpose: this window loads real youtube.com, so it gets
+    // no bridge, no Node, and an OS sandbox.
     win = new BrowserWindow({
       show: false,
-      webPreferences: { offscreen: true, javascript: true, images: false, contextIsolation: true, sandbox: false }
+      webPreferences: {
+        offscreen: true, javascript: true, images: false,
+        contextIsolation: true, nodeIntegration: false, sandbox: true,
+        webSecurity: true, partition: 'yt-scrape'
+      }
     });
     await win.loadURL('https://www.youtube.com/watch?v=' + videoId + '&hl=en');
     // give the page a beat to populate ytInitialPlayerResponse

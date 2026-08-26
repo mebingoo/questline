@@ -27,15 +27,40 @@ function cors() {
     'Access-Control-Max-Age': '86400'
   };
 }
-function authed(request, env) {
-  const t = request.headers.get('X-Questline-Token') || '';
+// Compare SHA-256 digests rather than the raw strings: fixed-length, so neither
+// the token's length nor its first differing character leaks through timing.
+async function sha256(s) {
+  return new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(s)));
+}
+async function authed(request, env) {
   const want = env.SYNC_TOKEN || '';
   if (!want) return false;
-  // constant-ish time compare
-  if (t.length !== want.length) return false;
+  const got = request.headers.get('X-Questline-Token') || '';
+  const [a, b] = await Promise.all([sha256(got), sha256(want)]);
   let diff = 0;
-  for (let i = 0; i < t.length; i++) diff |= t.charCodeAt(i) ^ want.charCodeAt(i);
+  for (let i = 0; i < a.length; i++) diff |= a[i] ^ b[i];
   return diff === 0;
+}
+
+/* Brute-force brake. The Worker URL is guessable and the token is the only
+ * thing standing in front of the data, so a client that keeps guessing wrong
+ * gets locked out for a while. Counters are per-IP and expire on their own. */
+const MAX_FAILURES = 10;
+const LOCKOUT_SECONDS = 900;
+
+const failKey = (request) => 'auth-fail:' + (request.headers.get('CF-Connecting-IP') || 'unknown');
+
+async function isLockedOut(request, env) {
+  const n = parseInt((await env.STATE.get(failKey(request))) || '0', 10) || 0;
+  return n >= MAX_FAILURES;
+}
+async function noteAuthFailure(request, env) {
+  const key = failKey(request);
+  const n = (parseInt((await env.STATE.get(key)) || '0', 10) || 0) + 1;
+  await env.STATE.put(key, String(n), { expirationTtl: LOCKOUT_SECONDS });
+}
+async function clearAuthFailures(request, env) {
+  try { await env.STATE.delete(failKey(request)); } catch (e) { /* best effort */ }
 }
 
 const STATE_KEY = 'questline:state';
@@ -48,17 +73,30 @@ export default {
     if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers: cors() });
 
     if (!path.startsWith('/api/')) {
-      // Everything else is the app itself.
-      return env.ASSETS.fetch(request);
+      // Everything else is the app itself. frame-ancestors and nosniff only
+      // work as real headers, so they are attached here rather than in the
+      // page's own <meta> CSP.
+      const res = await env.ASSETS.fetch(request);
+      const out = new Response(res.body, res);
+      out.headers.set('Content-Security-Policy', "frame-ancestors 'none'");
+      out.headers.set('X-Content-Type-Options', 'nosniff');
+      out.headers.set('Referrer-Policy', 'no-referrer');
+      out.headers.set('Permissions-Policy', 'geolocation=(), microphone=(), camera=(), interest-cohort=()');
+      return out;
     }
 
     if (path === '/api/ping') {
       return json({ ok: true, needsToken: !!env.SYNC_TOKEN, version: 1 });
     }
 
-    if (!authed(request, env)) {
+    if (await isLockedOut(request, env)) {
+      return json({ ok: false, error: 'Too many bad sync tokens. Try again in 15 minutes.' }, 429);
+    }
+    if (!(await authed(request, env))) {
+      await noteAuthFailure(request, env);
       return json({ ok: false, error: 'Wrong or missing sync token.' }, 401);
     }
+    ctx.waitUntil(clearAuthFailures(request, env));
 
     try {
       if (path === '/api/state' && request.method === 'GET') return await getState(env);
@@ -125,8 +163,20 @@ const RPC_ERRORS = {
   '-8998': 'WebUntis is busy right now. Try again in a moment.'
 };
 
+/* The school password is POSTed to whatever host this resolves to, so it is
+   pinned to WebUntis' own domain — the server field can never redirect the
+   credentials to an arbitrary host (nor make the Worker a general proxy). */
+function untisHost(server) {
+  const h = String(server || '').trim().replace(/^https?:\/\//i, '').replace(/[/?#].*$/, '').toLowerCase();
+  if (!/^[a-z0-9.-]+$/.test(h)) throw new Error('That server address is not a valid hostname.');
+  if (h !== 'webuntis.com' && !h.endsWith('.webuntis.com')) {
+    throw new Error('For safety Questline only signs in to *.webuntis.com servers (got "' + h + '").');
+  }
+  return h;
+}
+
 async function rpc(server, school, method, params, cookie) {
-  const res = await fetch('https://' + server + '/WebUntis/jsonrpc.do?school=' + encodeURIComponent(school), {
+  const res = await fetch('https://' + untisHost(server) + '/WebUntis/jsonrpc.do?school=' + encodeURIComponent(school), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'User-Agent': 'Questline/1.0', ...(cookie ? { Cookie: cookie } : {}) },
     body: JSON.stringify({ id: 'questline', method, params: params || {}, jsonrpc: '2.0' })
