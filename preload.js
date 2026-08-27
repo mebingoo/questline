@@ -20,14 +20,6 @@ contextBridge.exposeInMainWorld('roadmaps', {
   loadSeed: (filename) => ipcRenderer.invoke('roadmap-load-seed', filename)
 });
 
-// Local course folders: picking/scanning only ever touches a folder the user
-// picked through the native dialog (or a root already saved from a past pick).
-contextBridge.exposeInMainWorld('courses', {
-  pickFolder: () => ipcRenderer.invoke('course-pick-folder'),
-  registerRoot: (rootPath) => ipcRenderer.invoke('course-register-root', rootPath),
-  scanFolder: (rootPath) => ipcRenderer.invoke('course-scan-folder', rootPath)
-});
-
 // Shared by both the main window (toggles/configures the widget) and the
 // widget window itself (resizes its own frame, jumps back to the main window).
 contextBridge.exposeInMainWorld('widgetCtl', {

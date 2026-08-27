@@ -12,7 +12,7 @@
   style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
   font-src 'self' https://fonts.gstatic.com;
   img-src 'self' data: blob: https:;
-  media-src 'self' blob: https: qlmedia:;
+  media-src 'self' blob: https:;
   frame-src https://www.youtube.com https://www.youtube-nocookie.com;
   connect-src 'self' https:;
   worker-src 'self';
@@ -413,45 +413,15 @@
   .watch-text{font-family:var(--font-mono); font-size:11.5px; color:var(--text-faint); white-space:nowrap;}
 
   .subtabs{display:flex; gap:3px; border-bottom:1px solid var(--border); margin-bottom:18px; flex-wrap:wrap;}
-  .subtab, .cptab{
+  .subtab{
     padding:9px 15px; background:none; border:1px solid transparent; border-bottom:none;
     border-radius:2px 2px 0 0; color:var(--text-faint); font-size:12.5px; font-weight:600;
     cursor:pointer; margin-bottom:-1px;
   }
-  .subtab:hover, .cptab:hover{color:var(--text-dim);}
-  .subtab.active, .cptab.active{background:var(--surface); border-color:var(--border); color:var(--text);}
-  .subpanel, .cppanel{display:none;}
-  .cp-video-title{font-size:13px; color:var(--text-dim); margin:12px 0 4px;}
-  .cp-note-add{margin-top:14px; padding-top:14px; border-top:1px solid var(--border-soft);}
-  .cp-note-actions{display:flex; gap:8px; margin-top:8px; flex-wrap:wrap; align-items:center;}
-  .cp-note-actions .btn-primary{margin-left:auto;}
-  #cpPendingImage{margin-top:8px;}
-  .cp-pending-thumb{position:relative; display:inline-block;}
-  .cp-pending-thumb img{max-width:140px; max-height:90px; border-radius:var(--radius-s); display:block;}
-  .cp-pending-thumb button{position:absolute; top:-6px; right:-6px; width:18px; height:18px; border-radius:50%; background:var(--danger); color:#fff; border:none; cursor:pointer; font-size:11px; line-height:1;}
-  .co-tree{font-size:12.5px;}
-  .co-folder{margin-bottom:2px;}
-  .co-folder-name{display:flex; align-items:center; gap:6px; padding:6px 4px; cursor:pointer; color:var(--text-dim); font-weight:600;}
-  .co-folder-name:hover{color:var(--text);}
-  .co-folder-chev{transition:transform .15s; flex:none;}
-  .co-folder.open > .co-folder-name .co-folder-chev{transform:rotate(90deg);}
-  .co-folder-children{display:none; padding-left:18px;}
-  .co-folder.open > .co-folder-children{display:block;}
-  .co-video-row{display:flex; align-items:center; gap:8px; padding:6px 4px 6px 8px; border-radius:var(--radius-s); cursor:pointer; color:var(--text-dim);}
-  .co-video-row:hover{background:var(--surface-2); color:var(--text);}
-  .co-video-row.playing{background:var(--surface-3); color:var(--gold);}
-  .co-video-row.done .co-video-dot{background:var(--success); border-color:var(--success);}
-  .co-video-dot{width:7px; height:7px; border-radius:50%; border:2px solid var(--border); flex:none;}
-  .co-video-name{flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
-  .cp-note-row{display:flex; gap:10px; padding:8px 0; border-top:1px solid var(--border-soft); cursor:pointer;}
-  .cp-note-row:first-child{border-top:none;}
-  .cp-note-time{font-family:var(--font-mono); font-size:10.5px; color:var(--gold); flex:none; padding-top:1px;}
-  .cp-note-body{flex:1; min-width:0;}
-  .cp-note-text{font-size:12px; color:var(--text); line-height:1.4;}
-  .cp-note-row img{max-width:100%; max-height:120px; border-radius:var(--radius-s); margin-top:6px; display:block;}
-  .cp-note-del{flex:none; background:none; border:none; color:var(--text-faint); cursor:pointer; padding:2px;}
-  .cp-note-del:hover{color:var(--danger);}
-  .subpanel.active, .cppanel.active{display:block;}
+  .subtab:hover{color:var(--text-dim);}
+  .subtab.active{background:var(--surface); border-color:var(--border); color:var(--text);}
+  .subpanel{display:none;}
+  .subpanel.active{display:block;}
 
   .panel-box{background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-l); padding:20px;}
   .summary-text{font-size:14px; line-height:1.65; color:var(--text-dim); margin:0 0 16px;}
@@ -1211,30 +1181,14 @@
         </div>
       </div>
 
-      <div class="detail-tabs" id="learnModeToggle">
-        <button class="detail-tab active" data-mode="youtube">YouTube</button>
-        <button class="detail-tab" data-mode="courses">My Courses</button>
+      <div class="addbar">
+        <input type="text" class="fld" id="vidUrl" placeholder="Paste a YouTube link — e.g. https://www.youtube.com/watch?v=nIoXOplUvAw">
+        <select class="fld" id="vidGoal" style="flex:0 0 190px"></select>
+        <button class="btn-primary" id="vidAdd">Add video</button>
       </div>
+      <div id="addError"></div>
 
-      <div id="ytLibrary">
-        <div class="addbar">
-          <input type="text" class="fld" id="vidUrl" placeholder="Paste a YouTube link — e.g. https://www.youtube.com/watch?v=nIoXOplUvAw">
-          <select class="fld" id="vidGoal" style="flex:0 0 190px"></select>
-          <button class="btn-primary" id="vidAdd">Add video</button>
-        </div>
-        <div id="addError"></div>
-
-        <div class="vid-grid" id="vidGrid"></div>
-      </div>
-
-      <div id="courseLibrary" style="display:none;">
-        <div class="addbar">
-          <button class="btn-primary" id="courseAdd">+ Add a course folder</button>
-          <select class="fld" id="courseGoal" style="flex:0 0 190px"></select>
-        </div>
-        <div id="courseError"></div>
-        <div class="vid-grid" id="courseGrid"></div>
-      </div>
+      <div class="vid-grid" id="vidGrid"></div>
     </section>
 
     <!-- player -->
@@ -1265,46 +1219,6 @@
           <div class="subpanel active" id="sub-quiz"><div class="panel-box" id="quizBox"></div></div>
           <div class="subpanel" id="sub-summary"><div class="panel-box" id="summaryBox"></div></div>
           <div class="subpanel" id="sub-transcript"><div class="panel-box" id="transcriptBox"></div></div>
-        </div>
-      </div>
-    </section>
-
-    <!-- course player -->
-    <section id="coursePlayerSection" style="display:none; margin-top:0;">
-      <div class="player-head">
-        <button class="ghost-btn" id="backToCourseLib">&larr; Library</button>
-        <h2 id="cpCourseTitle"></h2>
-        <span class="vid-goal" id="cpGoal"></span>
-      </div>
-
-      <div class="learn-split">
-        <div class="learn-left">
-          <div class="player-wrap" id="coursePlayerWrap"><video id="courseVideoEl" controls></video></div>
-          <div class="watch-row">
-            <span class="watch-text" id="cpPos">0:00</span>
-            <div class="watch-track"><i id="cpFill" style="width:0%"></i></div>
-            <span class="watch-text" id="cpDur">--:--</span>
-          </div>
-          <div class="cp-video-title" id="cpVideoTitle"></div>
-
-          <div class="cp-note-add">
-            <input type="text" class="fld" id="cpNoteInput" placeholder="Note at the current time...">
-            <div class="cp-note-actions">
-              <button class="btn-ghost-sm" id="cpCaptureFrame" type="button">Capture frame</button>
-              <label class="btn-ghost-sm" id="cpUploadLabel">Upload image<input type="file" id="cpNoteImage" accept="image/*" style="display:none;"></label>
-              <button class="btn-primary" id="cpNoteAdd" type="button">Add note</button>
-            </div>
-            <div id="cpPendingImage"></div>
-          </div>
-        </div>
-
-        <div class="learn-right">
-          <div class="subtabs" id="cpTabs">
-            <button class="cptab active" data-sub="outline">Outline</button>
-            <button class="cptab" data-sub="notes">Notes</button>
-          </div>
-          <div class="cppanel active" id="cp-sub-outline"><div class="panel-box" id="cpOutline"></div></div>
-          <div class="cppanel" id="cp-sub-notes"><div class="panel-box" id="cpNotes"></div></div>
         </div>
       </div>
     </section>
@@ -1660,8 +1574,6 @@ function freshState(){
     school: defaultSchool(),
     focus: defaultFocus(),
     videos: [],
-    courses: [],
-    learnMode: 'youtube',
     focusSessions: [], questFavorites: [],
     activeTimer: null,
     ai:{ model:'', count:8 },
@@ -1708,51 +1620,6 @@ function unescapeQuestAmp(q){
   if(q.definitionOfDone) q.definitionOfDone = unescapeAmp(q.definitionOfDone);
   if(q.resource && q.resource.title) q.resource.title = unescapeAmp(q.resource.title);
   (q.steps||[]).forEach(st=>{ st.title = unescapeAmp(st.title); });
-}
-/* ============ LOCAL COURSES ============ */
-// A course wraps a folder the user picked (main.js re-validates rootPath against its
-// own allow-list every session — this object never grants filesystem access on its
-// own). `tree` is the last scan; `progress` is keyed by each video node's own `path`
-// so re-scanning after adding new files never loses watch position or notes on the
-// files that were already there.
-function normalizeNote(raw){
-  return {
-    id: raw.id || ('note'+Date.now()+'_'+Math.random().toString(36).slice(2,7)),
-    time: Number.isFinite(raw.time) ? raw.time : 0,
-    text: String(raw.text||''),
-    imageRef: raw.imageRef || null,
-    createdAt: raw.createdAt || new Date().toISOString()
-  };
-}
-function normalizeCourse(raw){
-  const progress = {};
-  if(raw.progress && typeof raw.progress==='object'){
-    Object.keys(raw.progress).forEach(p=>{
-      const entry = raw.progress[p] || {};
-      progress[p] = {
-        lastPos: Number.isFinite(entry.lastPos) ? entry.lastPos : 0,
-        duration: Number.isFinite(entry.duration) ? entry.duration : 0,
-        notes: Array.isArray(entry.notes) ? entry.notes.map(normalizeNote) : []
-      };
-    });
-  }
-  return {
-    id: raw.id || ('c'+Date.now()),
-    name: String(raw.name||'Untitled course'),
-    rootPath: String(raw.rootPath||''),
-    goal: raw.goal || null,
-    addedAt: raw.addedAt || todayStr(),
-    tree: Array.isArray(raw.tree) ? raw.tree : [],
-    progress
-  };
-}
-function courseVideoNodes(tree){
-  const out = [];
-  (tree||[]).forEach(node=>{
-    if(node.type==='video') out.push(node);
-    else if(node.type==='folder') out.push(...courseVideoNodes(node.children));
-  });
-  return out;
 }
 function fillQuestExtras(q){
   const extras = questExtras();
@@ -1848,13 +1715,6 @@ function migrate(s){
     if(!Array.isArray(v.cues)) v.cues = [];
     if(!Array.isArray(v.keyPoints)) v.keyPoints = [];
   });
-  if(!Array.isArray(s.courses)) s.courses = [];
-  s.courses = s.courses.map(normalizeCourse);
-  s.courses.forEach(c=>{
-    c.name = unescapeAmp(c.name);
-    Object.values(c.progress).forEach(p=>p.notes.forEach(n=>{ n.text = unescapeAmp(n.text); }));
-  });
-  if(!['youtube','courses'].includes(s.learnMode)) s.learnMode = 'youtube';
   if(!s.ai) s.ai = { model:'', count:8 };
   if(s.ai.apiKey !== undefined){
     // Legacy saves synced the AI key inside the state blob. Move it device-local once.
@@ -3338,362 +3198,6 @@ document.getElementById('vidGrid').addEventListener('click', e=>{
   openVideo(id);
 });
 
-/* ============ LOCAL COURSES — LEARN TAB ============ */
-// Note images: device-local, in IndexedDB — same reasoning as bgDb/proofDb above
-// (an image doesn't belong in the synced JSON blob), just a third small store
-// because it's a distinct kind of attachment, not because the pattern differs.
-const NOTEIMG_DB = 'questline-note-images', NOTEIMG_STORE = 'images';
-function noteImageDb(){
-  return new Promise((res, rej)=>{
-    const r = indexedDB.open(NOTEIMG_DB, 1);
-    r.onupgradeneeded = ()=>{ if(!r.result.objectStoreNames.contains(NOTEIMG_STORE)) r.result.createObjectStore(NOTEIMG_STORE); };
-    r.onsuccess = ()=>res(r.result);
-    r.onerror = ()=>rej(r.error);
-  });
-}
-async function noteImagePut(key, blob){
-  const db = await noteImageDb();
-  return new Promise((res, rej)=>{
-    const tx = db.transaction(NOTEIMG_STORE, 'readwrite');
-    tx.objectStore(NOTEIMG_STORE).put(blob, key);
-    tx.oncomplete = ()=>res(true); tx.onerror = ()=>rej(tx.error);
-  });
-}
-async function noteImageGet(key){
-  try{
-    const db = await noteImageDb();
-    return await new Promise((res)=>{
-      const tx = db.transaction(NOTEIMG_STORE, 'readonly');
-      const q = tx.objectStore(NOTEIMG_STORE).get(key);
-      q.onsuccess = ()=>res(q.result || null); q.onerror = ()=>res(null);
-    });
-  }catch(e){ return null; }
-}
-async function noteImageDelete(key){
-  try{
-    const db = await noteImageDb();
-    await new Promise((res)=>{
-      const tx = db.transaction(NOTEIMG_STORE, 'readwrite');
-      tx.objectStore(NOTEIMG_STORE).delete(key);
-      tx.oncomplete = ()=>res(); tx.onerror = ()=>res();
-    });
-  }catch(e){}
-}
-
-const coursesAvailable = ()=> !!(window.courses && window.courses.pickFolder);
-function courseById(id){ return state.courses.find(c=>c.id===id); }
-function courseWatchPct(entry){ return (entry && entry.duration>0) ? Math.min(100, Math.round(entry.lastPos/entry.duration*100)) : 0; }
-function courseOverallPct(course){
-  const nodes = courseVideoNodes(course.tree);
-  if(!nodes.length) return 0;
-  const total = nodes.reduce((sum,n)=>sum+courseWatchPct(course.progress[n.path]), 0);
-  return Math.round(total/nodes.length);
-}
-function courseProgressEntry(course, videoPath){
-  if(!course.progress[videoPath]) course.progress[videoPath] = { lastPos:0, duration:0, notes:[] };
-  return course.progress[videoPath];
-}
-
-/* ---------- YouTube / My Courses toggle ---------- */
-function switchLearnMode(mode){
-  state.learnMode = (mode==='courses') ? 'courses' : 'youtube';
-  document.querySelectorAll('#learnModeToggle .detail-tab').forEach(b=>b.classList.toggle('active', b.dataset.mode===state.learnMode));
-  document.getElementById('ytLibrary').style.display = state.learnMode==='youtube' ? '' : 'none';
-  document.getElementById('courseLibrary').style.display = state.learnMode==='courses' ? '' : 'none';
-  saveState();
-}
-document.getElementById('learnModeToggle').addEventListener('click', e=>{
-  const btn = e.target.closest('[data-mode]'); if(btn) switchLearnMode(btn.dataset.mode);
-});
-
-/* ---------- Library ---------- */
-function renderCourseGrid(){
-  const goalSel = document.getElementById('courseGoal');
-  const keep = goalSel.value;
-  goalSel.innerHTML = goalOptionsHtml(keep || (state.goals[0] && state.goals[0].id));
-  if(keep) goalSel.value = keep;
-
-  const grid = document.getElementById('courseGrid');
-  if(!state.courses.length){
-    grid.innerHTML = '<div class="empty-row" style="grid-column:1/-1; padding:40px 20px;">'+
-      'No courses yet. Add a course folder and Questline picks up whatever videos and subfolders '+
-      'are inside &mdash; however that particular course happens to be organized.</div>';
-    return;
-  }
-  grid.innerHTML = state.courses.map(c=>{
-    const g = goalById(c.goal);
-    const pct = courseOverallPct(c);
-    const videoCount = courseVideoNodes(c.tree).length;
-    return '<div class="vid-card" data-id="'+c.id+'">'+
-      '<div class="vid-thumb"><div class="vprog"><i style="width:'+pct+'%"></i></div></div>'+
-      '<div class="vid-body">'+
-        '<div class="vid-title">'+esc(c.name)+'</div>'+
-        '<div class="vid-author">'+videoCount+' video'+(videoCount===1?'':'s')+' &middot; '+pct+'%</div>'+
-        '<div class="vid-foot">'+
-          (g?'<span class="vid-goal"><i style="background:'+g.color+'"></i>'+esc(g.name)+'</span>':'<span></span>')+
-          '<span class="vid-actions">'+
-            '<button data-action="rescancourse" title="Rescan folder">'+icon('bolt')+'</button>'+
-            '<button data-action="delcourse" title="Remove">'+icon('trash')+'</button>'+
-          '</span>'+
-        '</div>'+
-      '</div>'+
-    '</div>';
-  }).join('');
-}
-
-/* ---------- Add / manage ---------- */
-async function addCourseFolder(){
-  const errBox = document.getElementById('courseError');
-  const setErr = m => errBox.innerHTML = m ? '<div class="hint" style="color:var(--danger);margin-bottom:14px">'+esc(m)+'</div>' : '';
-  if(!coursesAvailable()){ setErr('This needs the desktop app.'); return; }
-  setErr('');
-  const btn = document.getElementById('courseAdd');
-  btn.disabled = true;
-  try{
-    const result = await window.courses.pickFolder();
-    if(!result) return; // cancelled
-    if(!courseVideoNodes(result.tree).length){ setErr('No video files found in that folder.'); return; }
-    const name = result.root.split(/[\\/]/).filter(Boolean).pop() || 'Course';
-    state.courses.unshift(normalizeCourse({
-      id:'c'+Date.now(), name, rootPath:result.root,
-      goal: document.getElementById('courseGoal').value, addedAt: todayStr(), tree: result.tree
-    }));
-    saveState(); renderCourseGrid();
-    showToast({title:'Course added', sub:name});
-  }catch(e){
-    setErr('Could not read that folder: '+String(e.message||e));
-  }finally{
-    btn.disabled = false;
-  }
-}
-async function rescanCourse(id){
-  const c = courseById(id); if(!c || !coursesAvailable()) return;
-  try{
-    c.tree = await window.courses.scanFolder(c.rootPath);
-    saveState(); renderCourseGrid();
-    showToast({title:'Rescanned', sub:c.name});
-  }catch(e){
-    showToast({title:'Could not rescan', sub:String(e.message||e)});
-  }
-}
-document.getElementById('courseAdd').addEventListener('click', addCourseFolder);
-document.getElementById('courseGrid').addEventListener('click', e=>{
-  const card = e.target.closest('.vid-card'); if(!card) return;
-  const id = card.dataset.id;
-  if(e.target.closest('[data-action="delcourse"]')){
-    const i = state.courses.findIndex(c=>c.id===id);
-    if(i>-1){
-      const removed = state.courses[i];
-      state.courses.splice(i,1); renderCourseGrid(); saveState();
-      showToast({title:'Removed', sub:removed.name, undo:()=>{ state.courses.splice(i,0,removed); saveState(); renderCourseGrid(); }});
-    }
-    return;
-  }
-  if(e.target.closest('[data-action="rescancourse"]')){ rescanCourse(id); return; }
-  openCourse(id);
-});
-
-/* ---------- Player ---------- */
-let currentCourse = null, currentCourseVideoPath = null, courseProgressTimer = null, coursePendingImage = null;
-const courseOpenFolders = new Set();
-
-function openCourse(id){
-  const c = courseById(id); if(!c) return;
-  if(!coursesAvailable()){ showToast({title:'Not available here', sub:'Open the desktop app.'}); return; }
-  currentCourse = c;
-  window.courses.registerRoot(c.rootPath).catch(()=>{});
-  courseOpenFolders.clear();
-  (function collect(nodes){ (nodes||[]).forEach(n=>{ if(n.type==='folder'){ courseOpenFolders.add(n.path); collect(n.children); } }); })(c.tree);
-  document.getElementById('learnLibrary').style.display = 'none';
-  document.getElementById('coursePlayerSection').style.display = 'block';
-  document.getElementById('cpCourseTitle').textContent = c.name;
-  const g = goalById(c.goal);
-  document.getElementById('cpGoal').innerHTML = g ? '<i style="background:'+g.color+'"></i>'+esc(g.name) : '';
-  setCourseSubTab('outline');
-  const nodes = courseVideoNodes(c.tree);
-  if(nodes.length) playCourseVideo(nodes[0]);
-  else renderCourseOutlinePanel();
-}
-function closeCoursePlayer(){
-  stopCoursePlayer();
-  currentCourse = null; currentCourseVideoPath = null;
-  document.getElementById('coursePlayerSection').style.display = 'none';
-  document.getElementById('learnLibrary').style.display = 'block';
-  renderCourseGrid(); saveState();
-}
-function setCourseSubTab(name){
-  document.querySelectorAll('#cpTabs .cptab').forEach(t=>t.classList.toggle('active', t.dataset.sub===name));
-  document.querySelectorAll('.cppanel').forEach(p=>p.classList.toggle('active', p.id==='cp-sub-'+name));
-}
-document.getElementById('backToCourseLib').addEventListener('click', closeCoursePlayer);
-document.getElementById('cpTabs').addEventListener('click', e=>{
-  const t = e.target.closest('.cptab'); if(t) setCourseSubTab(t.dataset.sub);
-});
-
-function courseTreeNodeHtml(nodes){
-  return (nodes||[]).map(node=>{
-    if(node.type==='folder'){
-      const open = courseOpenFolders.has(node.path);
-      return '<div class="co-folder'+(open?' open':'')+'" data-path="'+esc(node.path)+'">'+
-        '<div class="co-folder-name"><span class="co-folder-chev">'+icon('chevron')+'</span>'+esc(node.name)+'</div>'+
-        '<div class="co-folder-children">'+courseTreeNodeHtml(node.children)+'</div>'+
-      '</div>';
-    }
-    const pct = courseWatchPct(currentCourse.progress[node.path]);
-    const isPlaying = node.path===currentCourseVideoPath;
-    return '<div class="co-video-row'+(isPlaying?' playing':'')+(pct>=90?' done':'')+'" data-path="'+esc(node.path)+'">'+
-      '<span class="co-video-dot"></span>'+
-      '<span class="co-video-name">'+esc(node.name)+'</span>'+
-      (pct>0 && pct<90 ? '<span class="cp-note-time">'+pct+'%</span>' : '')+
-    '</div>';
-  }).join('');
-}
-function renderCourseOutlinePanel(){
-  const host = document.getElementById('cpOutline'); if(!host || !currentCourse) return;
-  host.innerHTML = '<div class="co-tree">'+courseTreeNodeHtml(currentCourse.tree)+'</div>';
-  host.querySelectorAll('.co-folder-name').forEach(el=>{
-    el.addEventListener('click', ()=>{
-      const folder = el.closest('.co-folder');
-      const nowOpen = folder.classList.toggle('open');
-      if(nowOpen) courseOpenFolders.add(folder.dataset.path); else courseOpenFolders.delete(folder.dataset.path);
-    });
-  });
-  host.querySelectorAll('.co-video-row').forEach(el=>{
-    el.addEventListener('click', ()=>{
-      const node = courseVideoNodes(currentCourse.tree).find(n=>n.path===el.dataset.path);
-      if(node) playCourseVideo(node);
-    });
-  });
-}
-
-function playCourseVideo(node){
-  if(!currentCourse) return;
-  if(currentCourseVideoPath) captureCourseProgress();
-  currentCourseVideoPath = node.path;
-  const entry = courseProgressEntry(currentCourse, node.path);
-  const el = document.getElementById('courseVideoEl');
-  el.src = 'qlmedia://play/?p='+encodeURIComponent(node.path);
-  document.getElementById('cpVideoTitle').textContent = node.name;
-  coursePendingImage = null;
-  renderPendingImagePreview();
-  document.getElementById('cpNoteInput').value = '';
-
-  const onLoaded = ()=>{
-    if(entry.lastPos) el.currentTime = Math.max(0, entry.lastPos - 2);
-    entry.duration = Math.round(el.duration) || entry.duration;
-    updateCourseWatchRow();
-    el.removeEventListener('loadedmetadata', onLoaded);
-  };
-  el.addEventListener('loadedmetadata', onLoaded);
-  el.ontimeupdate = updateCourseWatchRow;
-
-  clearInterval(courseProgressTimer);
-  courseProgressTimer = setInterval(captureCourseProgress, 5000);
-
-  renderCourseOutlinePanel();
-  renderCourseNotesPanel();
-  saveState();
-}
-function updateCourseWatchRow(){
-  const el = document.getElementById('courseVideoEl'); if(!el) return;
-  document.getElementById('cpPos').textContent = fmtTime(el.currentTime);
-  document.getElementById('cpDur').textContent = el.duration ? fmtTime(el.duration) : '--:--';
-  const pct = el.duration ? Math.min(100, Math.round(el.currentTime/el.duration*100)) : 0;
-  document.getElementById('cpFill').style.width = pct+'%';
-}
-function captureCourseProgress(){
-  if(!currentCourse || !currentCourseVideoPath) return;
-  const el = document.getElementById('courseVideoEl');
-  const entry = courseProgressEntry(currentCourse, currentCourseVideoPath);
-  entry.lastPos = el.currentTime || 0;
-  if(el.duration) entry.duration = Math.round(el.duration);
-  saveState();
-}
-function stopCoursePlayer(){
-  clearInterval(courseProgressTimer); courseProgressTimer = null;
-  if(currentCourseVideoPath) captureCourseProgress();
-  const el = document.getElementById('courseVideoEl');
-  if(el){ el.pause(); el.ontimeupdate = null; el.removeAttribute('src'); el.load(); }
-}
-
-/* ---------- Notes ---------- */
-function renderPendingImagePreview(){
-  const host = document.getElementById('cpPendingImage'); if(!host) return;
-  if(!coursePendingImage){ host.innerHTML = ''; return; }
-  const url = URL.createObjectURL(coursePendingImage);
-  host.innerHTML = '<div class="cp-pending-thumb"><img src="'+url+'" alt=""><button type="button" id="cpPendingRemove" aria-label="Remove image">&times;</button></div>';
-  document.getElementById('cpPendingRemove').addEventListener('click', ()=>{ coursePendingImage = null; renderPendingImagePreview(); });
-}
-document.getElementById('cpCaptureFrame').addEventListener('click', ()=>{
-  const el = document.getElementById('courseVideoEl'); if(!el || !el.videoWidth) return;
-  const canvas = document.createElement('canvas');
-  canvas.width = el.videoWidth; canvas.height = el.videoHeight;
-  canvas.getContext('2d').drawImage(el, 0, 0);
-  canvas.toBlob(blob=>{ if(blob){ coursePendingImage = blob; renderPendingImagePreview(); } }, 'image/jpeg', 0.85);
-});
-document.getElementById('cpNoteImage').addEventListener('change', e=>{
-  const file = e.target.files[0]; if(!file) return;
-  coursePendingImage = file;
-  renderPendingImagePreview();
-  e.target.value = '';
-});
-function renderCourseNotesPanel(){
-  const host = document.getElementById('cpNotes'); if(!host || !currentCourse || !currentCourseVideoPath) return;
-  const entry = courseProgressEntry(currentCourse, currentCourseVideoPath);
-  if(!entry.notes.length){ host.innerHTML = '<div class="empty-row">No notes on this video yet.</div>'; return; }
-  const sorted = [...entry.notes].sort((a,b)=>a.time-b.time);
-  host.innerHTML = sorted.map(n=>
-    '<div class="cp-note-row" data-id="'+n.id+'">'+
-      '<span class="cp-note-time" data-action="seeknote">'+fmtTime(n.time)+'</span>'+
-      '<div class="cp-note-body">'+
-        (n.text ? '<div class="cp-note-text">'+esc(n.text)+'</div>' : '')+
-        (n.imageRef ? '<img data-imgref="'+esc(n.imageRef)+'" alt="">' : '')+
-      '</div>'+
-      '<button class="cp-note-del" data-action="delnote" aria-label="Delete note">'+icon('trash')+'</button>'+
-    '</div>'
-  ).join('');
-  host.querySelectorAll('img[data-imgref]').forEach(img=>{
-    noteImageGet(img.dataset.imgref).then(blob=>{ if(blob) img.src = URL.createObjectURL(blob); });
-  });
-}
-document.getElementById('cpNoteAdd').addEventListener('click', async ()=>{
-  if(!currentCourse || !currentCourseVideoPath) return;
-  const input = document.getElementById('cpNoteInput');
-  const text = input.value.trim();
-  if(!text && !coursePendingImage) return;
-  const el = document.getElementById('courseVideoEl');
-  const note = normalizeNote({ time: el.currentTime||0, text });
-  if(coursePendingImage){
-    const key = 'note_'+note.id;
-    await noteImagePut(key, coursePendingImage);
-    note.imageRef = key;
-  }
-  courseProgressEntry(currentCourse, currentCourseVideoPath).notes.push(note);
-  input.value = ''; coursePendingImage = null; renderPendingImagePreview();
-  saveState(); renderCourseNotesPanel(); renderCourseOutlinePanel();
-  showToast({title:'Note added', sub:fmtTime(note.time)});
-});
-document.getElementById('cpNotes').addEventListener('click', e=>{
-  if(!currentCourse || !currentCourseVideoPath) return;
-  const row = e.target.closest('.cp-note-row'); if(!row) return;
-  const entry = courseProgressEntry(currentCourse, currentCourseVideoPath);
-  if(e.target.closest('[data-action="delnote"]')){
-    const i = entry.notes.findIndex(n=>n.id===row.dataset.id);
-    if(i>-1){
-      const removed = entry.notes[i];
-      if(removed.imageRef) noteImageDelete(removed.imageRef);
-      entry.notes.splice(i,1);
-      saveState(); renderCourseNotesPanel();
-    }
-    return;
-  }
-  if(e.target.closest('[data-action="seeknote"]')){
-    const n = entry.notes.find(x=>x.id===row.dataset.id);
-    const el = document.getElementById('courseVideoEl');
-    if(n && el){ el.currentTime = n.time; el.play(); }
-  }
-});
-
 /* ============ RENDER: DISCIPLINES + OBJECTIVES ============ */
 function objectivesBlockHtml(g){
   const objs = g.objectives || [];
@@ -3847,7 +3351,6 @@ function renderAll(){
   renderRewards();
   renderLog();
   renderLibrary();
-  renderCourseGrid();
   renderWidgetUI();
   renderPlanNudge();
   renderTimerPill();
@@ -5809,16 +5312,8 @@ reconcile();
 applyAppearance();
 renderBgMedia();
 setTab(state.activeTab || 'overview');
-switchLearnMode(state.learnMode);
 renderAll();
 saveState(false);
-
-// The main process only remembers picked course folders for this running session
-// (isPathAllowed's allow-list is in-memory) — re-register every known root now so
-// playback works again after a restart without re-picking each folder.
-if(coursesAvailable()){
-  state.courses.forEach(c=>{ if(c.rootPath) window.courses.registerRoot(c.rootPath).catch(()=>{}); });
-}
 
 if(syncOn()){
   setSyncBadge('syncing…');

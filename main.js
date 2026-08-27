@@ -1,19 +1,7 @@
-const { app, BrowserWindow, Menu, ipcMain, session, globalShortcut, dialog, shell, protocol } = require('electron');
+const { app, BrowserWindow, Menu, ipcMain, session, globalShortcut, dialog, shell } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const https = require('https');
-const { Readable } = require('stream');
-
-/* ------------------------------------------------------------------ *
- * Local course video — a privileged custom scheme so the sandboxed
- * renderer can stream local video files (with proper seek support) without
- * the page's CSP needing to allow file:// media, which would let any script
- * running on the page read arbitrary local files just by pointing a <video>
- * at one. Must be registered before the app is ready.
- * ------------------------------------------------------------------ */
-protocol.registerSchemesAsPrivileged([
-  { scheme: 'qlmedia', privileges: { standard: true, secure: true, stream: true, supportFetchAPI: true, corsEnabled: false } }
-]);
 
 /* ------------------------------------------------------------------ *
  * Window hardening
@@ -184,108 +172,7 @@ ipcMain.handle('roadmap-load-seed', (event, filename) => {
   return JSON.parse(fs.readFileSync(path.join(ROADMAPS_DIR, filename), 'utf8'));
 });
 
-/* ------------------------------------------------------------------ *
- * Local courses — folder picking, recursive scan, and the allow-list that
- * backs the qlmedia:// handler below. Only paths inside a folder the user
- * has actually picked (this session's dialog, or a root the renderer
- * re-registers on load because it's already saved in state) are ever
- * readable through qlmedia:// — a path the renderer merely asks for is
- * never enough on its own.
- * ------------------------------------------------------------------ */
-const allowedCourseRoots = new Set();
-function isPathAllowed(targetPath) {
-  if (typeof targetPath !== 'string' || !targetPath) return false;
-  const resolved = path.resolve(targetPath);
-  for (const root of allowedCourseRoots) {
-    if (resolved === root) return true;
-    const rel = path.relative(root, resolved);
-    if (rel && !rel.startsWith('..') && !path.isAbsolute(rel)) return true;
-  }
-  return false;
-}
-const VIDEO_EXTENSIONS = new Set(['.mp4', '.mkv', '.mov', '.avi', '.webm', '.m4v']);
-function scanCourseFolder(rootPath) {
-  function walk(dir) {
-    let entries;
-    try { entries = fs.readdirSync(dir, { withFileTypes: true }); } catch (e) { return []; }
-    const nodes = [];
-    for (const entry of entries.sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }))) {
-      if (entry.name.startsWith('.')) continue;
-      const full = path.join(dir, entry.name);
-      if (entry.isDirectory()) {
-        const children = walk(full);
-        if (children.length) nodes.push({ type: 'folder', name: entry.name, path: full, children });
-      } else if (VIDEO_EXTENSIONS.has(path.extname(entry.name).toLowerCase())) {
-        let size = 0;
-        try { size = fs.statSync(full).size; } catch (e) { /* skip unreadable file */ }
-        nodes.push({ type: 'video', name: entry.name, path: full, size });
-      }
-    }
-    return nodes;
-  }
-  return walk(rootPath);
-}
-ipcMain.handle('course-pick-folder', async () => {
-  const win = mainWin || BrowserWindow.getFocusedWindow();
-  const result = await dialog.showOpenDialog(win, { properties: ['openDirectory'] });
-  if (result.canceled || !result.filePaths[0]) return null;
-  const root = path.resolve(result.filePaths[0]);
-  allowedCourseRoots.add(root);
-  return { root, tree: scanCourseFolder(root) };
-});
-ipcMain.handle('course-register-root', (event, rootPath) => {
-  if (typeof rootPath === 'string' && rootPath) allowedCourseRoots.add(path.resolve(rootPath));
-  return true;
-});
-ipcMain.handle('course-scan-folder', (event, rootPath) => {
-  if (!isPathAllowed(rootPath)) throw new Error('That folder is not registered for this session.');
-  return scanCourseFolder(rootPath);
-});
-
-function mimeForExt(ext) {
-  return {
-    '.mp4': 'video/mp4', '.m4v': 'video/mp4', '.webm': 'video/webm',
-    '.mov': 'video/quicktime', '.mkv': 'video/x-matroska', '.avi': 'video/x-msvideo'
-  }[ext] || 'application/octet-stream';
-}
-
 app.whenReady().then(() => {
-  // qlmedia://play/?p=<encodeURIComponent(absolute path)> — the path travels as an
-  // opaque query value instead of the URL's path/host so Windows drive letters,
-  // backslashes, spaces and unicode names never have to survive raw URL parsing.
-  protocol.handle('qlmedia', async (request) => {
-    try {
-      const url = new URL(request.url);
-      const filePath = decodeURIComponent(url.searchParams.get('p') || '');
-      if (!isPathAllowed(filePath)) return new Response('Forbidden', { status: 403 });
-      const stat = await fs.promises.stat(filePath);
-      const mime = mimeForExt(path.extname(filePath).toLowerCase());
-      const range = request.headers.get('range');
-      if (range) {
-        const m = /bytes=(\d*)-(\d*)/.exec(range);
-        const start = m && m[1] ? parseInt(m[1], 10) : 0;
-        const end = m && m[2] ? parseInt(m[2], 10) : stat.size - 1;
-        const stream = fs.createReadStream(filePath, { start, end });
-        return new Response(Readable.toWeb(stream), {
-          status: 206,
-          headers: {
-            'Content-Range': 'bytes ' + start + '-' + end + '/' + stat.size,
-            'Accept-Ranges': 'bytes',
-            'Content-Length': String(end - start + 1),
-            'Content-Type': mime
-          }
-        });
-      }
-      const stream = fs.createReadStream(filePath);
-      return new Response(Readable.toWeb(stream), {
-        status: 200,
-        headers: { 'Content-Length': String(stat.size), 'Content-Type': mime, 'Accept-Ranges': 'bytes' }
-      });
-    } catch (e) {
-      return new Response('Not found', { status: 404 });
-    }
-  });
-
   const prefs = loadPrefs();
   const loginInfo = app.getLoginItemSettings();
   if (loginInfo.wasOpenedAtLogin && prefs.widgetOnly) {
