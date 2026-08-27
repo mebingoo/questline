@@ -506,6 +506,11 @@
   .disc-track > i{display:block; height:100%; background:var(--dcolor); border-radius:4px; transition:width .5s ease;}
   .disc-actions{display:flex; gap:8px; margin-top:12px;}
   .roadmap-sub{font-family:var(--font-mono); font-size:10px; color:var(--text-faint); margin-top:8px;}
+  .roadmap-current{display:flex; align-items:baseline; gap:6px; margin-top:4px; flex-wrap:wrap;}
+  .roadmap-current-title{font-size:12px; color:var(--text); font-weight:600;}
+  .roadmap-current-days{font-family:var(--font-mono); font-size:10px; color:var(--text-faint); margin-left:auto;}
+  .roadmap-current-track{height:4px; border-radius:3px; background:var(--surface-3); overflow:hidden; margin-top:5px;}
+  .roadmap-current-track > i{display:block; height:100%; background:var(--dcolor,var(--gold)); border-radius:3px; transition:width .35s ease;}
   .disc-actions button{flex:1;}
   .btn-ghost-sm{background:none; border:1px solid var(--border); color:var(--text-dim); border-radius:var(--radius-s); padding:6px 8px; font-size:11px; cursor:pointer; transition:border-color .15s, color .15s;}
   .btn-ghost-sm:hover{border-color:var(--dcolor); color:var(--dcolor);}
@@ -766,31 +771,74 @@
   .rm-path::before{content:""; position:absolute; left:9px; top:10px; bottom:10px; width:2px; background:var(--border);}
   .rm-node{position:relative; margin-bottom:16px; padding:10px 12px; border-radius:var(--radius-m); background:var(--surface-2); border:1px solid var(--border-soft); cursor:pointer;}
   .rm-node:last-child{margin-bottom:0;}
-  .rm-node.locked{opacity:0.4; cursor:default;}
-  .rm-node.completed{opacity:0.75;}
+  .rm-node.locked{opacity:0.3; cursor:default;}
+  .rm-node.completed{opacity:0.75; cursor:default;}
+  .rm-node.completed.expandable{cursor:pointer;}
   .rm-node.active{border-color:var(--gold-soft);}
+  /* overdue is active-but-late: same border family, just the fuller-strength gold
+     instead of the soft one — a louder version of "in progress", not a red alarm. */
+  .rm-node.overdue{border-color:var(--gold);}
+  .rm-node.pulse{animation:rmPulse 2.4s ease-in-out infinite;}
+  @keyframes rmPulse{
+    0%, 100% { box-shadow:0 0 0 0 var(--gold-glow); }
+    50% { box-shadow:0 0 0 4px var(--gold-glow); }
+  }
   .rm-node-icon{
     position:absolute; left:-26px; top:12px; width:19px; height:19px; border-radius:50%;
     display:flex; align-items:center; justify-content:center; background:var(--surface-3); border:2px solid var(--border);
     font-size:10px; color:var(--text-faint);
   }
-  .rm-node.active .rm-node-icon{border-color:var(--gold); color:var(--gold);}
+  .rm-node.active .rm-node-icon, .rm-node.overdue .rm-node-icon{border-color:var(--gold); color:var(--gold);}
   .rm-node.completed .rm-node-icon{border-color:var(--success); background:var(--success); color:var(--bg-2);}
   .rm-node-icon svg{width:10px;height:10px;}
+  .rm-node-short{font-family:var(--font-mono); font-size:10.5px; color:var(--text-faint); margin-right:6px;}
   .rm-node-title{font-size:13px; color:var(--text); font-weight:600;}
-  .rm-node-meta{font-size:10.5px; color:var(--text-faint); margin-top:3px; font-family:var(--font-mono);}
+  /* The most important line on the card, per spec: bigger and brighter than the
+     description below it, since "what can I do after this" matters more than the syllabus. */
+  .rm-node-capability{font-size:13px; color:var(--text); font-weight:500; margin-top:5px; line-height:1.4;}
+  .rm-node-meta{font-size:10.5px; color:var(--text-faint); margin-top:5px; font-family:var(--font-mono);}
   .rm-node-desc{font-size:11.5px; color:var(--text-dim); margin-top:5px; line-height:1.4;}
+  .rm-node-progress{margin-top:8px; display:flex; align-items:center; gap:8px;}
+  .rm-node-progress-track{flex:1; height:5px; border-radius:3px; background:var(--surface-3); overflow:hidden;}
+  .rm-node-progress-track > i{display:block; height:100%; background:var(--dcolor,var(--gold)); border-radius:3px; transition:width .35s ease;}
+  .rm-node-progress-text{font-family:var(--font-mono); font-size:10px; color:var(--text-faint); white-space:nowrap;}
+  .rm-node-topics{margin-top:8px; display:flex; flex-wrap:wrap; gap:5px;}
+  .rm-node-topic{font-size:10.5px; color:var(--text-dim); background:var(--surface-3); border-radius:var(--radius-s); padding:3px 8px;}
+  .rm-node-resources{margin-top:8px; display:flex; flex-direction:column; gap:4px;}
+  .rm-res{font-size:11.5px; color:var(--teal); text-decoration:none;}
+  .rm-res:hover{text-decoration:underline;}
+  .rm-res-nolink{font-size:11.5px; color:var(--text-faint);}
+  .rm-badge{font-size:9px; color:var(--text-faint); border:1px solid var(--border); border-radius:var(--radius-s); padding:1px 5px; margin-left:2px;}
+  .rm-node-retro{display:none; margin-top:8px; font-size:11.5px; color:var(--text-dim); line-height:1.6;}
+  .rm-node.open .rm-node-retro{display:block;}
   .rm-empty{font-size:12px; color:var(--text-faint); padding:14px 2px; text-align:center; line-height:1.5;}
-  .gate-diff-row{display:flex; gap:8px; margin-bottom:14px;}
+  .detail-tabs{display:flex; gap:8px; margin:14px 0 16px;}
+  .detail-tab{font-family:var(--font-display); font-size:11px; letter-spacing:0.06em; padding:7px 16px;
+    background:var(--surface); color:var(--text-dim); border:1px solid var(--border); border-radius:var(--radius-m); cursor:pointer;}
+  .detail-tab:hover{color:var(--text);}
+  .detail-tab.active{color:var(--gold); border-color:var(--gold); box-shadow:0 0 0 1px var(--gold-glow);}
+  .rm-quest-row{display:flex; align-items:center; gap:10px; padding:7px 2px; border-bottom:1px solid var(--border-soft);}
+  .rm-quest-row:last-child{border-bottom:none;}
+  .rm-quest-row.done{opacity:0.55;}
+  .rm-quest-dot{width:8px; height:8px; border-radius:50%; border:2px solid var(--border); flex:none;}
+  .rm-quest-title{flex:1; font-size:12.5px; color:var(--text);}
+  .rm-quest-xp{font-family:var(--font-mono); font-size:10.5px; color:var(--text-faint);}
+  .rm-quest-filter{display:flex; align-items:center; gap:6px; font-size:11.5px; color:var(--text-dim); cursor:pointer;}
+  .gate-diff-row{display:flex; gap:8px; margin-bottom:10px;}
   .gate-diff{flex:1; background:var(--surface-2); border:1px solid var(--border-soft); border-radius:var(--radius-m); padding:10px; cursor:pointer; text-align:left;}
   .gate-diff.picked{border-color:var(--gold); background:var(--surface-3);}
   .gate-diff .lvl{font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--text-dim);}
   .gate-diff .xp{font-family:var(--font-mono); font-size:13px; color:var(--gold); margin-top:2px;}
+  .gate-diff-desc{font-size:12px; color:var(--text-dim); line-height:1.5; margin:0 0 14px;}
   .gate-dod-row{display:flex; align-items:flex-start; gap:9px; padding:6px 0; font-size:12.5px; border-top:1px solid var(--border-soft);}
   .gate-dod-row .qcheck{margin-top:1px;}
   .gate-dod-row.checked span{color:var(--text-faint); text-decoration:line-through;}
   .gate-attempts{margin-top:14px; padding-top:10px; border-top:1px solid var(--border-soft);}
   .gate-attempt{font-size:11px; color:var(--text-faint); margin-bottom:6px; line-height:1.4;}
+  .gate-crit-count{font-family:var(--font-mono); font-size:11px; color:var(--text-faint); align-self:center; margin-right:auto;}
+  .gate-proof{margin-top:14px; padding-top:12px; border-top:1px solid var(--border-soft);}
+  .gate-proof-row{display:flex; align-items:center; gap:10px;}
+  .gate-proof-row a{color:var(--teal); font-size:12.5px;}
 
   /* ---------- Plan Tomorrow ---------- */
   .pt-row{font-size:12.5px; color:var(--text-dim); margin-bottom:6px;}
@@ -1120,6 +1168,7 @@
                 <select class="fld" id="dailyGoal"></select>
                 <input type="number" class="fld" id="dailyXp" placeholder="XP" value="12" min="1" max="200">
               </div>
+              <div id="dailySuggest"></div>
               <div class="actions">
                 <button class="btn-text" data-close="dailyForm">Cancel</button>
                 <button class="btn-primary" id="dailySubmit">Add Quest</button>
@@ -1141,6 +1190,7 @@
                 <select class="fld" id="weeklyGoal"></select>
                 <input type="number" class="fld" id="weeklyXp" placeholder="XP" value="50" min="1" max="500">
               </div>
+              <div id="weeklySuggest"></div>
               <div class="actions">
                 <button class="btn-text" data-close="weeklyForm">Cancel</button>
                 <button class="btn-primary" id="weeklySubmit">Add Quest</button>
@@ -1515,6 +1565,10 @@ function yyyymmdd(d){ return d.getFullYear()*10000 + (d.getMonth()+1)*100 + d.ge
 /* ============ STATE ============ */
 const STORAGE_KEY = 'questline_state_v2';
 const LEGACY_KEY  = 'questline_state_v1';
+// Bumped whenever the shape of `state` changes in a way migrate() needs to know about.
+// Separate from STORAGE_KEY (which only ever changed for a full localStorage-key cutover) —
+// this is the field migrate() stamps so future changes can tell old saves apart in-place.
+const SCHEMA_VERSION = 2;
 
 /* WebUntis credentials (incl. the school password) live in their own local-only
  * key, never inside `state` — state gets pushed to the sync server, this doesn't. */
@@ -1545,30 +1599,60 @@ function questExtras(){
   };
 }
 /* ============ MILESTONES / ROADMAP ============ */
+// Resource.type is constrained to the roadmap.json seed vocabulary; anything else
+// (legacy "article", an unmapped markdown label) falls back to the neutral 'docs'.
+const RESOURCE_TYPES = ['course','video','docs','book','tool','asset','forum'];
 function normalizeMilestone(raw, i){
   const gate = raw.gate || {};
+  const id = raw.id || ('ms'+Date.now()+'_'+i);
+  const order = Number.isFinite(raw.order) ? raw.order : i;
   return {
-    id: raw.id || ('ms'+Date.now()+'_'+i),
-    order: Number.isFinite(raw.order) ? raw.order : i,
+    id,
+    order,
+    shortLabel: String(raw.shortLabel || ('M'+(order+1))),
     title: String(raw.title||'Untitled milestone'),
+    capability: String(raw.capability||''),
     description: String(raw.description||''),
     startDate: raw.startDate || null,
     deadline: raw.deadline || null,
     status: ['locked','active','completed','overdue'].includes(raw.status) ? raw.status : (i===0 ? 'active' : 'locked'),
     completedDate: raw.completedDate || null,
     topics: Array.isArray(raw.topics) ? raw.topics.map(String) : [],
-    resources: Array.isArray(raw.resources) ? raw.resources.map(r=>({type:r.type||'article', url:r.url||'', title:r.title||r.url||''})) : [],
+    resources: Array.isArray(raw.resources) ? raw.resources.map(r=>({
+      title: String(r.title || r.url || ''),
+      url: String(r.url || ''),
+      type: RESOURCE_TYPES.includes(r.type) ? r.type : 'docs',
+      free: r.free !== false
+    })) : [],
     gate: {
       challengeTitle: String(gate.challengeTitle||''),
-      difficultyOptions: Array.isArray(gate.difficultyOptions) && gate.difficultyOptions.length
-        ? gate.difficultyOptions.map(o=>({level:o.level||'easy', description:o.description||'', xp:parseInt(o.xp,10)||100}))
-        : [{level:'standard', description:'', xp:200}],
-      definitionOfDone: Array.isArray(gate.definitionOfDone)
-        ? gate.definitionOfDone.map(d=>typeof d==='string' ? {text:d, done:false} : {text:String(d.text||''), done:!!d.done})
-        : [],
-      verificationType: ['self','checklist'].includes(gate.verificationType) ? gate.verificationType : 'checklist',
+      // Accept both the internal shape (difficultyOptions/definitionOfDone, used by state
+      // already saved to disk) and the roadmap.json seed shape (difficulties/criteria, per
+      // the import format) — one normalizer, no separate translation step for imports.
+      difficultyOptions: (()=>{
+        const list = Array.isArray(gate.difficultyOptions) ? gate.difficultyOptions : gate.difficulties;
+        return Array.isArray(list) && list.length
+          ? list.map(o=>({level: o.level==='hard' ? 'hard' : 'easy', description:String(o.description||''), xp:parseInt(o.xp,10)||100}))
+          : [{level:'easy', description:'', xp:200}];
+      })(),
+      selectedDifficulty: ['easy','hard'].includes(gate.selectedDifficulty) ? gate.selectedDifficulty : null,
+      definitionOfDone: (()=>{
+        const list = Array.isArray(gate.definitionOfDone) ? gate.definitionOfDone : gate.criteria;
+        return Array.isArray(list)
+          ? list.map((d,di)=>typeof d==='string'
+              ? {id:id+'_c'+di, text:d, done:false, checkedAt:null}
+              : {id:d.id||(id+'_c'+di), text:String(d.text||''), done:!!d.done, checkedAt:d.checkedAt||null})
+          : [];
+      })(),
+      verificationType: ['self','checklist','ai_review'].includes(gate.verificationType) ? gate.verificationType : 'checklist',
       proofRequired: !!gate.proofRequired,
-      attempts: Array.isArray(gate.attempts) ? gate.attempts : []
+      proofUrl: gate.proofUrl || null,
+      attempts: Array.isArray(gate.attempts)
+        ? gate.attempts.map(a=>({
+            attemptedAt: a.attemptedAt || (a.date ? a.date+'T00:00:00.000Z' : new Date().toISOString()),
+            note: String(a.note||'')
+          }))
+        : []
     },
     unlocksMilestoneId: raw.unlocksMilestoneId || null
   };
@@ -1580,11 +1664,25 @@ function unlockNextMilestone(g, fromId){
     || g.milestones.filter(m=>m.order>g.milestones[idx].order).sort((a,b)=>a.order-b.order)[0];
   if(next && next.status==='locked') next.status = 'active';
 }
+// "Current" milestone = the one you're actually working on. Overdue is active-but-late,
+// not a dead end, so anything that means "the active milestone" must include it too.
+function currentMilestone(g){
+  return (g.milestones||[]).find(m=>m.status==='active'||m.status==='overdue');
+}
+// Flip active -> overdue in place whenever this runs (on load, and again whenever the
+// roadmap view opens) so a deadline that passes while the app sits open still gets caught,
+// not just on next restart.
+function syncOverdueStatus(g){
+  (g.milestones||[]).forEach(m=>{
+    if(m.status==='active' && m.deadline && daysBetween(todayStr(), m.deadline) < 0) m.status = 'overdue';
+  });
+}
 function freshState(){
   const now = Date.now();
   return {
+    schemaVersion: SCHEMA_VERSION,
     player:{ xp:0, gold:0, streak:0, longestStreak:0, lastActiveDate:null },
-    goals: DEFAULT_GOALS.map(g=>({...g, xp:0, objectives:[], milestones:[]})),
+    goals: DEFAULT_GOALS.map(g=>({...g, xp:0, objectives:[], milestones:[], roadmapKey:null})),
     dailies: DEFAULT_DAILIES.map((d,i)=>({ id:'d'+i+'_'+now, goal:d.goal, title:d.title, xp:d.xp, gold:Math.round(d.xp/2), lastDone:null, skipDate:null, steps:[], stepsDay:null, open:false, ...questExtras() })),
     weeklies: DEFAULT_WEEKLIES.map((d,i)=>({
       id:'w'+i+'_'+now, goal:d.goal, title:d.title, xp:d.xp, gold:Math.round(d.xp/2),
@@ -1613,8 +1711,36 @@ function defaultAppearance(){
   return { accent:'#ff2ea6', accent2:'#14e6ff', bgOpacity:100, bgBlur:0, font:'', textScale:100, contrast:'auto' };
 }
 
+// Collapses however many layers of accidental re-escaping piled up (a save/render
+// round trip gone wrong can compound this more than once), not just one - loops until
+// a pass changes nothing. Safe: it only ever touches an actual "&amp;" substring, so a
+// clean string with a real "&" in it is never touched.
 function unescapeAmp(s){
-  return typeof s === 'string' ? s.replace(/&amp;/g,'&') : s;
+  if(typeof s !== 'string') return s;
+  let prev, cur = s;
+  do{ prev = cur; cur = prev.replace(/&amp;/g,'&'); }while(cur !== prev);
+  return cur;
+}
+// The original fix only covered goal/objective/quest titles. Milestone text, gate
+// content, quest notes and resource titles can carry the same double-escaped
+// artifact from an old save and never got repaired — this closes that gap.
+function unescapeMilestoneAmp(m){
+  m.title = unescapeAmp(m.title);
+  m.description = unescapeAmp(m.description);
+  m.capability = unescapeAmp(m.capability);
+  m.shortLabel = unescapeAmp(m.shortLabel);
+  m.topics = m.topics.map(unescapeAmp);
+  m.resources.forEach(r=>{ r.title = unescapeAmp(r.title); });
+  m.gate.challengeTitle = unescapeAmp(m.gate.challengeTitle);
+  m.gate.definitionOfDone.forEach(d=>{ d.text = unescapeAmp(d.text); });
+  m.gate.attempts.forEach(a=>{ a.note = unescapeAmp(a.note); });
+}
+function unescapeQuestAmp(q){
+  q.title = unescapeAmp(q.title);
+  if(q.note) q.note = unescapeAmp(q.note);
+  if(q.definitionOfDone) q.definitionOfDone = unescapeAmp(q.definitionOfDone);
+  if(q.resource && q.resource.title) q.resource.title = unescapeAmp(q.resource.title);
+  (q.steps||[]).forEach(st=>{ st.title = unescapeAmp(st.title); });
 }
 function fillQuestExtras(q){
   const extras = questExtras();
@@ -1635,8 +1761,12 @@ function migrate(s){
     if(!Array.isArray(g.objectives)) g.objectives = [];
     if(!Array.isArray(g.milestones)) g.milestones = [];
     g.milestones = g.milestones.map((m,i)=>normalizeMilestone(m,i));
+    if(g.roadmapKey===undefined) g.roadmapKey = null;
+    syncOverdueStatus(g);
     g.name = unescapeAmp(g.name);
+    g.flavor = unescapeAmp(g.flavor);
     g.objectives.forEach(o=>{ o.title = unescapeAmp(o.title); });
+    g.milestones.forEach(unescapeMilestoneAmp);
   });
   if(!s.goals.some(g=>g.id==='school')){
     const sd = DEFAULT_GOALS.find(g=>g.id==='school');
@@ -1645,23 +1775,22 @@ function migrate(s){
   const DEAD_QUEST_FIELDS = ['bonusXpMax','lootRoll','chainId','unlocksQuestId','proofUrl','mood'];
   if(!Array.isArray(s.dailies)) s.dailies = [];
   s.dailies.forEach(d=>{
-    d.title = unescapeAmp(d.title);
     if(!Array.isArray(d.steps)) d.steps = [];
     if(typeof d.open !== 'boolean') d.open = false;
     if(d.stepsDay === undefined) d.stepsDay = null;
     if(d.skipDate === undefined) d.skipDate = null;
     fillQuestExtras(d);
+    unescapeQuestAmp(d);
     DEAD_QUEST_FIELDS.forEach(k=>delete d[k]);
   });
   if(!Array.isArray(s.weeklies)) s.weeklies = [];
   s.weeklies.forEach((q,i)=>{
     if(!Array.isArray(q.steps)) q.steps = [];
-    q.title = unescapeAmp(q.title);
-    q.steps.forEach(st=>{ st.title = unescapeAmp(st.title); });
     if(typeof q.open !== 'boolean') q.open = false;
     if(q.stepsWeek === undefined) q.stepsWeek = null;
     if(q.skipWeek === undefined) q.skipWeek = null;
     fillQuestExtras(q);
+    unescapeQuestAmp(q);
     DEAD_QUEST_FIELDS.forEach(k=>delete q[k]);
   });
   if(!Array.isArray(s.focusSessions)) s.focusSessions = [];
@@ -1669,8 +1798,10 @@ function migrate(s){
   if(s.activeTimer === undefined) s.activeTimer = null;
   delete s.streakState; delete s.mealLog; delete s.mealFavorites; delete s.dailyCheckins; delete s.pinnedItems;
   if(!Array.isArray(s.rewards)) s.rewards = [];
+  s.rewards.forEach(r=>{ r.name = unescapeAmp(r.name); });
   if(!s.achievements) s.achievements = {};
   if(!Array.isArray(s.log)) s.log = [];
+  s.log.forEach(l=>{ if(l.goalId===undefined) l.goalId = null; });
   if(!s.school) s.school = defaultSchool();
   DAYS.forEach(d=>{ if(!Array.isArray(s.school[d])) s.school[d] = []; });
   if(!s.focus){
@@ -1716,6 +1847,7 @@ function migrate(s){
   if(!s.activeTab) s.activeTab = 'overview';
   if(typeof s.showAllQuests !== 'boolean') s.showAllQuests = false;
   s.appearance = Object.assign(defaultAppearance(), s.appearance || {});
+  s.schemaVersion = SCHEMA_VERSION;
   return s;
 }
 
@@ -2209,6 +2341,24 @@ function cellHtml(day, slotKey, periodNum, isToday){
 function goalOptionsHtml(selected){
   return state.goals.map(g=>'<option value="'+g.id+'"'+(g.id===selected?' selected':'')+'>'+esc(g.name)+'</option>').join('');
 }
+// Refreshes the suggestion chips in the daily/weekly add-quest form to match whichever
+// goal is currently selected there — called on open and whenever that goal changes.
+function renderQuestSuggestions(prefix){
+  const host = document.getElementById(prefix+'Suggest'); if(!host) return;
+  const goalSelect = document.getElementById(prefix+'Goal');
+  const g = goalSelect ? goalById(goalSelect.value) : null;
+  const suggestions = g ? milestoneQuestSuggestions(g).slice(0,8) : [];
+  host.innerHTML = suggestions.length
+    ? '<div class="pt-chip-row">'+suggestions.map(s=>'<button type="button" class="pt-chip" data-suggest="'+esc(s)+'">'+esc(s)+'</button>').join('')+'</div>'
+    : '';
+  host.querySelectorAll('[data-suggest]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const titleFld = document.getElementById(prefix+'Title');
+      titleFld.value = btn.dataset.suggest;
+      titleFld.dispatchEvent(new Event('input'));
+    });
+  });
+}
 
 function openSlotEditor(day, slotKey, periodNum){
   const lesson = periodNum ? schoolAt(day, periodNum) : null;
@@ -2579,7 +2729,7 @@ function dailyItemHtml(q, done){
   const pct = steps.length ? Math.round(doneSteps/steps.length*100) : 0;
   return '<div class="quest-item'+(done?' done':'')+(q.open?' open':'')+'" data-id="'+q.id+'" style="--dcolor:'+g.color+'">'+
     '<div class="quest-head" data-action="toggleopen">'+
-      '<span class="wchev">'+icon('chevron')+'</span>'+
+      (steps.length ? '<span class="wchev">'+icon('chevron')+'</span>' : '')+
       '<button class="qcheck" data-action="'+(done?'noop':'complete')+'" aria-label="Complete quest">'+icon('check')+'</button>'+
       '<div class="qmeta"><div class="qtitle">'+esc(q.title)+'</div>'+
         (steps.length
@@ -2621,7 +2771,7 @@ function weeklyItemHtml(q, done){
 
   return '<div class="quest-item'+(done?' done':'')+(q.open?' open':'')+'" data-id="'+q.id+'" style="--dcolor:'+g.color+'">'+
     '<div class="quest-head" data-action="toggleopen">'+
-      '<span class="wchev">'+icon('chevron')+'</span>'+
+      (steps.length ? '<span class="wchev">'+icon('chevron')+'</span>' : '')+
       '<button class="qcheck" data-action="'+(done?'noop':'completeweekly')+'" aria-label="Complete weekly quest">'+icon('check')+'</button>'+
       '<div class="qmeta">'+
         '<div class="qtitle">'+esc(q.title)+'</div>'+
@@ -3086,7 +3236,7 @@ function renderQuizResult(){
   if(xp>0){
     const prev = levelFromXP(state.player.xp,150);
     grant(xp, v.goal);
-    pushLog('Quiz on <b>'+esc(v.title)+'</b>: '+correct+'/'+total, '+'+xp+'xp', 'complete');
+    pushLog('Quiz on <b>'+esc(v.title)+'</b>: '+correct+'/'+total, '+'+xp+'xp', 'complete', v.goal);
     if(levelFromXP(state.player.xp,150)>prev) setTimeout(()=>showLevelUp(levelFromXP(state.player.xp,150)), 400);
   }
   v.awarded = true;
@@ -3201,13 +3351,24 @@ function milestoneSummaryHtml(g){
   const ms = g.milestones || [];
   if(!ms.length) return '';
   const completed = ms.filter(m=>m.status==='completed').length;
-  const active = ms.find(m=>m.status==='active');
+  const active = currentMilestone(g);
   let sub = completed+'/'+ms.length+' milestones';
+  let daysLine = '';
   if(active && active.deadline){
     const days = daysBetween(todayStr(), active.deadline);
-    if(Number.isFinite(days)) sub += ' &middot; '+(days>=0 ? days+'d left' : Math.abs(days)+'d overdue');
+    if(Number.isFinite(days)) daysLine = days>=0 ? days+'d left' : Math.abs(days)+'d overdue';
   }
-  return '<div class="roadmap-sub">'+sub+'</div>';
+  if(!active) return '<div class="roadmap-sub">'+sub+'</div>';
+  const doneCrit = active.gate.definitionOfDone.filter(d=>d.done).length;
+  const totalCrit = active.gate.definitionOfDone.length;
+  const pct = totalCrit ? Math.round(doneCrit/totalCrit*100) : 0;
+  return '<div class="roadmap-sub">'+sub+'</div>'+
+    '<div class="roadmap-current">'+
+      '<span class="rm-node-short">'+esc(active.shortLabel)+'</span>'+
+      '<span class="roadmap-current-title">'+esc(active.title)+'</span>'+
+      (daysLine ? '<span class="roadmap-current-days">'+daysLine+'</span>' : '')+
+    '</div>'+
+    (totalCrit ? '<div class="roadmap-current-track"><i style="width:'+pct+'%"></i></div>' : '');
 }
 function renderDisciplines(){
   let html = state.goals.map(g=>{
@@ -3326,10 +3487,10 @@ function renderAll(){
 }
 
 /* ============ LOG / TOAST / BURST ============ */
-function pushLog(text, delta, type){
+function pushLog(text, delta, type, goalId){
   const t = new Date();
   const time = String(t.getHours()).padStart(2,'0')+':'+String(t.getMinutes()).padStart(2,'0');
-  state.log.push({time, text, delta, type});
+  state.log.push({time, text, delta, type, goalId: goalId||null});
   if(state.log.length>200) state.log = state.log.slice(-200);
 }
 function showToast({title, sub, big, undo}){
@@ -3434,7 +3595,7 @@ function completeDaily(id){
     state.player.lastActiveDate = today;
     state.player.longestStreak = Math.max(state.player.longestStreak, state.player.streak);
   }
-  pushLog('Completed <b>'+esc(q.title)+'</b>', '+'+q.xp+'xp', 'complete');
+  pushLog('Completed <b>'+esc(q.title)+'</b>', '+'+q.xp+'xp', 'complete', q.goal);
   renderAll(); checkAchievements();
 
   const row = document.querySelector('.quest-item[data-id="'+id+'"]');
@@ -3463,7 +3624,7 @@ function completeWeekly(id, silent){
   state.player.xp += q.xp; state.player.gold += q.gold;
   if(g) g.xp += q.xp;
   q.lastDoneWeek = wk;
-  pushLog('Weekly quest complete: <b>'+esc(q.title)+'</b>', '+'+q.xp+'xp', 'weekly');
+  pushLog('Weekly quest complete: <b>'+esc(q.title)+'</b>', '+'+q.xp+'xp', 'weekly', q.goal);
   renderAll(); checkAchievements();
   burst(window.innerWidth/2, window.innerHeight/3, g?g.color:'#ff2ea6');
   showToast({
@@ -3516,7 +3677,7 @@ function openLogXp(goalId){
     const amt = Math.max(1, Math.min(500, parseInt(document.getElementById('logXpAmt').value,10)||20));
     const prev = levelFromXP(state.player.xp,150);
     grant(amt, goalId);
-    pushLog('Progress on <b>'+esc(g.name)+'</b>: '+esc(note), '+'+amt+'xp', 'complete');
+    pushLog('Progress on <b>'+esc(g.name)+'</b>: '+esc(note), '+'+amt+'xp', 'complete', goalId);
     closeModal(); renderAll(); checkAchievements();
     showToast({title:'+'+amt+' XP', sub:note});
     if(levelFromXP(state.player.xp,150)>prev) setTimeout(()=>showLevelUp(levelFromXP(state.player.xp,150)), 350);
@@ -3524,62 +3685,237 @@ function openLogXp(goalId){
   });
 }
 /* ============ ROADMAP ============ */
+// Locked keeps only the teaser (title + capability) on purpose — Topics, Resources and
+// the Gate stay hidden until it unlocks; that anticipation is the point, not a bug.
 function rmNodeHtml(m, g){
+  const shortLabel = m.shortLabel ? '<span class="rm-node-short">'+esc(m.shortLabel)+'</span>' : '';
   if(m.status==='locked'){
     return '<div class="rm-node locked" data-id="'+m.id+'">'+
       '<div class="rm-node-icon">'+icon('lock')+'</div>'+
-      '<div class="rm-node-title">'+esc(m.title)+'</div>'+
-      '<div class="rm-node-meta">Locked</div>'+
+      '<div class="rm-node-body">'+
+        '<div class="rm-node-title">'+shortLabel+esc(m.title)+'</div>'+
+        (m.capability ? '<div class="rm-node-capability">'+esc(m.capability)+'</div>' : '')+
+      '</div>'+
     '</div>';
   }
-  const doneDod = m.gate.definitionOfDone.filter(d=>d.done).length;
-  const totalDod = m.gate.definitionOfDone.length;
+  const doneCrit = m.gate.definitionOfDone.filter(d=>d.done).length;
+  const totalCrit = m.gate.definitionOfDone.length;
+  const pct = totalCrit ? Math.round(doneCrit/totalCrit*100) : 0;
+  // overdue is active-but-late: same detail (progress, topics, resources), just a
+  // warning-colored border via the status class — no red, no shame signal.
+  const isCurrent = m.status==='active' || m.status==='overdue';
+  const pulse = isCurrent && totalCrit>0 && pct>80;
+  const expandable = m.status==='completed';
+
   let meta = '';
   if(m.status==='completed'){
     meta = 'Completed'+(m.completedDate?' &middot; '+m.completedDate:'');
-  } else {
-    const parts = [];
-    if(m.deadline){
-      const days = daysBetween(todayStr(), m.deadline);
-      if(Number.isFinite(days)) parts.push(days>=0 ? 'due in '+days+'d' : Math.abs(days)+'d overdue');
-    }
-    if(totalDod) parts.push(doneDod+'/'+totalDod+' criteria');
-    meta = parts.join(' &middot; ') || 'In progress';
+  } else if(m.deadline){
+    const days = daysBetween(todayStr(), m.deadline);
+    if(Number.isFinite(days)) meta = days>=0 ? days+'d left' : Math.abs(days)+'d overdue';
   }
-  return '<div class="rm-node '+m.status+'" data-id="'+m.id+'">'+
+  const resourceHtml = r => r.url
+    ? '<a class="rm-res" href="#" data-action="openresource" data-url="'+esc(r.url)+'">'+esc(r.title)+(r.free?'':' <span class="rm-badge">paid</span>')+'</a>'
+    : '<span class="rm-res rm-res-nolink">'+esc(r.title)+(r.free?'':' <span class="rm-badge">paid</span>')+'</span>';
+
+  return '<div class="rm-node '+m.status+(pulse?' pulse':'')+(expandable?' expandable':'')+'" data-id="'+m.id+'">'+
     '<div class="rm-node-icon">'+(m.status==='completed' ? icon('check') : '<span>'+(m.order+1)+'</span>')+'</div>'+
-    '<div class="rm-node-title">'+esc(m.title)+'</div>'+
-    '<div class="rm-node-meta">'+meta+'</div>'+
-    (m.status!=='completed' && m.description ? '<div class="rm-node-desc">'+esc(m.description)+'</div>' : '')+
+    '<div class="rm-node-body">'+
+      '<div class="rm-node-title">'+shortLabel+esc(m.title)+'</div>'+
+      (m.capability ? '<div class="rm-node-capability">'+esc(m.capability)+'</div>' : '')+
+      (m.description ? '<div class="rm-node-desc">'+esc(m.description)+'</div>' : '')+
+      (meta ? '<div class="rm-node-meta">'+meta+'</div>' : '')+
+      (isCurrent && totalCrit ? '<div class="rm-node-progress">'+
+          '<div class="rm-node-progress-track"><i style="width:'+pct+'%"></i></div>'+
+          '<span class="rm-node-progress-text">'+esc(m.gate.challengeTitle||'Gate')+' &middot; '+doneCrit+'/'+totalCrit+' criteria</span>'+
+        '</div>' : '')+
+      (isCurrent && m.topics.length ? '<div class="rm-node-topics">'+m.topics.map(t=>'<div class="rm-node-topic">'+esc(t)+'</div>').join('')+'</div>' : '')+
+      (isCurrent && m.resources.length ? '<div class="rm-node-resources">'+m.resources.map(resourceHtml).join('')+'</div>' : '')+
+      (expandable ? '<div class="rm-node-retro">'+
+          (m.gate.selectedDifficulty ? '<div>Difficulty chosen: '+esc(m.gate.selectedDifficulty)+'</div>' : '')+
+          (m.gate.proofUrl ? '<div><a href="#" data-action="viewproof" data-proof="'+esc(m.gate.proofUrl)+'">View proof</a></div>' : '')+
+          (!m.gate.selectedDifficulty && !m.gate.proofUrl ? '<div class="hint">No extra details recorded for this one.</div>' : '')+
+        '</div>' : '')+
+    '</div>'+
   '</div>';
 }
-function renderRoadmapBody(goalId){
+// Renders just the Roadmap tab's content into `container` — the shared goal header and
+// tab strip live in openQuestLineDetail below, not here, so this can't be opened on its own.
+function renderRoadmapBody(container, goalId){
   const g = goalById(goalId); if(!g) return;
+  syncOverdueStatus(g);
   const ms = [...g.milestones].sort((a,b)=>a.order-b.order);
-  const m = document.getElementById('modalBody');
-  m.classList.add('modal-wide');
-  const weekSummary = focusWeekSummary(g.id);
-  m.innerHTML = '<h3>Roadmap &mdash; '+esc(g.name)+'</h3>'+
-    '<p>'+esc(g.flavor||'')+(weekSummary?' <span style="color:var(--teal)">&middot; '+weekSummary+' focused</span>':'')+'</p>'+
-    '<div class="rm-actions"><button class="rm-link" id="rmImport">Import roadmap.json</button><button class="rm-link" id="rmAddMs">+ Add milestone</button></div>'+
+  container.innerHTML = '<div class="rm-actions"><button class="rm-link" id="rmImport">Import roadmap.json</button><button class="rm-link" id="rmAddMs">+ Add milestone</button></div>'+
     (ms.length
       ? '<div class="rm-path">'+ms.map(x=>rmNodeHtml(x,g)).join('')+'</div>'
-      : '<div class="rm-empty">No roadmap yet for this quest line. Import a <code>roadmap.json</code>, or add milestones one at a time.</div>')+
-    '<div class="actions"><button class="btn-text" id="mCancel">Close</button></div>';
-  document.getElementById('mCancel').addEventListener('click', closeModal);
+      : '<div class="rm-empty">No roadmap yet for this quest line. Import a <code>roadmap.json</code>, or add milestones one at a time.</div>');
   document.getElementById('rmImport').addEventListener('click', ()=>openImportRoadmap(goalId));
   document.getElementById('rmAddMs').addEventListener('click', ()=>openAddMilestone(goalId));
-  m.querySelectorAll('.rm-node').forEach(node=>{
-    node.addEventListener('click', ()=>{
+  container.querySelectorAll('.rm-node').forEach(node=>{
+    node.addEventListener('click', (e)=>{
+      const resChip = e.target.closest('[data-action="openresource"]');
+      if(resChip){ openResourceChip(resChip); return; }
+      const proofLink = e.target.closest('[data-action="viewproof"]');
+      if(proofLink){ openGateProof(proofLink.dataset.proof); return; }
       const ms2 = g.milestones.find(x=>x.id===node.dataset.id);
       if(!ms2 || ms2.status==='locked') return;
+      // Completed nodes fold their retrospective open in place; there's nothing left to
+      // "do" there, so no reason to leave the roadmap to see it.
+      if(ms2.status==='completed'){ node.classList.toggle('open'); return; }
       openMilestoneGate(goalId, ms2.id);
     });
   });
 }
-function openRoadmap(goalId){
-  renderRoadmapBody(goalId);
+// Still read-only — this goal's dailies/weeklies with an optional "only the current
+// milestone" filter. Actually completing/editing them stays on the Tasks tab; that's a
+// bigger, separate interaction model this view doesn't try to duplicate.
+function renderQuestsTabBody(container, goalId, filterToMilestone, onFilterChange){
+  const g = goalById(goalId); if(!g) return;
+  const current = currentMilestone(g);
+  let dailies = state.dailies.filter(q=>q.goal===goalId);
+  let weeklies = state.weeklies.filter(q=>q.goal===goalId);
+  if(filterToMilestone && current){
+    dailies = dailies.filter(q=>q.milestoneId===current.id);
+    weeklies = weeklies.filter(q=>q.milestoneId===current.id);
+  }
+  const today = todayStr(), wk = isoWeekKey();
+  const row = (q, done) => '<div class="rm-quest-row'+(done?' done':'')+'">'+
+    (done ? icon('check','style="width:14px;height:14px;color:var(--success)"') : '<span class="rm-quest-dot"></span>')+
+    '<span class="rm-quest-title">'+esc(q.title)+'</span>'+
+    '<span class="rm-quest-xp">+'+q.xp+' xp</span>'+
+  '</div>';
+  const emptySuffix = filterToMilestone ? ' for the current milestone' : ' for this quest line yet';
+  container.innerHTML =
+    (current ? '<label class="rm-quest-filter"><input type="checkbox" id="questsMilestoneFilter"'+(filterToMilestone?' checked':'')+'> Only '+esc(current.shortLabel)+' quests</label>' : '')+
+    '<label style="margin-top:10px;">Daily</label>'+
+    (dailies.length ? dailies.map(q=>row(q,q.lastDone===today)).join('') : '<div class="empty-row">No daily quests'+emptySuffix+'.</div>')+
+    '<label style="margin-top:14px;">Weekly</label>'+
+    (weeklies.length ? weeklies.map(q=>row(q,q.lastDoneWeek===wk)).join('') : '<div class="empty-row">No weekly quests'+emptySuffix+'.</div>')+
+    '<p class="hint" style="margin-top:14px;">Head to the Tasks tab to complete or edit these.</p>';
+  const filterCb = document.getElementById('questsMilestoneFilter');
+  if(filterCb) filterCb.addEventListener('change', ()=>onFilterChange(filterCb.checked));
+}
+function renderLogTabBody(container, goalId){
+  const g = goalById(goalId); if(!g) return;
+  const entries = state.log.filter(l=>l.goalId===goalId);
+  container.innerHTML = entries.length
+    ? '<div class="log-list">'+entries.slice(-40).reverse().map(l=>
+        '<div class="log-row"><span class="log-time">'+l.time+'</span><span class="log-text">'+l.text+'</span><span class="log-delta">'+(l.delta||'')+'</span></div>'
+      ).join('')+'</div>'
+    : '<div class="empty-row">Nothing logged yet for '+esc(g.name)+'.</div>';
+}
+const DETAIL_TABS = [['roadmap','Roadmap'],['quests','Quests'],['log','Log']];
+function openQuestLineDetail(goalId, initialTab){
+  const g = goalById(goalId); if(!g) return;
+  let activeTab = DETAIL_TABS.some(t=>t[0]===initialTab) ? initialTab : 'roadmap';
+  let questsFilterMilestone = false;
+  const m = document.getElementById('modalBody');
+  m.classList.add('modal-wide');
+
+  function render(){
+    const weekSummary = focusWeekSummary(g.id);
+    m.innerHTML = '<h3>'+esc(g.name)+'</h3>'+
+      '<p>'+esc(g.flavor||'')+(weekSummary?' <span style="color:var(--teal)">&middot; '+weekSummary+' focused</span>':'')+'</p>'+
+      '<div class="detail-tabs">'+DETAIL_TABS.map(([id,label])=>
+        '<button class="detail-tab'+(id===activeTab?' active':'')+'" data-tab="'+id+'">'+label+'</button>'
+      ).join('')+'</div>'+
+      '<div id="detailBody"></div>'+
+      '<div class="actions"><button class="btn-text" id="mCancel">Close</button></div>';
+    document.getElementById('mCancel').addEventListener('click', closeModal);
+    m.querySelectorAll('.detail-tab').forEach(btn=>{
+      btn.addEventListener('click', ()=>{ activeTab = btn.dataset.tab; render(); });
+    });
+    const body = document.getElementById('detailBody');
+    if(activeTab==='roadmap') renderRoadmapBody(body, goalId);
+    else if(activeTab==='quests') renderQuestsTabBody(body, goalId, questsFilterMilestone, (checked)=>{ questsFilterMilestone = checked; render(); });
+    else renderLogTabBody(body, goalId);
+  }
+  render();
   document.getElementById('modalVeil').classList.add('open');
+}
+function openRoadmap(goalId){
+  openQuestLineDetail(goalId, 'roadmap');
+}
+/* ---- Gate proof uploads: device-local, in IndexedDB — same reasoning as the
+   background media above (Appearance tab): a screenshot doesn't belong in the
+   synced JSON blob, so gate.proofUrl only ever holds a small "idb:<key>"
+   reference, never the file itself. ---- */
+const PROOF_DB = 'questline-proofs', PROOF_STORE = 'proofs';
+function proofDb(){
+  return new Promise((res, rej)=>{
+    const r = indexedDB.open(PROOF_DB, 1);
+    r.onupgradeneeded = ()=>{ if(!r.result.objectStoreNames.contains(PROOF_STORE)) r.result.createObjectStore(PROOF_STORE); };
+    r.onsuccess = ()=>res(r.result);
+    r.onerror = ()=>rej(r.error);
+  });
+}
+async function proofPut(key, file){
+  const db = await proofDb();
+  return new Promise((res, rej)=>{
+    const tx = db.transaction(PROOF_STORE, 'readwrite');
+    tx.objectStore(PROOF_STORE).put(file, key);
+    tx.oncomplete = ()=>res(true); tx.onerror = ()=>rej(tx.error);
+  });
+}
+async function proofGet(key){
+  try{
+    const db = await proofDb();
+    return await new Promise((res)=>{
+      const tx = db.transaction(PROOF_STORE, 'readonly');
+      const q = tx.objectStore(PROOF_STORE).get(key);
+      q.onsuccess = ()=>res(q.result || null); q.onerror = ()=>res(null);
+    });
+  }catch(e){ return null; }
+}
+async function proofDelete(key){
+  try{
+    const db = await proofDb();
+    await new Promise((res)=>{
+      const tx = db.transaction(PROOF_STORE, 'readwrite');
+      tx.objectStore(PROOF_STORE).delete(key);
+      tx.oncomplete = ()=>res(); tx.onerror = ()=>res();
+    });
+  }catch(e){}
+}
+// Shared by the Gate view's own "View proof" link and the completed-milestone
+// retrospective in the roadmap ladder, so an idb: reference resolves the same way
+// wherever it's clicked from.
+async function openGateProof(proofUrl){
+  if(!proofUrl) return;
+  if(proofUrl.startsWith('idb:')){
+    const file = await proofGet(proofUrl.slice(4));
+    if(file) window.open(URL.createObjectURL(file), '_blank');
+  } else {
+    window.open(proofUrl, '_blank');
+  }
+}
+function gateProofHtml(gate, isDone){
+  return '<div class="gate-proof">'+
+    '<label>Proof'+(gate.proofRequired ? '' : ' (optional)')+'</label>'+
+    (gate.proofUrl
+      ? '<div class="gate-proof-row"><a href="#" id="gateProofView">View uploaded proof</a>'+
+          (isDone ? '' : '<button class="qdel" id="gateProofRemove" aria-label="Remove proof">'+icon('trash')+'</button>')+
+        '</div>'
+      : (isDone ? '<div class="hint">No proof attached.</div>' : '<input type="file" class="fld" id="gateProofFile" accept="image/*,.pdf">'))+
+  '</div>';
+}
+function wireGateProof(gate, rerender){
+  const fileInput = document.getElementById('gateProofFile');
+  if(fileInput) fileInput.addEventListener('change', async e=>{
+    const file = e.target.files[0]; if(!file) return;
+    const key = 'proof_'+Date.now();
+    await proofPut(key, file);
+    gate.proofUrl = 'idb:'+key;
+    saveState(); rerender();
+  });
+  const viewBtn = document.getElementById('gateProofView');
+  if(viewBtn) viewBtn.addEventListener('click', e=>{ e.preventDefault(); openGateProof(gate.proofUrl); });
+  const removeBtn = document.getElementById('gateProofRemove');
+  if(removeBtn) removeBtn.addEventListener('click', async ()=>{
+    if(gate.proofUrl && gate.proofUrl.startsWith('idb:')) await proofDelete(gate.proofUrl.slice(4));
+    gate.proofUrl = null;
+    saveState(); rerender();
+  });
 }
 function openMilestoneGate(goalId, msId){
   const g = goalById(goalId); if(!g) return;
@@ -3588,74 +3924,89 @@ function openMilestoneGate(goalId, msId){
   const isDone = ms.status==='completed';
   const m = document.getElementById('modalBody');
   m.classList.add('modal-wide');
-  let pickedLevel = gate.difficultyOptions[0] ? gate.difficultyOptions[0].level : null;
 
   const render = ()=>{
-    const doneDod = gate.definitionOfDone.filter(d=>d.done).length;
-    const allDod = gate.definitionOfDone.length===0 || doneDod===gate.definitionOfDone.length;
-    const canComplete = !isDone && (gate.verificationType==='self' || allDod);
+    const doneCrit = gate.definitionOfDone.filter(d=>d.done).length;
+    const totalCrit = gate.definitionOfDone.length;
+    const allCrit = totalCrit===0 || doneCrit===totalCrit;
+    // ai_review isn't implemented yet (spec: enum only) — it falls back to behaving
+    // like checklist rather than either blocking forever or auto-completing.
+    const canComplete = !isDone && (gate.verificationType==='self' || allCrit);
+    const selectedLevel = gate.selectedDifficulty || (gate.difficultyOptions[0] && gate.difficultyOptions[0].level);
+    const selectedOpt = gate.difficultyOptions.find(o=>o.level===selectedLevel) || gate.difficultyOptions[0];
     m.innerHTML = '<h3>'+(gate.challengeTitle ? esc(gate.challengeTitle) : 'Gate Challenge')+'</h3>'+
       '<p>'+esc(ms.title)+(ms.description?' &mdash; '+esc(ms.description):'')+'</p>'+
       (gate.difficultyOptions.length>1 && !isDone
         ? '<div class="gate-diff-row">'+gate.difficultyOptions.map(o=>
-            '<button class="gate-diff'+(pickedLevel===o.level?' picked':'')+'" data-level="'+esc(o.level)+'">'+
-              '<div class="lvl">'+esc(o.level)+'</div>'+(o.description?'<div class="rm-node-desc">'+esc(o.description)+'</div>':'')+
+            '<button class="gate-diff'+(selectedLevel===o.level?' picked':'')+'" data-level="'+esc(o.level)+'">'+
+              '<div class="lvl">'+esc(o.level)+'</div>'+
               '<div class="xp">'+o.xp+' XP</div>'+
             '</button>').join('')+'</div>'
         : '')+
+      (selectedOpt && selectedOpt.description ? '<p class="gate-diff-desc">'+esc(selectedOpt.description)+'</p>' : '')+
+      (gate.attempts.length
+        ? '<div class="gate-attempts"><label>Previous attempts</label>'+gate.attempts.map(a=>
+            '<div class="gate-attempt">'+esc((a.attemptedAt||'').slice(0,10))+' &mdash; '+esc(a.note||'')+'</div>').join('')+'</div>'
+        : '')+
       (gate.definitionOfDone.length
-        ? '<div class="gate-dod">'+gate.definitionOfDone.map((d,i)=>
-            '<div class="gate-dod-row'+(d.done?' checked':'')+'" data-i="'+i+'">'+
+        ? '<div class="gate-dod">'+gate.definitionOfDone.map(d=>
+            '<div class="gate-dod-row'+(d.done?' checked':'')+'" data-id="'+esc(d.id)+'">'+
               '<button class="qcheck small'+(d.done?' stepdone':'')+'" data-action="toggledod" '+(isDone?'disabled':'')+'>'+icon('check')+'</button>'+
               '<span>'+esc(d.text)+'</span>'+
             '</div>').join('')+'</div>'
         : '')+
+      (gate.proofRequired ? gateProofHtml(gate, isDone) : '')+
       (isDone
         ? '<div class="hint" style="margin-top:12px;">Completed'+(ms.completedDate?' on '+ms.completedDate:'')+'.</div>'
         : '<div class="actions" style="margin-top:14px;">'+
             '<button class="btn-text" id="mBack">Back to roadmap</button>'+
+            (gate.verificationType==='checklist' && totalCrit>0
+              ? '<span class="gate-crit-count">'+doneCrit+'/'+totalCrit+(totalCrit>doneCrit?' &mdash; '+(totalCrit-doneCrit)+' left':'')+'</span>'
+              : '')+
             '<button class="btn-primary" id="gateComplete"'+(canComplete?'':' disabled')+'>Complete Challenge</button>'+
           '</div>')+
-      (gate.attempts.length
-        ? '<div class="gate-attempts"><label>Previous attempts</label>'+gate.attempts.map(a=>
-            '<div class="gate-attempt">'+esc(a.date||'')+' &mdash; '+esc(a.note||'')+'</div>').join('')+'</div>'
-        : '')+
-      (!isDone ? '<label style="margin-top:10px;">Note (optional)</label><input type="text" class="fld" id="gateNote" placeholder="What happened, what\'s left...">'+
-        '<button class="rm-link" id="gateSaveNote">Save note without completing</button>' : '')+
+      (!isDone ? '<label style="margin-top:14px;">What was missing? (optional)</label><input type="text" class="fld" id="gateNote" placeholder="What happened, what\'s left...">'+
+        '<button class="btn-text" id="gateSaveNote">Try again</button>' : '')+
       (isDone ? '' : '<div class="actions"><button class="btn-text" id="mBack2">Back to roadmap</button></div>');
-    if(document.getElementById('mBack')) document.getElementById('mBack').addEventListener('click', ()=>renderRoadmapBody(goalId));
-    if(document.getElementById('mBack2')) document.getElementById('mBack2').addEventListener('click', ()=>renderRoadmapBody(goalId));
+    if(document.getElementById('mBack')) document.getElementById('mBack').addEventListener('click', ()=>openQuestLineDetail(goalId, 'roadmap'));
+    if(document.getElementById('mBack2')) document.getElementById('mBack2').addEventListener('click', ()=>openQuestLineDetail(goalId, 'roadmap'));
     m.querySelectorAll('.gate-diff').forEach(btn=>{
-      btn.addEventListener('click', ()=>{ pickedLevel = btn.dataset.level; render(); });
+      // Persisted immediately, not just held in memory — you can pick a difficulty,
+      // close the app, and it's still picked when you come back to this challenge.
+      btn.addEventListener('click', ()=>{ gate.selectedDifficulty = btn.dataset.level; saveState(); render(); });
     });
     m.querySelectorAll('.gate-dod-row').forEach(row=>{
       row.addEventListener('click', e=>{
         if(!e.target.closest('[data-action="toggledod"]')) return;
-        gate.definitionOfDone[parseInt(row.dataset.i,10)].done = !gate.definitionOfDone[parseInt(row.dataset.i,10)].done;
+        const crit = gate.definitionOfDone.find(c=>c.id===row.dataset.id); if(!crit) return;
+        crit.done = !crit.done;
+        crit.checkedAt = crit.done ? new Date().toISOString() : null;
         saveState(); render();
       });
     });
+    wireGateProof(gate, render);
     const saveNoteBtn = document.getElementById('gateSaveNote');
     if(saveNoteBtn) saveNoteBtn.addEventListener('click', ()=>{
       const note = document.getElementById('gateNote').value.trim(); if(!note) return;
-      gate.attempts.push({date:todayStr(), note});
+      gate.attempts.push({attemptedAt:new Date().toISOString(), note});
       saveState(); render();
     });
     const completeBtn = document.getElementById('gateComplete');
     if(completeBtn) completeBtn.addEventListener('click', ()=>{
       if(completeBtn.disabled) return;
-      const opt = gate.difficultyOptions.find(o=>o.level===pickedLevel) || gate.difficultyOptions[0] || {xp:200};
+      const opt = gate.difficultyOptions.find(o=>o.level===gate.selectedDifficulty) || gate.difficultyOptions[0] || {xp:200};
+      gate.selectedDifficulty = opt.level; // always end up recorded, even for a single-option gate never explicitly clicked
       const prevLevel = levelFromXP(state.player.xp,150);
       grant(opt.xp, goalId);
       ms.status = 'completed';
       ms.completedDate = todayStr();
       unlockNextMilestone(g, ms.id);
-      pushLog('Milestone complete: <b>'+esc(ms.title)+'</b> ('+esc(g.name)+')', '+'+opt.xp+'xp', 'complete');
+      pushLog('Milestone complete: <b>'+esc(ms.title)+'</b> ('+esc(g.name)+')', '+'+opt.xp+'xp', 'complete', goalId);
       saveState(); renderAll(); checkAchievements();
       burst(window.innerWidth/2, window.innerHeight/3, g.color);
       showToast({title:'Milestone complete &middot; +'+opt.xp+' XP', sub:ms.title, big:true});
       if(levelFromXP(state.player.xp,150)>prevLevel) setTimeout(()=>showLevelUp(levelFromXP(state.player.xp,150)), 350);
-      renderRoadmapBody(goalId);
+      openQuestLineDetail(goalId, 'roadmap');
     });
   };
   render();
@@ -3685,7 +4036,7 @@ function openAddMilestone(goalId){
       order: g.milestones.length,
       gate: {
         challengeTitle: document.getElementById('msChallenge').value.trim(),
-        difficultyOptions: [{level:'standard', description:'', xp}],
+        difficultyOptions: [{level:'easy', description:'', xp}],
         definitionOfDone: dod, verificationType: dod.length ? 'checklist' : 'self'
       }
     };
@@ -3694,37 +4045,138 @@ function openAddMilestone(goalId){
     openRoadmap(goalId);
   });
 }
+// Re-import must not reset progress: a completed milestone stays completed, a checked
+// criterion stays checked. Milestones are matched between old and new by `order` (their
+// position in the roadmap) since the seed format has no id of its own.
+function mergeCriteria(existingList, incomingRawList){
+  return (incomingRawList||[]).map(d=>{
+    const text = typeof d==='string' ? d : String(d.text||'');
+    const prev = (existingList||[]).find(e=>e.text===text);
+    return prev ? {id:prev.id, text, done:prev.done, checkedAt:prev.checkedAt} : {text};
+  });
+}
+// Shared by both import paths below so they can't drift apart on this: sorts in place by
+// order and re-derives unlocksMilestoneId from that order, same rule the spec asks for.
+function chainUnlocks(milestones){
+  milestones.sort((a,b)=>a.order-b.order);
+  milestones.forEach((m,i)=>{ m.unlocksMilestoneId = milestones[i+1] ? milestones[i+1].id : null; });
+}
+function mergeImportedMilestones(g, parsed){
+  const list = Array.isArray(parsed.milestones) ? parsed.milestones : (Array.isArray(parsed) ? parsed : null);
+  if(!list) throw new Error('No "milestones" array found.');
+  const existingByOrder = new Map();
+  (g.milestones||[]).forEach((m,i)=>existingByOrder.set(Number.isFinite(m.order)?m.order:i, m));
+  const consumedOrders = new Set();
+
+  const merged = list.map((raw,i)=>{
+    const order = Number.isFinite(raw.order) ? raw.order : i;
+    consumedOrders.add(order);
+    const existing = existingByOrder.get(order);
+    if(!existing) return normalizeMilestone(raw, i);
+    const gate = raw.gate || {};
+    const incomingCriteria = Array.isArray(gate.criteria) ? gate.criteria : (Array.isArray(gate.definitionOfDone) ? gate.definitionOfDone : []);
+    return normalizeMilestone({
+      ...raw,
+      id: existing.id,
+      status: existing.status,
+      completedDate: existing.completedDate,
+      gate: {
+        ...gate,
+        selectedDifficulty: existing.gate.selectedDifficulty,
+        proofUrl: existing.gate.proofUrl,
+        attempts: existing.gate.attempts,
+        definitionOfDone: mergeCriteria(existing.gate.definitionOfDone, incomingCriteria)
+      }
+    }, i);
+  });
+
+  // A milestone the new file no longer lists is kept, not dropped — re-importing a
+  // trimmed file must never silently erase a finished milestone's history.
+  existingByOrder.forEach((existing, order)=>{
+    if(!consumedOrders.has(order)) merged.push(existing);
+  });
+
+  chainUnlocks(merged);
+  g.milestones = merged;
+  g.roadmapKey = parsed.questLineKey || g.roadmapKey || null;
+}
+function freshImportMilestones(g, parsed){
+  const list = Array.isArray(parsed.milestones) ? parsed.milestones : (Array.isArray(parsed) ? parsed : null);
+  if(!list) throw new Error('No "milestones" array found.');
+  const milestones = list.map((raw,i)=>normalizeMilestone(raw,i));
+  chainUnlocks(milestones);
+  g.milestones = milestones;
+  g.roadmapKey = parsed.questLineKey || null;
+}
+// Shared by the file-picker and the bundled-seed picker below. Guards the one case a
+// plain order-merge can't handle sanely: this quest line already has a *different*
+// imported roadmap, where matching by position would stitch together two unrelated
+// challenges. That case asks first instead of guessing.
+function applyRoadmapImport(goalId, parsed, msgEl){
+  const g = goalById(goalId); if(!g) return;
+  const doImport = (fresh)=>{
+    try{
+      if(fresh) freshImportMilestones(g, parsed); else mergeImportedMilestones(g, parsed);
+      saveState(); renderAll();
+      showToast({title:'Roadmap imported', sub:(parsed.milestones||[]).length+' milestones for '+g.name});
+      openQuestLineDetail(goalId, 'roadmap');
+    }catch(err){
+      if(msgEl) msgEl.innerHTML = '<div class="hint" style="color:var(--danger)">Could not read that file: '+esc(String(err.message||err))+'</div>';
+    }
+  };
+  const hasMismatch = (g.milestones||[]).length>0 && g.roadmapKey && parsed.questLineKey && parsed.questLineKey!==g.roadmapKey;
+  if(hasMismatch){
+    openConfirm({
+      title: 'Replace the existing roadmap?',
+      body: 'This quest line already has a different imported roadmap. &ldquo;'+esc(parsed.title||parsed.questLineKey)+'&rdquo; would replace it rather than merge with it, so any progress on the current one would be gone. Continue?',
+      confirmLabel: 'Replace',
+      onConfirm: ()=>doImport(true)
+    });
+  } else {
+    doImport(false);
+  }
+}
 function openImportRoadmap(goalId){
   const g = goalById(goalId); if(!g) return;
   const m = document.getElementById('modalBody');
   m.classList.add('modal-wide');
   m.innerHTML = '<h3>Import Roadmap</h3>'+
-    '<p>Choose a <code>roadmap.json</code> file for <b style="color:'+g.color+'">'+esc(g.name)+'</b>. This replaces its current milestones.</p>'+
+    '<p>Choose a <code>roadmap.json</code> file for <b style="color:'+g.color+'">'+esc(g.name)+'</b>. Milestones you\'ve already completed and criteria you\'ve already checked off are kept — re-importing only refreshes the rest.</p>'+
     '<input type="file" class="fld" id="rmFile" accept="application/json,.json">'+
-    '<div class="hint">Expected shape: <code>{"milestones":[{"title":"...","description":"...","deadline":"YYYY-MM-DD","topics":[],"resources":[],"gate":{"challengeTitle":"...","difficultyOptions":[{"level":"easy","xp":400}],"definitionOfDone":["..."],"verificationType":"checklist"}}]}</code></div>'+
+    '<div id="rmSeeds"></div>'+
+    '<div class="hint">Expected shape: <code>{"milestones":[{"order":1,"shortLabel":"L1","title":"...","capability":"...","deadline":"YYYY-MM-DD","topics":[],"resources":[],"gate":{"challengeTitle":"...","difficulties":[{"level":"easy","xp":400}],"criteria":["..."],"verificationType":"checklist"}}]}</code></div>'+
     '<div id="rmImportMsg"></div>'+
     '<div class="actions"><button class="btn-text" id="mBack">Back</button></div>';
   document.getElementById('modalVeil').classList.add('open');
-  document.getElementById('mBack').addEventListener('click', ()=>renderRoadmapBody(goalId));
+  document.getElementById('mBack').addEventListener('click', ()=>openQuestLineDetail(goalId, 'roadmap'));
+
+  const msg = document.getElementById('rmImportMsg');
   document.getElementById('rmFile').addEventListener('change', e=>{
     const file = e.target.files[0]; if(!file) return;
-    const msg = document.getElementById('rmImportMsg');
     const reader = new FileReader();
     reader.onload = ()=>{
-      try{
-        const parsed = JSON.parse(String(reader.result));
-        const list = Array.isArray(parsed.milestones) ? parsed.milestones : (Array.isArray(parsed) ? parsed : null);
-        if(!list) throw new Error('No "milestones" array found.');
-        g.milestones = list.map((raw,i)=>normalizeMilestone(raw,i));
-        saveState(); renderAll();
-        showToast({title:'Roadmap imported', sub:list.length+' milestones for '+g.name});
-        renderRoadmapBody(goalId);
-      }catch(err){
-        msg.innerHTML = '<div class="hint" style="color:var(--danger)">Could not read that file: '+esc(String(err.message||err))+'</div>';
-      }
+      try{ applyRoadmapImport(goalId, JSON.parse(String(reader.result)), msg); }
+      catch(err){ msg.innerHTML = '<div class="hint" style="color:var(--danger)">Could not read that file: '+esc(String(err.message||err))+'</div>'; }
     };
     reader.readAsText(file);
   });
+
+  // Bundled seeds only exist inside the Electron app (preload exposes window.roadmaps);
+  // skip quietly if it's ever missing instead of showing a broken picker.
+  if(window.roadmaps && window.roadmaps.listSeeds){
+    window.roadmaps.listSeeds().then(list=>{
+      const host = document.getElementById('rmSeeds');
+      if(!host || !list.length) return;
+      host.innerHTML = '<label style="margin-top:14px;">Or choose a bundled seed</label><div class="pt-chip-row">'+
+        list.map(s=>'<button class="pt-chip" data-seed="'+esc(s.filename)+'">'+esc(s.title)+'</button>').join('')+'</div>';
+      host.querySelectorAll('[data-seed]').forEach(btn=>{
+        btn.addEventListener('click', async ()=>{
+          try{ applyRoadmapImport(goalId, await window.roadmaps.loadSeed(btn.dataset.seed), msg); }
+          catch(err){ msg.innerHTML = '<div class="hint" style="color:var(--danger)">Could not load that seed: '+esc(String(err.message||err))+'</div>'; }
+        });
+      });
+    }).catch(()=>{});
+  }
 }
 const GOAL_COLORS = ['#ff8c2b','#14e6ff','#39ff6a','#4d8dff','#ff3b3b','#b026ff','#ff2ea6','#ffe135'];
 const GOAL_ICONS  = ['cube','terminal','chart','globe','flame','briefcase','quill','star'];
@@ -4060,13 +4512,21 @@ document.getElementById('timerPill').addEventListener('click', ()=>{
 function activeMilestoneSuggestions(){
   const out = [];
   state.goals.forEach(g=>{
-    const active = g.milestones.find(m=>m.status==='active');
+    const active = currentMilestone(g);
     if(!active) return;
     active.gate.definitionOfDone.forEach(d=>{
       if(!d.done) out.push({text:d.text, goalId:g.id, goalName:g.name, goalColor:g.color, msId:active.id});
     });
   });
   return out;
+}
+// One quest-title suggestion per open gate criterion and per topic of this goal's
+// current milestone — a simple rule (per spec), no AI needed.
+function milestoneQuestSuggestions(g){
+  const active = currentMilestone(g);
+  if(!active) return [];
+  const openCriteria = active.gate.definitionOfDone.filter(d=>!d.done).map(d=>d.text);
+  return [...openCriteria, ...active.topics].filter(Boolean);
 }
 function openPlanTomorrow(){
   const m = document.getElementById('modalBody');
@@ -4254,7 +4714,7 @@ function completeObjective(goalId, objId){
   const prev = levelFromXP(state.player.xp,150);
   g.objectives.splice(idx,1);
   grant(obj.xp, goalId);
-  pushLog('Objective done on <b>'+esc(g.name)+'</b>: '+esc(obj.title), '+'+obj.xp+'xp', 'complete');
+  pushLog('Objective done on <b>'+esc(g.name)+'</b>: '+esc(obj.title), '+'+obj.xp+'xp', 'complete', goalId);
   renderAll(); checkAchievements();
   const card = document.querySelector('.disc-card[data-goal="'+goalId+'"]');
   if(card){ const r = card.getBoundingClientRect(); burst(r.left+30, r.top+r.height/2, g.color); }
@@ -4360,7 +4820,11 @@ document.getElementById('discGrid').addEventListener('click', e=>{
         showToast({title:'Objective removed', sub:removed.title, undo:()=>{ g.objectives.splice(i,0,removed); saveState(); renderAll(); }});
       }
     }
+    return;
   }
+  // Anything else on the card (not one of the specific actions above) opens the detail view.
+  const card = e.target.closest('.disc-card');
+  if(card) openQuestLineDetail(card.dataset.goal, 'roadmap');
 });
 document.getElementById('rewardGrid').addEventListener('click', e=>{
   if(e.target.id==='addRewardBtn'){ openAddReward(); return; }
@@ -4389,6 +4853,10 @@ document.getElementById('rewardGrid').addEventListener('click', e=>{
 });
 document.querySelectorAll('[data-open]').forEach(b=>b.addEventListener('click', ()=>document.getElementById(b.dataset.open).classList.toggle('open')));
 document.querySelectorAll('[data-close]').forEach(b=>b.addEventListener('click', ()=>document.getElementById(b.dataset.close).classList.remove('open')));
+document.querySelector('[data-open="dailyForm"]').addEventListener('click', ()=>renderQuestSuggestions('daily'));
+document.querySelector('[data-open="weeklyForm"]').addEventListener('click', ()=>renderQuestSuggestions('weekly'));
+document.getElementById('dailyGoal').addEventListener('change', ()=>renderQuestSuggestions('daily'));
+document.getElementById('weeklyGoal').addEventListener('change', ()=>renderQuestSuggestions('weekly'));
 
 function isVagueTitle(title){
   return title.trim().split(/\s+/).filter(Boolean).length < 4;
@@ -4402,8 +4870,10 @@ document.getElementById('weeklyTitle').addEventListener('input', e=>{
 document.getElementById('dailySubmit').addEventListener('click', ()=>{
   const title = document.getElementById('dailyTitle').value.trim(); if(!title) return;
   const xp = Math.max(1, Math.min(200, parseInt(document.getElementById('dailyXp').value,10)||12));
-  state.dailies.push({id:'d'+Date.now(), goal:document.getElementById('dailyGoal').value, title, xp, gold:Math.round(xp/2), lastDone:null, skipDate:null,
-    steps:[], stepsDay:null, open:false, ...questExtras()});
+  const goalId = document.getElementById('dailyGoal').value;
+  const curMs = currentMilestone(goalById(goalId)||{});
+  state.dailies.push({id:'d'+Date.now(), goal:goalId, title, xp, gold:Math.round(xp/2), lastDone:null, skipDate:null,
+    steps:[], stepsDay:null, open:false, ...questExtras(), milestoneId: curMs ? curMs.id : null});
   document.getElementById('dailyTitle').value='';
   document.getElementById('dailyVagueHint').classList.remove('show');
   document.getElementById('dailyForm').classList.remove('open');
@@ -4414,8 +4884,10 @@ document.getElementById('weeklySubmit').addEventListener('click', ()=>{
   const xp = Math.max(1, Math.min(500, parseInt(document.getElementById('weeklyXp').value,10)||50));
   const raw = document.getElementById('weeklySteps').value.trim();
   const steps = raw ? raw.split(',').map(s=>s.trim()).filter(Boolean).map((t,i)=>({id:'s'+Date.now()+'_'+i, title:t, done:false})) : [];
-  state.weeklies.push({id:'w'+Date.now(), goal:document.getElementById('weeklyGoal').value, title, xp, gold:Math.round(xp/2),
-    steps, stepsWeek:isoWeekKey(), lastDoneWeek:null, skipWeek:null, open:steps.length>0, ...questExtras()});
+  const goalId = document.getElementById('weeklyGoal').value;
+  const curMs = currentMilestone(goalById(goalId)||{});
+  state.weeklies.push({id:'w'+Date.now(), goal:goalId, title, xp, gold:Math.round(xp/2),
+    steps, stepsWeek:isoWeekKey(), lastDoneWeek:null, skipWeek:null, open:steps.length>0, ...questExtras(), milestoneId: curMs ? curMs.id : null});
   document.getElementById('weeklyTitle').value='';
   document.getElementById('weeklySteps').value='';
   document.getElementById('weeklyVagueHint').classList.remove('show');
