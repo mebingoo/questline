@@ -1,7 +1,98 @@
-const { app, BrowserWindow, Menu, ipcMain, session, globalShortcut, dialog, shell } = require('electron');
+const { app, BrowserWindow, Menu, ipcMain, session, globalShortcut, dialog, shell, protocol, net } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const https = require('https');
+const { pathToFileURL } = require('url');
+
+/* ------------------------------------------------------------------ *
+ * Local course media
+ *
+ * Course videos live wherever the user downloaded them, which the
+ * renderer cannot read on its own. They are served over a private
+ * qlmedia:// scheme instead of file://, so exactly one thing is
+ * reachable: files underneath a folder the user picked in the dialog.
+ * Registered as a standard, streaming scheme because <video> needs
+ * byte-range requests to be able to seek.
+ * ------------------------------------------------------------------ */
+protocol.registerSchemesAsPrivileged([{
+  scheme: 'qlmedia',
+  privileges: { standard: true, secure: true, supportFetchAPI: true, stream: true, corsEnabled: true, bypassCSP: false }
+}]);
+
+const courseRoots = new Set();          // folders the user actually chose
+
+function isInsideRoot(target) {
+  const t = path.resolve(target);
+  for (const root of courseRoots) {
+    const r = path.resolve(root);
+    if (t === r || t.startsWith(r + path.sep)) return true;
+  }
+  return false;
+}
+
+const VIDEO_EXT = new Set(['.mp4', '.mkv', '.webm', '.mov', '.m4v', '.avi']);
+
+function scanDir(dir, depth) {
+  // Deep course sets are common; a generous cap still stops a runaway symlink.
+  if (depth > 8) return { folders: [], videos: [] };
+  let entries = [];
+  try { entries = fs.readdirSync(dir, { withFileTypes: true }); } catch (e) { return { folders: [], videos: [] }; }
+
+  const folders = [], videos = [];
+  for (const e of entries) {
+    if (e.name.startsWith('.')) continue;
+    const full = path.join(dir, e.name);
+    if (e.isDirectory()) {
+      const sub = scanDir(full, depth + 1);
+      // Keep only branches that actually contain something watchable.
+      if (sub.videos.length || sub.folders.length) folders.push({ name: e.name, path: full, ...sub });
+    } else if (e.isFile() && VIDEO_EXT.has(path.extname(e.name).toLowerCase())) {
+      let size = 0;
+      try { size = fs.statSync(full).size; } catch (err) {}
+      videos.push({ name: e.name, path: full, size });
+    }
+  }
+  return { folders, videos };
+}
+
+function countVideos(node) {
+  return (node.videos ? node.videos.length : 0) +
+    (node.folders || []).reduce((n, f) => n + countVideos(f), 0);
+}
+
+ipcMain.handle('courses-pick', async () => {
+  const r = await dialog.showOpenDialog({
+    title: 'Pick a course folder',
+    properties: ['openDirectory']
+  });
+  if (r.canceled || !r.filePaths.length) return { ok: false, canceled: true };
+  return { ok: true, path: r.filePaths[0], name: path.basename(r.filePaths[0]) };
+});
+
+ipcMain.handle('courses-scan', async (event, dir) => {
+  if (!dir || typeof dir !== 'string') return { ok: false, error: 'No folder given.' };
+  try {
+    if (!fs.statSync(dir).isDirectory()) return { ok: false, error: 'That is not a folder.' };
+  } catch (e) {
+    return { ok: false, error: 'That folder is no longer there — was it moved or unplugged?' };
+  }
+  courseRoots.add(path.resolve(dir));
+  const tree = scanDir(dir, 0);
+  const total = countVideos(tree);
+  if (!total) return { ok: false, error: 'No video files found in that folder.' };
+  return { ok: true, root: dir, name: path.basename(dir), tree, total };
+});
+
+// Re-authorise a saved course on launch without rescanning it.
+ipcMain.handle('courses-allow', async (event, dir) => {
+  if (typeof dir === 'string' && dir) courseRoots.add(path.resolve(dir));
+  return true;
+});
+
+ipcMain.handle('courses-reveal', async (event, target) => {
+  if (typeof target === 'string' && isInsideRoot(target)) shell.showItemInFolder(target);
+  return true;
+});
 
 /* ------------------------------------------------------------------ *
  * Window hardening
@@ -173,6 +264,26 @@ ipcMain.handle('roadmap-load-seed', (event, filename) => {
 });
 
 app.whenReady().then(() => {
+  // qlmedia://f/<base64url of an absolute path>. net.fetch on a file URL keeps
+  // range support intact, which is what lets the user scrub through a video.
+  protocol.handle('qlmedia', async (request) => {
+    try {
+      const u = new URL(request.url);
+      const encoded = decodeURIComponent(u.pathname.replace(/^\/+/, ''));
+      const target = Buffer.from(encoded, 'base64url').toString('utf8');
+      if (!isInsideRoot(target)) return new Response('Forbidden', { status: 403 });
+      const res = await net.fetch(pathToFileURL(target).toString(), { bypassCustomProtocolHandlers: true });
+      // Without CORS headers the video counts as cross-origin, which taints any
+      // canvas it is drawn onto — and "Capture frame" is exactly that. Status and
+      // Content-Range are passed through so seeking keeps working.
+      const headers = new Headers(res.headers);
+      headers.set('Access-Control-Allow-Origin', '*');
+      return new Response(res.body, { status: res.status, statusText: res.statusText, headers });
+    } catch (e) {
+      return new Response('Bad request', { status: 400 });
+    }
+  });
+
   const prefs = loadPrefs();
   const loginInfo = app.getLoginItemSettings();
   if (loginInfo.wasOpenedAtLogin && prefs.widgetOnly) {

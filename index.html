@@ -11,8 +11,8 @@
   script-src 'self' 'unsafe-inline' https://www.youtube.com https://s.ytimg.com;
   style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
   font-src 'self' https://fonts.gstatic.com;
-  img-src 'self' data: blob: https:;
-  media-src 'self' blob: https:;
+  img-src 'self' data: blob: qlmedia: https:;
+  media-src 'self' blob: qlmedia: https:;
   frame-src https://www.youtube.com https://www.youtube-nocookie.com;
   connect-src 'self' https:;
   worker-src 'self';
@@ -866,6 +866,72 @@
   .quest-head:hover .qtimer-btn{opacity:0.6;}
   .qtimer-btn:hover{opacity:1 !important; color:var(--gold);}
 
+  /* ============ COURSES ============ */
+  .course-grid{display:grid; grid-template-columns:repeat(auto-fill, minmax(250px,1fr)); gap:14px;}
+  .course-card{background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-m);
+    padding:15px; cursor:pointer; position:relative; transition:border-color .15s, transform .1s;}
+  .course-card:hover{border-color:var(--gold); transform:translateY(-1px);}
+  .course-card .cc-name{font-family:var(--font-display); font-size:13.5px; color:var(--text); line-height:1.35; margin-bottom:7px; word-break:break-word;}
+  .course-card .cc-goal{font-size:10.5px; letter-spacing:0.05em; text-transform:uppercase; margin-bottom:9px;}
+  .course-card .cc-meta{font-family:var(--font-mono); font-size:10.5px; color:var(--text-faint); display:flex; justify-content:space-between; gap:8px;}
+  .course-card .cc-bar{height:4px; background:var(--surface-3); border-radius:2px; overflow:hidden; margin:9px 0 7px;}
+  .course-card .cc-bar i{display:block; height:100%; background:var(--gold);}
+  .course-card .cc-del{position:absolute; top:9px; right:9px; background:none; border:none; color:var(--text-faint); cursor:pointer; opacity:0; padding:3px;}
+  .course-card:hover .cc-del{opacity:1;}
+  .course-card .cc-del:hover{color:var(--danger);}
+  .course-card .cc-del svg{width:13px; height:13px;}
+
+  .course-layout{display:grid; grid-template-columns:300px 1fr; gap:16px; align-items:start;}
+  .course-side{background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-m);
+    max-height:76vh; overflow-y:auto; padding:8px;}
+  .course-sec{margin-bottom:3px;}
+  .course-sec-head{display:flex; align-items:center; gap:6px; width:100%; background:none; border:none; cursor:pointer;
+    padding:7px 8px; text-align:left; font-family:var(--font-display); font-size:11px; letter-spacing:0.04em; color:var(--text-dim);}
+  .course-sec-head:hover{color:var(--text);}
+  .course-sec-head svg{width:11px; height:11px; flex:none; transition:transform .18s;}
+  .course-sec.collapsed .course-sec-head svg{transform:rotate(-90deg);}
+  .course-sec.collapsed .course-sec-body{display:none;}
+  .course-sec-body{padding-left:9px; border-left:1px solid var(--border-soft); margin-left:12px;}
+  .course-item{display:flex; align-items:center; gap:7px; width:100%; background:none; border:none; cursor:pointer;
+    padding:6px 8px; text-align:left; font-size:11.5px; color:var(--text-dim); border-radius:var(--radius-s); line-height:1.35;}
+  .course-item:hover{background:var(--hover-tint); color:var(--text);}
+  .course-item.playing{background:var(--gold-glow); color:var(--text);}
+  .course-item .ci-dot{width:7px; height:7px; border-radius:50%; border:1px solid var(--text-faint); flex:none;}
+  .course-item.done .ci-dot{background:var(--success); border-color:var(--success);}
+  .course-item.partial .ci-dot{background:var(--gold); border-color:var(--gold);}
+  .course-item .ci-name{flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+
+  .course-main{min-width:0;}
+  .course-stage{position:relative; background:#000; border:1px solid var(--border); border-radius:var(--radius-m); overflow:hidden;}
+  .course-stage video{width:100%; max-height:60vh; display:block; background:#000;}
+  .course-empty{padding:70px 20px; text-align:center; color:var(--text-faint); font-size:12.5px;}
+  .course-now{font-family:var(--font-display); font-size:13px; color:var(--text); margin:12px 0 4px; word-break:break-word;}
+  .course-now .cn-path{display:block; font-family:var(--font-mono); font-size:10.5px; color:var(--text-faint); margin-top:3px;}
+
+  .course-notes{margin-top:14px; background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-m); padding:13px;}
+  .course-notes-head{display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:9px;
+    font-family:var(--font-display); font-size:11px; letter-spacing:0.06em; color:var(--teal);}
+  .course-notes-tools{display:flex; align-items:center; gap:7px; flex-wrap:wrap;}
+  .note-saved{font-family:var(--font-mono); font-size:10px; color:var(--text-faint); min-width:52px;}
+  .note-area{width:100%; min-height:150px; resize:vertical; background:var(--surface-2); color:var(--text);
+    border:1px solid var(--border); border-radius:var(--radius-s); padding:10px 11px; font-family:var(--font-body);
+    font-size:13px; line-height:1.55; outline:none;}
+  .note-area:focus{border-color:var(--gold);}
+  .note-shots{display:flex; flex-wrap:wrap; gap:8px; margin-top:10px;}
+  .note-shot{position:relative; width:132px; border:1px solid var(--border); border-radius:var(--radius-s); overflow:hidden; background:var(--surface-2);}
+  .note-shot img{width:100%; display:block; cursor:zoom-in;}
+  .note-shot button{position:absolute; top:3px; right:3px; background:rgba(0,0,0,0.65); border:none; color:#fff;
+    cursor:pointer; border-radius:2px; padding:2px 4px; line-height:1; opacity:0;}
+  .note-shot:hover button{opacity:1;}
+  .shot-veil{position:fixed; inset:0; background:rgba(0,0,0,0.9); z-index:260; display:none; align-items:center; justify-content:center; padding:24px;}
+  .shot-veil.open{display:flex;}
+  .shot-veil img{max-width:100%; max-height:100%; object-fit:contain;}
+
+  @media(max-width:900px){
+    .course-layout{grid-template-columns:1fr;}
+    .course-side{max-height:300px;}
+  }
+
   /* ============ SETTINGS OVERLAY ============ */
   /* Sits behind everything the user has chosen as a background, and above the app. */
   #bgMedia{position:fixed; inset:0; z-index:-2; overflow:hidden; pointer-events:none;}
@@ -1024,6 +1090,7 @@
     <button class="tab" data-tab="tasks"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3 8-8"/><path d="M20 12v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h9"/></svg> Tasks <span class="tabcount" id="tabTaskCount">0/0</span></button>
     <button class="tab" data-tab="timetable"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg> Timetable</button>
     <button class="tab" data-tab="learn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="4.5" width="19" height="13" rx="2.5"/><path d="M10 8.5l5 2.5-5 2.5z"/><path d="M8 21h8"/></svg> Learn <span class="tabcount" id="tabLearnCount">0</span></button>
+    <button class="tab" data-tab="courses"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19V6a2 2 0 0 1 2-2h5l2 2h5a2 2 0 0 1 2 2v11a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1z"/><path d="M10 11l4 2.5-4 2.5z"/></svg> Courses <span class="tabcount" id="tabCourseCount">0</span></button>
   </nav>
 </header>
 
@@ -1224,6 +1291,58 @@
     </section>
   </div>
 
+  <div class="tabpanel" id="panel-courses">
+
+    <!-- library -->
+    <section id="courseLibrary" style="margin-top:0;">
+      <div class="section-head">
+        <h2>Courses</h2>
+        <div class="section-sub">
+          <span id="courseStats"></span>
+          <button class="ghost-btn" id="courseAddBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19V6a2 2 0 0 1 2-2h5l2 2h5a2 2 0 0 1 2 2v11a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1z"/><path d="M12 10v6M9 13h6"/></svg> Add course folder</button>
+        </div>
+      </div>
+      <div id="courseAddError"></div>
+      <div class="course-grid" id="courseGrid"></div>
+    </section>
+
+    <!-- player -->
+    <section id="coursePlayer" style="display:none; margin-top:0;">
+      <div class="section-head">
+        <h2 id="courseTitle">Course</h2>
+        <div class="section-sub">
+          <span id="coursePlayStats"></span>
+          <button class="ghost-btn" id="courseRescan">Rescan folder</button>
+          <button class="ghost-btn" id="courseBack">All courses</button>
+        </div>
+      </div>
+      <div class="course-layout">
+        <aside class="course-side" id="courseTree"></aside>
+        <div class="course-main">
+          <div class="course-stage">
+            <video id="courseVideo" controls preload="metadata" crossorigin="anonymous"></video>
+            <div class="course-empty" id="courseStageEmpty">Pick a video on the left to start watching.</div>
+          </div>
+          <div class="course-now" id="courseNow"></div>
+          <div class="course-notes">
+            <div class="course-notes-head">
+              <span>Notes</span>
+              <span class="course-notes-tools">
+                <button class="btn-ghost-sm" id="noteStamp" title="Insert the current timestamp">+ Timestamp</button>
+                <button class="btn-ghost-sm" id="noteShot" title="Capture the current frame">Capture frame</button>
+                <button class="btn-ghost-sm" id="noteUpload">Add image</button>
+                <input type="file" id="noteFile" accept="image/*" multiple style="display:none">
+                <span class="note-saved" id="noteSaved"></span>
+              </span>
+            </div>
+            <textarea id="noteText" class="note-area" placeholder="Type as you watch — saved automatically. Paste an image here to attach it."></textarea>
+            <div class="note-shots" id="noteShots"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+
 </div>
 
 <footer>
@@ -1244,6 +1363,7 @@
   <div class="set-body" id="setBody"></div>
 </div>
 
+<div class="shot-veil" id="shotVeil"><img id="shotBig" alt=""></div>
 <div class="toast-stack" id="toastStack"></div>
 <canvas id="burst"></canvas>
 <div class="modal-veil" id="modalVeil"><div class="modal" id="modalBody"></div></div>
@@ -1574,6 +1694,7 @@ function freshState(){
     school: defaultSchool(),
     focus: defaultFocus(),
     videos: [],
+    courses: [],
     focusSessions: [], questFavorites: [],
     activeTimer: null,
     ai:{ model:'', count:8 },
@@ -1707,6 +1828,8 @@ function migrate(s){
     if(!hasLocalCreds){ untisCfg = Object.assign({}, untisCfg, s.untis); saveUntisCfg(); }
     delete s.untis;
   }
+  if(!Array.isArray(s.courses)) s.courses = [];
+  s.courses.forEach(c=>{ if(!c.items) c.items = {}; });
   if(!Array.isArray(s.videos)) s.videos = [];
   s.videos.forEach(v=>{
     if(typeof v.lastPos !== 'number') v.lastPos = 0;
@@ -2024,6 +2147,12 @@ function setTab(name){
   if(state.activeTab==='learn' && name!=='learn' && typeof currentVideo!=='undefined' && currentVideo){
     captureProgress(currentVideo);
     if(ytPlayer && ytPlayer.pauseVideo){ try{ ytPlayer.pauseVideo(); }catch(e){} }
+  }
+  // Same for a course video, which would otherwise keep talking in the background.
+  if(state.activeTab==='courses' && name!=='courses'){
+    if(typeof captureCourseProgress==='function') captureCourseProgress();
+    const cv = document.getElementById('courseVideo');
+    if(cv){ try{ cv.pause(); }catch(e){} }
   }
   state.activeTab = name;
   document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active', t.dataset.tab===name));
@@ -3341,6 +3470,7 @@ if(isWidget){
 function renderAll(){
   applyAppearance();      // a pull from the other device can bring new theme settings
   renderHeader();
+  if(typeof renderCourseLibrary==='function' && !activeCourseId) renderCourseLibrary();
   renderRadar();
   renderTodayStrip();
   renderTimetable();
@@ -4856,6 +4986,465 @@ async function openWidgetSettings(host){
 }
 
 
+/* ============ COURSES ============ */
+/* A course is a folder of videos the user downloaded. The files stay where
+ * they are and are streamed over qlmedia://; only the small stuff — watch
+ * position, done flags and notes — is kept in state and synced. Screenshots
+ * are far too big for that, so they live in IndexedDB on this device. */
+
+const coursesAvailable = ()=> !!(window.courses && window.courses.pick);
+
+function mediaUrl(absPath){
+  // base64url of the absolute path; the main process refuses anything that is
+  // not inside a folder the user picked.
+  const bytes = new TextEncoder().encode(absPath);
+  let bin = '';
+  for(let i=0;i<bytes.length;i++) bin += String.fromCharCode(bytes[i]);
+  const b64 = btoa(bin).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+  return 'qlmedia://f/' + b64;
+}
+
+/* "2. Intro" must sort before "10. Wrap-up", which a plain string sort gets
+   wrong — so compare with numeric collation. */
+const naturalCmp = (a,b)=> String(a).localeCompare(String(b), undefined, {numeric:true, sensitivity:'base'});
+
+function courseById(id){ return (state.courses||[]).find(c=>c.id===id) || null; }
+function courseItem(course, key){
+  if(!course.items) course.items = {};
+  if(!course.items[key]) course.items[key] = {pos:0, dur:0, done:false, note:''};
+  return course.items[key];
+}
+function courseDoneCount(course){
+  return Object.keys(course.items||{}).filter(k=>course.items[k].done).length;
+}
+
+/* ---------- Screenshots: device-local, same store pattern as the background ---------- */
+const SHOT_DB = 'questline-shots', SHOT_STORE = 'shots';
+function shotDb(){
+  return new Promise((res, rej)=>{
+    const r = indexedDB.open(SHOT_DB, 1);
+    r.onupgradeneeded = ()=>{ if(!r.result.objectStoreNames.contains(SHOT_STORE)) r.result.createObjectStore(SHOT_STORE); };
+    r.onsuccess = ()=>res(r.result);
+    r.onerror = ()=>rej(r.error);
+  });
+}
+async function shotPut(id, blob){
+  const db = await shotDb();
+  return new Promise((res, rej)=>{
+    const tx = db.transaction(SHOT_STORE, 'readwrite');
+    tx.objectStore(SHOT_STORE).put(blob, id);
+    tx.oncomplete = ()=>res(true); tx.onerror = ()=>rej(tx.error);
+  });
+}
+async function shotGet(id){
+  try{
+    const db = await shotDb();
+    return await new Promise((res)=>{
+      const tx = db.transaction(SHOT_STORE, 'readonly');
+      const q = tx.objectStore(SHOT_STORE).get(id);
+      q.onsuccess = ()=>res(q.result||null); q.onerror = ()=>res(null);
+    });
+  }catch(e){ return null; }
+}
+async function shotDelete(id){
+  try{
+    const db = await shotDb();
+    await new Promise((res)=>{
+      const tx = db.transaction(SHOT_STORE, 'readwrite');
+      tx.objectStore(SHOT_STORE).delete(id);
+      tx.oncomplete = ()=>res(); tx.onerror = ()=>res();
+    });
+  }catch(e){}
+}
+
+/* ---------- Library ---------- */
+let activeCourseId = null;
+let activeItemKey = null;
+let shotUrls = [];
+
+function renderCourseLibrary(){
+  const list = state.courses || [];
+  const countEl = document.getElementById('tabCourseCount');
+  if(countEl) countEl.textContent = list.length;
+
+  const stats = document.getElementById('courseStats');
+  if(stats){
+    const totalV = list.reduce((n,c)=>n+(c.total||0), 0);
+    const totalD = list.reduce((n,c)=>n+courseDoneCount(c), 0);
+    stats.textContent = list.length ? list.length+' course'+(list.length===1?'':'s')+' · '+totalD+'/'+totalV+' watched' : '';
+  }
+
+  const grid = document.getElementById('courseGrid');
+  if(!grid) return;
+  if(!coursesAvailable()){
+    grid.innerHTML = '<div class="empty-row" style="grid-column:1/-1; padding:36px 20px;">'+
+      'Courses read video files straight off this PC, so they only work in the Questline desktop app &mdash; not in a browser tab or on your phone.</div>';
+    return;
+  }
+  if(!list.length){
+    grid.innerHTML = '<div class="empty-row" style="grid-column:1/-1; padding:36px 20px;">'+
+      'No courses yet. Point Questline at a folder of downloaded course videos and it will lay out the whole thing &mdash; sections, ordering and all.</div>';
+    return;
+  }
+  grid.innerHTML = list.map(c=>{
+    const g = goalById(c.goal);
+    const done = courseDoneCount(c), total = c.total||0;
+    const pct = total ? Math.round(done/total*100) : 0;
+    return '<div class="course-card" data-id="'+esc(c.id)+'">'+
+      '<button class="cc-del" data-del="'+esc(c.id)+'" title="Remove from Questline">'+icon('trash')+'</button>'+
+      '<div class="cc-name">'+esc(c.name)+'</div>'+
+      (g?'<div class="cc-goal" style="color:'+g.color+'">'+esc(g.name)+'</div>':'')+
+      '<div class="cc-bar"><i style="width:'+pct+'%"></i></div>'+
+      '<div class="cc-meta"><span>'+done+' / '+total+' videos</span><span>'+pct+'%</span></div>'+
+    '</div>';
+  }).join('');
+}
+
+async function addCourse(){
+  const err = document.getElementById('courseAddError');
+  err.innerHTML = '';
+  if(!coursesAvailable()){
+    err.innerHTML = '<div class="hint" style="color:var(--danger)">This needs the Questline desktop app.</div>';
+    return;
+  }
+  const picked = await window.courses.pick();
+  if(!picked || !picked.ok) return;
+  const scan = await window.courses.scan(picked.path);
+  if(!scan || !scan.ok){
+    err.innerHTML = '<div class="hint" style="color:var(--danger)">'+esc((scan && scan.error) || 'Could not read that folder.')+'</div>';
+    return;
+  }
+  if((state.courses||[]).some(c=>c.root===scan.root)){
+    err.innerHTML = '<div class="hint" style="color:var(--danger)">That folder is already in your library.</div>';
+    return;
+  }
+  openCourseGoalPicker(scan);
+}
+
+function openCourseGoalPicker(scan){
+  const m = document.getElementById('modalBody');
+  m.innerHTML = '<h3>Add Course</h3>'+
+    '<p><b>'+esc(scan.name)+'</b><br>'+scan.total+' video'+(scan.total===1?'':'s')+' found.</p>'+
+    '<label>Counts toward</label>'+
+    '<select class="fld" id="ccGoal">'+goalOptionsHtml((state.goals[0]&&state.goals[0].id))+'</select>'+
+    '<div class="hint">Finishing a video grants XP to this quest line, so the course levels up the same goal as the rest of your work.</div>'+
+    '<div class="actions"><button class="btn-text" id="mCancel">Cancel</button><button class="btn-primary" id="ccAdd">Add course</button></div>';
+  document.getElementById('modalVeil').classList.add('open');
+  document.getElementById('mCancel').addEventListener('click', closeModal);
+  document.getElementById('ccAdd').addEventListener('click', ()=>{
+    if(!Array.isArray(state.courses)) state.courses = [];
+    state.courses.push({
+      id: 'c'+Date.now(),
+      name: scan.name,
+      root: scan.root,
+      goal: document.getElementById('ccGoal').value,
+      tree: scan.tree,
+      total: scan.total,
+      items: {},
+      addedAt: Date.now()
+    });
+    closeModal(); saveState(); renderCourseLibrary();
+    showToast({title:'Course added', sub:scan.name, big:true});
+  });
+}
+
+/* ---------- Player ---------- */
+async function openCourse(id){
+  const c = courseById(id); if(!c) return;
+  activeCourseId = id;
+  activeItemKey = null;
+  document.getElementById('courseLibrary').style.display = 'none';
+  document.getElementById('coursePlayer').style.display = '';
+  document.getElementById('courseTitle').textContent = c.name;
+  // Must land before the first click on a video, or the media request is refused.
+  if(window.courses && window.courses.allow) await window.courses.allow(c.root);
+  renderCourseTree();
+  renderNowPlaying();
+}
+function closeCourse(){
+  captureCourseProgress();
+  const v = document.getElementById('courseVideo');
+  try{ v.pause(); }catch(e){}
+  v.removeAttribute('src'); v.load();
+  activeCourseId = null; activeItemKey = null;
+  document.getElementById('coursePlayer').style.display = 'none';
+  document.getElementById('courseLibrary').style.display = '';
+  renderCourseLibrary();
+}
+
+function itemKeyFor(course, absPath){
+  // Relative to the course root, so the key survives the folder being moved.
+  // Matched on a normalised form, since one side may use / where the other
+  // uses \, and Windows drive letters can differ in case.
+  const norm = (x)=>String(x||'').replace(/\\/g,'/').replace(/\/+$/,'').toLowerCase();
+  const root = norm(course.root), full = norm(absPath);
+  const fwd = String(absPath).replace(/\\/g,'/');
+  if(full !== root && full.startsWith(root + '/')) return fwd.slice(root.length + 1);
+  return fwd;
+}
+
+function renderCourseTree(){
+  const c = courseById(activeCourseId); if(!c) return;
+  const side = document.getElementById('courseTree');
+
+  const renderNode = (node, depth)=>{
+    let html = '';
+    const folders = (node.folders||[]).slice().sort((a,b)=>naturalCmp(a.name,b.name));
+    const videos  = (node.videos||[]).slice().sort((a,b)=>naturalCmp(a.name,b.name));
+    videos.forEach(v=>{
+      const key = itemKeyFor(c, v.path);
+      const it = (c.items||{})[key] || {};
+      const pct = it.dur ? Math.min(100, Math.round((it.pos||0)/it.dur*100)) : 0;
+      const cls = it.done ? 'done' : (pct>3 ? 'partial' : '');
+      html += '<button class="course-item '+cls+(key===activeItemKey?' playing':'')+'" data-key="'+esc(key)+'" data-path="'+esc(v.path)+'">'+
+        '<span class="ci-dot"></span><span class="ci-name" title="'+esc(v.name)+'">'+esc(v.name.replace(/\.[^.]+$/,''))+'</span>'+
+      '</button>';
+    });
+    folders.forEach((f,i)=>{
+      const gid = 'sec_'+depth+'_'+i+'_'+f.name.replace(/[^a-z0-9]/gi,'').slice(0,12);
+      html += '<div class="course-sec" id="'+gid+'">'+
+        '<button class="course-sec-head" data-sec="'+gid+'">'+
+          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>'+
+          '<span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis">'+esc(f.name)+'</span>'+
+        '</button>'+
+        '<div class="course-sec-body">'+renderNode(f, depth+1)+'</div>'+
+      '</div>';
+    });
+    return html;
+  };
+
+  side.innerHTML = renderNode(c.tree||{}, 0) || '<div class="hint" style="padding:10px">Nothing to play in this folder.</div>';
+  const done = courseDoneCount(c);
+  document.getElementById('coursePlayStats').textContent = done+' / '+(c.total||0)+' watched';
+}
+
+function playCourseItem(key, absPath){
+  const c = courseById(activeCourseId); if(!c) return;
+  captureCourseProgress();
+  activeItemKey = key;
+  const it = courseItem(c, key);
+  const v = document.getElementById('courseVideo');
+  document.getElementById('courseStageEmpty').style.display = 'none';
+  v.style.display = '';
+  v.src = mediaUrl(absPath);
+  v.currentTime = 0;
+  v.addEventListener('loadedmetadata', function once(){
+    v.removeEventListener('loadedmetadata', once);
+    if(it.dur !== v.duration && isFinite(v.duration)){ it.dur = v.duration; }
+    // Drop back a couple of seconds so you re-hear the sentence you left on.
+    if(it.pos > 3 && it.pos < (v.duration-2)) v.currentTime = it.pos - 2;
+    renderCourseTree();
+  }, {once:true});
+  v.play().catch(()=>{});
+  loadNoteFor(key);
+  renderNowPlaying(absPath);
+  renderCourseTree();
+  saveState();
+}
+
+function renderNowPlaying(absPath){
+  const c = courseById(activeCourseId);
+  const el = document.getElementById('courseNow');
+  if(!c || !activeItemKey){ el.innerHTML = ''; return; }
+  el.innerHTML = esc(activeItemKey.split(/[\\/]/).pop().replace(/\.[^.]+$/,''))+
+    '<span class="cn-path">'+esc(activeItemKey)+'</span>';
+}
+
+/* Watching most of the way through counts as done and pays out once. */
+function captureCourseProgress(){
+  const c = courseById(activeCourseId);
+  if(!c || !activeItemKey) return;
+  const v = document.getElementById('courseVideo');
+  if(!v || !isFinite(v.duration) || !v.duration) return;
+  const it = courseItem(c, activeItemKey);
+  it.pos = v.currentTime;
+  it.dur = v.duration;
+  if(!it.done && v.currentTime/v.duration >= 0.9){
+    it.done = true;
+    const xp = 12;
+    grant(xp, c.goal);
+    pushLog('Watched <b>'+esc(activeItemKey.split(/[\\/]/).pop().replace(/\.[^.]+$/,''))+'</b>', '+'+xp+'xp', 'complete');
+    showToast({title:'+'+xp+' XP', sub:'Video finished'});
+    checkAchievements();
+    renderAll();
+    renderCourseTree();      // tick the dot and the watched count over straight away
+  }
+  saveState();
+}
+
+/* ---------- Notes ---------- */
+let noteTimer = null;
+function loadNoteFor(key){
+  const c = courseById(activeCourseId); if(!c) return;
+  const it = courseItem(c, key);
+  document.getElementById('noteText').value = it.note || '';
+  document.getElementById('noteSaved').textContent = '';
+  renderShots();
+}
+function saveNoteSoon(){
+  const c = courseById(activeCourseId);
+  if(!c || !activeItemKey) return;
+  clearTimeout(noteTimer);
+  noteTimer = setTimeout(()=>{
+    const it = courseItem(c, activeItemKey);
+    it.note = document.getElementById('noteText').value;
+    saveState();
+    const s = document.getElementById('noteSaved');
+    s.textContent = 'saved';
+    setTimeout(()=>{ if(s.textContent==='saved') s.textContent=''; }, 1600);
+  }, 600);
+}
+function insertAtCursor(text){
+  const ta = document.getElementById('noteText');
+  const a = ta.selectionStart, b = ta.selectionEnd;
+  ta.value = ta.value.slice(0,a) + text + ta.value.slice(b);
+  ta.selectionStart = ta.selectionEnd = a + text.length;
+  ta.focus();
+  saveNoteSoon();
+}
+
+async function addShotBlob(blob){
+  const c = courseById(activeCourseId);
+  if(!c || !activeItemKey){ showToast({title:'Pick a video first'}); return; }
+  const it = courseItem(c, activeItemKey);
+  if(!Array.isArray(it.shots)) it.shots = [];
+  const id = 's'+Date.now()+'_'+Math.random().toString(36).slice(2,7);
+  try{
+    await shotPut(id, blob);
+    it.shots.push(id);
+    saveState();
+    renderShots();
+  }catch(err){
+    showToast({title:'Could not save that image', sub:String(err && err.message || err)});
+  }
+}
+
+async function renderShots(){
+  const host = document.getElementById('noteShots');
+  shotUrls.forEach(u=>URL.revokeObjectURL(u));
+  shotUrls = [];
+  host.innerHTML = '';
+  const c = courseById(activeCourseId);
+  if(!c || !activeItemKey) return;
+  const it = courseItem(c, activeItemKey);
+  const ids = Array.isArray(it.shots) ? it.shots : [];
+  for(const id of ids){
+    const blob = await shotGet(id);
+    if(!blob) continue;
+    const url = URL.createObjectURL(blob);
+    shotUrls.push(url);
+    const wrap = document.createElement('div');
+    wrap.className = 'note-shot';
+    const img = document.createElement('img');
+    img.src = url; img.alt = 'note image';
+    img.addEventListener('click', ()=>{
+      const veil = document.getElementById('shotVeil');
+      document.getElementById('shotBig').src = url;
+      veil.classList.add('open');
+    });
+    const del = document.createElement('button');
+    del.textContent = '×';
+    del.title = 'Remove';
+    del.addEventListener('click', async (e)=>{
+      e.stopPropagation();
+      it.shots = it.shots.filter(x=>x!==id);
+      await shotDelete(id);
+      saveState(); renderShots();
+    });
+    wrap.appendChild(img); wrap.appendChild(del);
+    host.appendChild(wrap);
+  }
+}
+
+function captureFrame(){
+  const v = document.getElementById('courseVideo');
+  if(!v || !v.videoWidth){ showToast({title:'Nothing to capture yet'}); return; }
+  const c = document.createElement('canvas');
+  c.width = v.videoWidth; c.height = v.videoHeight;
+  c.getContext('2d').drawImage(v, 0, 0, c.width, c.height);
+  c.toBlob(b=>{
+    if(!b) return;
+    addShotBlob(b);
+    insertAtCursor('['+fmtTime(v.currentTime)+'] ');
+    showToast({title:'Frame captured', sub:'at '+fmtTime(v.currentTime)});
+  }, 'image/jpeg', 0.86);
+}
+
+/* ---------- Wiring ---------- */
+document.getElementById('courseAddBtn').addEventListener('click', addCourse);
+document.getElementById('courseBack').addEventListener('click', closeCourse);
+
+document.getElementById('courseGrid').addEventListener('click', e=>{
+  const del = e.target.closest('.cc-del');
+  if(del){
+    e.stopPropagation();
+    const c = courseById(del.dataset.del); if(!c) return;
+    openConfirm({
+      title:'Remove this course?',
+      body:'Takes <b>'+esc(c.name)+'</b> out of Questline, along with its notes and captured images. Nothing on disk is touched &mdash; the video files stay exactly where they are.',
+      confirmLabel:'Remove course',
+      onConfirm: async ()=>{
+        const ids = Object.values(c.items||{}).flatMap(i=>Array.isArray(i.shots)?i.shots:[]);
+        for(const id of ids) await shotDelete(id);
+        state.courses = state.courses.filter(x=>x.id!==c.id);
+        saveState(); renderCourseLibrary();
+        showToast({title:'Course removed'});
+      }
+    });
+    return;
+  }
+  const card = e.target.closest('.course-card');
+  if(card) openCourse(card.dataset.id);
+});
+
+document.getElementById('courseTree').addEventListener('click', e=>{
+  const sec = e.target.closest('.course-sec-head');
+  if(sec){ document.getElementById(sec.dataset.sec).classList.toggle('collapsed'); return; }
+  const item = e.target.closest('.course-item');
+  if(item) playCourseItem(item.dataset.key, item.dataset.path);
+});
+
+document.getElementById('courseRescan').addEventListener('click', async ()=>{
+  const c = courseById(activeCourseId); if(!c || !coursesAvailable()) return;
+  const scan = await window.courses.scan(c.root);
+  if(!scan || !scan.ok){ showToast({title:'Rescan failed', sub:(scan&&scan.error)||''}); return; }
+  const added = scan.total - (c.total||0);
+  c.tree = scan.tree; c.total = scan.total;
+  saveState(); renderCourseTree();
+  showToast({title:'Folder rescanned', sub: added>0 ? added+' new video'+(added===1?'':'s') : 'Nothing new'});
+});
+
+(function wireCourseVideo(){
+  const v = document.getElementById('courseVideo');
+  v.addEventListener('pause', captureCourseProgress);
+  v.addEventListener('ended', ()=>{ captureCourseProgress(); });
+  setInterval(()=>{ if(activeCourseId && activeItemKey && !document.getElementById('courseVideo').paused) captureCourseProgress(); }, 10000);
+})();
+
+document.getElementById('noteText').addEventListener('input', saveNoteSoon);
+document.getElementById('noteText').addEventListener('paste', e=>{
+  const items = (e.clipboardData && e.clipboardData.items) || [];
+  for(const it of items){
+    if(it.type && it.type.startsWith('image/')){
+      const blob = it.getAsFile();
+      if(blob){ e.preventDefault(); addShotBlob(blob); showToast({title:'Image attached'}); }
+      return;
+    }
+  }
+});
+document.getElementById('noteStamp').addEventListener('click', ()=>{
+  const v = document.getElementById('courseVideo');
+  insertAtCursor('['+fmtTime(v.currentTime||0)+'] ');
+});
+document.getElementById('noteShot').addEventListener('click', captureFrame);
+document.getElementById('noteUpload').addEventListener('click', ()=>document.getElementById('noteFile').click());
+document.getElementById('noteFile').addEventListener('change', async e=>{
+  const files = Array.from(e.target.files||[]);
+  for(const f of files){ if(f.type.startsWith('image/')) await addShotBlob(f); }
+  e.target.value = '';
+});
+document.getElementById('shotVeil').addEventListener('click', ()=>document.getElementById('shotVeil').classList.remove('open'));
+
 /* ============ APPEARANCE ============ */
 function hexToRgb(hex){
   const h = String(hex||'').replace('#','');
@@ -5311,6 +5900,9 @@ document.addEventListener('keydown', e=>{
 reconcile();
 applyAppearance();
 renderBgMedia();
+if(window.courses && window.courses.allow){
+  (state.courses||[]).forEach(c=>{ if(c.root) window.courses.allow(c.root); });
+}
 setTab(state.activeTab || 'overview');
 renderAll();
 saveState(false);

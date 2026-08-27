@@ -8,6 +8,14 @@ contextBridge.exposeInMainWorld('untis', {
   sync: (config) => ipcRenderer.invoke('untis-sync', config)
 });
 
+// Local course folders: pick one, read its tree, re-authorise a saved one.
+contextBridge.exposeInMainWorld('courses', {
+  pick: () => ipcRenderer.invoke('courses-pick'),
+  scan: (dir) => ipcRenderer.invoke('courses-scan', dir),
+  allow: (dir) => ipcRenderer.invoke('courses-allow', dir),
+  reveal: (target) => ipcRenderer.invoke('courses-reveal', target)
+});
+
 contextBridge.exposeInMainWorld('learn', {
   meta: (videoId) => ipcRenderer.invoke('yt-meta', videoId),
   transcript: (videoId) => ipcRenderer.invoke('yt-transcript', videoId),
