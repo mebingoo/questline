@@ -766,21 +766,58 @@
   .rm-path::before{content:""; position:absolute; left:9px; top:10px; bottom:10px; width:2px; background:var(--border);}
   .rm-node{position:relative; margin-bottom:16px; padding:10px 12px; border-radius:var(--radius-m); background:var(--surface-2); border:1px solid var(--border-soft); cursor:pointer;}
   .rm-node:last-child{margin-bottom:0;}
-  .rm-node.locked{opacity:0.4; cursor:default;}
-  .rm-node.completed{opacity:0.75;}
+  .rm-node.locked{opacity:0.3; cursor:default;}
+  .rm-node.completed{opacity:0.75; cursor:default;}
+  .rm-node.completed.expandable{cursor:pointer;}
   .rm-node.active{border-color:var(--gold-soft);}
+  /* overdue is active-but-late: same border family, just the fuller-strength gold
+     instead of the soft one — a louder version of "in progress", not a red alarm. */
+  .rm-node.overdue{border-color:var(--gold);}
+  .rm-node.pulse{animation:rmPulse 2.4s ease-in-out infinite;}
+  @keyframes rmPulse{
+    0%, 100% { box-shadow:0 0 0 0 var(--gold-glow); }
+    50% { box-shadow:0 0 0 4px var(--gold-glow); }
+  }
   .rm-node-icon{
     position:absolute; left:-26px; top:12px; width:19px; height:19px; border-radius:50%;
     display:flex; align-items:center; justify-content:center; background:var(--surface-3); border:2px solid var(--border);
     font-size:10px; color:var(--text-faint);
   }
-  .rm-node.active .rm-node-icon{border-color:var(--gold); color:var(--gold);}
+  .rm-node.active .rm-node-icon, .rm-node.overdue .rm-node-icon{border-color:var(--gold); color:var(--gold);}
   .rm-node.completed .rm-node-icon{border-color:var(--success); background:var(--success); color:var(--bg-2);}
   .rm-node-icon svg{width:10px;height:10px;}
+  .rm-node-short{font-family:var(--font-mono); font-size:10.5px; color:var(--text-faint); margin-right:6px;}
   .rm-node-title{font-size:13px; color:var(--text); font-weight:600;}
-  .rm-node-meta{font-size:10.5px; color:var(--text-faint); margin-top:3px; font-family:var(--font-mono);}
+  /* The most important line on the card, per spec: bigger and brighter than the
+     description below it, since "what can I do after this" matters more than the syllabus. */
+  .rm-node-capability{font-size:13px; color:var(--text); font-weight:500; margin-top:5px; line-height:1.4;}
+  .rm-node-meta{font-size:10.5px; color:var(--text-faint); margin-top:5px; font-family:var(--font-mono);}
   .rm-node-desc{font-size:11.5px; color:var(--text-dim); margin-top:5px; line-height:1.4;}
+  .rm-node-progress{margin-top:8px; display:flex; align-items:center; gap:8px;}
+  .rm-node-progress-track{flex:1; height:5px; border-radius:3px; background:var(--surface-3); overflow:hidden;}
+  .rm-node-progress-track > i{display:block; height:100%; background:var(--dcolor,var(--gold)); border-radius:3px; transition:width .35s ease;}
+  .rm-node-progress-text{font-family:var(--font-mono); font-size:10px; color:var(--text-faint); white-space:nowrap;}
+  .rm-node-topics{margin-top:8px; display:flex; flex-wrap:wrap; gap:5px;}
+  .rm-node-topic{font-size:10.5px; color:var(--text-dim); background:var(--surface-3); border-radius:var(--radius-s); padding:3px 8px;}
+  .rm-node-resources{margin-top:8px; display:flex; flex-direction:column; gap:4px;}
+  .rm-res{font-size:11.5px; color:var(--teal); text-decoration:none;}
+  .rm-res:hover{text-decoration:underline;}
+  .rm-res-nolink{font-size:11.5px; color:var(--text-faint);}
+  .rm-badge{font-size:9px; color:var(--text-faint); border:1px solid var(--border); border-radius:var(--radius-s); padding:1px 5px; margin-left:2px;}
+  .rm-node-retro{display:none; margin-top:8px; font-size:11.5px; color:var(--text-dim); line-height:1.6;}
+  .rm-node.open .rm-node-retro{display:block;}
   .rm-empty{font-size:12px; color:var(--text-faint); padding:14px 2px; text-align:center; line-height:1.5;}
+  .detail-tabs{display:flex; gap:8px; margin:14px 0 16px;}
+  .detail-tab{font-family:var(--font-display); font-size:11px; letter-spacing:0.06em; padding:7px 16px;
+    background:var(--surface); color:var(--text-dim); border:1px solid var(--border); border-radius:var(--radius-m); cursor:pointer;}
+  .detail-tab:hover{color:var(--text);}
+  .detail-tab.active{color:var(--gold); border-color:var(--gold); box-shadow:0 0 0 1px var(--gold-glow);}
+  .rm-quest-row{display:flex; align-items:center; gap:10px; padding:7px 2px; border-bottom:1px solid var(--border-soft);}
+  .rm-quest-row:last-child{border-bottom:none;}
+  .rm-quest-row.done{opacity:0.55;}
+  .rm-quest-dot{width:8px; height:8px; border-radius:50%; border:2px solid var(--border); flex:none;}
+  .rm-quest-title{flex:1; font-size:12.5px; color:var(--text);}
+  .rm-quest-xp{font-family:var(--font-mono); font-size:10.5px; color:var(--text-faint);}
   .gate-diff-row{display:flex; gap:8px; margin-bottom:14px;}
   .gate-diff{flex:1; background:var(--surface-2); border:1px solid var(--border-soft); border-radius:var(--radius-m); padding:10px; cursor:pointer; text-align:left;}
   .gate-diff.picked{border-color:var(--gold); background:var(--surface-3);}
@@ -1600,6 +1637,7 @@ function migrate(s){
   if(!Array.isArray(s.rewards)) s.rewards = [];
   if(!s.achievements) s.achievements = {};
   if(!Array.isArray(s.log)) s.log = [];
+  s.log.forEach(l=>{ if(l.goalId===undefined) l.goalId = null; });
   if(!s.school) s.school = defaultSchool();
   DAYS.forEach(d=>{ if(!Array.isArray(s.school[d])) s.school[d] = []; });
   if(!s.focus){
@@ -3008,7 +3046,7 @@ function renderQuizResult(){
   if(xp>0){
     const prev = levelFromXP(state.player.xp,150);
     grant(xp, v.goal);
-    pushLog('Quiz on <b>'+esc(v.title)+'</b>: '+correct+'/'+total, '+'+xp+'xp', 'complete');
+    pushLog('Quiz on <b>'+esc(v.title)+'</b>: '+correct+'/'+total, '+'+xp+'xp', 'complete', v.goal);
     if(levelFromXP(state.player.xp,150)>prev) setTimeout(()=>showLevelUp(levelFromXP(state.player.xp,150)), 400);
   }
   v.awarded = true;
@@ -3247,10 +3285,10 @@ function renderAll(){
 }
 
 /* ============ LOG / TOAST / BURST ============ */
-function pushLog(text, delta, type){
+function pushLog(text, delta, type, goalId){
   const t = new Date();
   const time = String(t.getHours()).padStart(2,'0')+':'+String(t.getMinutes()).padStart(2,'0');
-  state.log.push({time, text, delta, type});
+  state.log.push({time, text, delta, type, goalId: goalId||null});
   if(state.log.length>200) state.log = state.log.slice(-200);
 }
 function showToast({title, sub, big, undo}){
@@ -3355,7 +3393,7 @@ function completeDaily(id){
     state.player.lastActiveDate = today;
     state.player.longestStreak = Math.max(state.player.longestStreak, state.player.streak);
   }
-  pushLog('Completed <b>'+esc(q.title)+'</b>', '+'+q.xp+'xp', 'complete');
+  pushLog('Completed <b>'+esc(q.title)+'</b>', '+'+q.xp+'xp', 'complete', q.goal);
   renderAll(); checkAchievements();
 
   const row = document.querySelector('.quest-item[data-id="'+id+'"]');
@@ -3384,7 +3422,7 @@ function completeWeekly(id, silent){
   state.player.xp += q.xp; state.player.gold += q.gold;
   if(g) g.xp += q.xp;
   q.lastDoneWeek = wk;
-  pushLog('Weekly quest complete: <b>'+esc(q.title)+'</b>', '+'+q.xp+'xp', 'weekly');
+  pushLog('Weekly quest complete: <b>'+esc(q.title)+'</b>', '+'+q.xp+'xp', 'weekly', q.goal);
   renderAll(); checkAchievements();
   burst(window.innerWidth/2, window.innerHeight/3, g?g.color:'#ff2ea6');
   showToast({
@@ -3437,7 +3475,7 @@ function openLogXp(goalId){
     const amt = Math.max(1, Math.min(500, parseInt(document.getElementById('logXpAmt').value,10)||20));
     const prev = levelFromXP(state.player.xp,150);
     grant(amt, goalId);
-    pushLog('Progress on <b>'+esc(g.name)+'</b>: '+esc(note), '+'+amt+'xp', 'complete');
+    pushLog('Progress on <b>'+esc(g.name)+'</b>: '+esc(note), '+'+amt+'xp', 'complete', goalId);
     closeModal(); renderAll(); checkAchievements();
     showToast({title:'+'+amt+' XP', sub:note});
     if(levelFromXP(state.player.xp,150)>prev) setTimeout(()=>showLevelUp(levelFromXP(state.player.xp,150)), 350);
@@ -3445,62 +3483,144 @@ function openLogXp(goalId){
   });
 }
 /* ============ ROADMAP ============ */
+// Locked keeps only the teaser (title + capability) on purpose — Topics, Resources and
+// the Gate stay hidden until it unlocks; that anticipation is the point, not a bug.
 function rmNodeHtml(m, g){
+  const shortLabel = m.shortLabel ? '<span class="rm-node-short">'+esc(m.shortLabel)+'</span>' : '';
   if(m.status==='locked'){
     return '<div class="rm-node locked" data-id="'+m.id+'">'+
       '<div class="rm-node-icon">'+icon('lock')+'</div>'+
-      '<div class="rm-node-title">'+esc(m.title)+'</div>'+
-      '<div class="rm-node-meta">Locked</div>'+
+      '<div class="rm-node-body">'+
+        '<div class="rm-node-title">'+shortLabel+esc(m.title)+'</div>'+
+        (m.capability ? '<div class="rm-node-capability">'+esc(m.capability)+'</div>' : '')+
+      '</div>'+
     '</div>';
   }
-  const doneDod = m.gate.definitionOfDone.filter(d=>d.done).length;
-  const totalDod = m.gate.definitionOfDone.length;
+  const doneCrit = m.gate.definitionOfDone.filter(d=>d.done).length;
+  const totalCrit = m.gate.definitionOfDone.length;
+  const pct = totalCrit ? Math.round(doneCrit/totalCrit*100) : 0;
+  // overdue is active-but-late: same detail (progress, topics, resources), just a
+  // warning-colored border via the status class — no red, no shame signal.
+  const isCurrent = m.status==='active' || m.status==='overdue';
+  const pulse = isCurrent && totalCrit>0 && pct>80;
+  const expandable = m.status==='completed';
+
   let meta = '';
   if(m.status==='completed'){
     meta = 'Completed'+(m.completedDate?' &middot; '+m.completedDate:'');
-  } else {
-    const parts = [];
-    if(m.deadline){
-      const days = daysBetween(todayStr(), m.deadline);
-      if(Number.isFinite(days)) parts.push(days>=0 ? 'due in '+days+'d' : Math.abs(days)+'d overdue');
-    }
-    if(totalDod) parts.push(doneDod+'/'+totalDod+' criteria');
-    meta = parts.join(' &middot; ') || 'In progress';
+  } else if(m.deadline){
+    const days = daysBetween(todayStr(), m.deadline);
+    if(Number.isFinite(days)) meta = days>=0 ? days+'d left' : Math.abs(days)+'d overdue';
   }
-  return '<div class="rm-node '+m.status+'" data-id="'+m.id+'">'+
+  const resourceHtml = r => r.url
+    ? '<a class="rm-res" href="#" data-action="openresource" data-url="'+esc(r.url)+'">'+esc(r.title)+(r.free?'':' <span class="rm-badge">paid</span>')+'</a>'
+    : '<span class="rm-res rm-res-nolink">'+esc(r.title)+(r.free?'':' <span class="rm-badge">paid</span>')+'</span>';
+
+  return '<div class="rm-node '+m.status+(pulse?' pulse':'')+(expandable?' expandable':'')+'" data-id="'+m.id+'">'+
     '<div class="rm-node-icon">'+(m.status==='completed' ? icon('check') : '<span>'+(m.order+1)+'</span>')+'</div>'+
-    '<div class="rm-node-title">'+esc(m.title)+'</div>'+
-    '<div class="rm-node-meta">'+meta+'</div>'+
-    (m.status!=='completed' && m.description ? '<div class="rm-node-desc">'+esc(m.description)+'</div>' : '')+
+    '<div class="rm-node-body">'+
+      '<div class="rm-node-title">'+shortLabel+esc(m.title)+'</div>'+
+      (m.capability ? '<div class="rm-node-capability">'+esc(m.capability)+'</div>' : '')+
+      (m.description ? '<div class="rm-node-desc">'+esc(m.description)+'</div>' : '')+
+      (meta ? '<div class="rm-node-meta">'+meta+'</div>' : '')+
+      (isCurrent && totalCrit ? '<div class="rm-node-progress">'+
+          '<div class="rm-node-progress-track"><i style="width:'+pct+'%"></i></div>'+
+          '<span class="rm-node-progress-text">'+esc(m.gate.challengeTitle||'Gate')+' &middot; '+doneCrit+'/'+totalCrit+' criteria</span>'+
+        '</div>' : '')+
+      (isCurrent && m.topics.length ? '<div class="rm-node-topics">'+m.topics.map(t=>'<div class="rm-node-topic">'+esc(t)+'</div>').join('')+'</div>' : '')+
+      (isCurrent && m.resources.length ? '<div class="rm-node-resources">'+m.resources.map(resourceHtml).join('')+'</div>' : '')+
+      (expandable ? '<div class="rm-node-retro">'+
+          (m.gate.selectedDifficulty ? '<div>Difficulty chosen: '+esc(m.gate.selectedDifficulty)+'</div>' : '')+
+          (m.gate.proofUrl ? '<div><a href="#" data-action="openresource" data-url="'+esc(m.gate.proofUrl)+'">View proof</a></div>' : '')+
+          (!m.gate.selectedDifficulty && !m.gate.proofUrl ? '<div class="hint">No extra details recorded for this one.</div>' : '')+
+        '</div>' : '')+
+    '</div>'+
   '</div>';
 }
-function renderRoadmapBody(goalId){
+// Renders just the Roadmap tab's content into `container` — the shared goal header and
+// tab strip live in openQuestLineDetail below, not here, so this can't be opened on its own.
+function renderRoadmapBody(container, goalId){
   const g = goalById(goalId); if(!g) return;
+  syncOverdueStatus(g);
   const ms = [...g.milestones].sort((a,b)=>a.order-b.order);
-  const m = document.getElementById('modalBody');
-  m.classList.add('modal-wide');
-  const weekSummary = focusWeekSummary(g.id);
-  m.innerHTML = '<h3>Roadmap &mdash; '+esc(g.name)+'</h3>'+
-    '<p>'+esc(g.flavor||'')+(weekSummary?' <span style="color:var(--teal)">&middot; '+weekSummary+' focused</span>':'')+'</p>'+
-    '<div class="rm-actions"><button class="rm-link" id="rmImport">Import roadmap.json</button><button class="rm-link" id="rmAddMs">+ Add milestone</button></div>'+
+  container.innerHTML = '<div class="rm-actions"><button class="rm-link" id="rmImport">Import roadmap.json</button><button class="rm-link" id="rmAddMs">+ Add milestone</button></div>'+
     (ms.length
       ? '<div class="rm-path">'+ms.map(x=>rmNodeHtml(x,g)).join('')+'</div>'
-      : '<div class="rm-empty">No roadmap yet for this quest line. Import a <code>roadmap.json</code>, or add milestones one at a time.</div>')+
-    '<div class="actions"><button class="btn-text" id="mCancel">Close</button></div>';
-  document.getElementById('mCancel').addEventListener('click', closeModal);
+      : '<div class="rm-empty">No roadmap yet for this quest line. Import a <code>roadmap.json</code>, or add milestones one at a time.</div>');
   document.getElementById('rmImport').addEventListener('click', ()=>openImportRoadmap(goalId));
   document.getElementById('rmAddMs').addEventListener('click', ()=>openAddMilestone(goalId));
-  m.querySelectorAll('.rm-node').forEach(node=>{
-    node.addEventListener('click', ()=>{
+  container.querySelectorAll('.rm-node').forEach(node=>{
+    node.addEventListener('click', (e)=>{
+      const resChip = e.target.closest('[data-action="openresource"]');
+      if(resChip){ openResourceChip(resChip); return; }
       const ms2 = g.milestones.find(x=>x.id===node.dataset.id);
       if(!ms2 || ms2.status==='locked') return;
+      // Completed nodes fold their retrospective open in place; there's nothing left to
+      // "do" there, so no reason to leave the roadmap to see it.
+      if(ms2.status==='completed'){ node.classList.toggle('open'); return; }
       openMilestoneGate(goalId, ms2.id);
     });
   });
 }
-function openRoadmap(goalId){
-  renderRoadmapBody(goalId);
+// A read-only first pass: this goal's dailies/weeklies, so the tab isn't empty. Actually
+// completing/editing them, and filtering to the active milestone, lands with the
+// milestone-suggestion integration in a later step.
+function renderQuestsTabBody(container, goalId){
+  const g = goalById(goalId); if(!g) return;
+  const dailies = state.dailies.filter(q=>q.goal===goalId);
+  const weeklies = state.weeklies.filter(q=>q.goal===goalId);
+  const today = todayStr(), wk = isoWeekKey();
+  const row = (q, done) => '<div class="rm-quest-row'+(done?' done':'')+'">'+
+    (done ? icon('check','style="width:14px;height:14px;color:var(--success)"') : '<span class="rm-quest-dot"></span>')+
+    '<span class="rm-quest-title">'+esc(q.title)+'</span>'+
+    '<span class="rm-quest-xp">+'+q.xp+' xp</span>'+
+  '</div>';
+  container.innerHTML =
+    '<label>Daily</label>'+
+    (dailies.length ? dailies.map(q=>row(q,q.lastDone===today)).join('') : '<div class="empty-row">No daily quests for this quest line yet.</div>')+
+    '<label style="margin-top:14px;">Weekly</label>'+
+    (weeklies.length ? weeklies.map(q=>row(q,q.lastDoneWeek===wk)).join('') : '<div class="empty-row">No weekly quests for this quest line yet.</div>')+
+    '<p class="hint" style="margin-top:14px;">Head to the Tasks tab to complete or edit these.</p>';
+}
+function renderLogTabBody(container, goalId){
+  const g = goalById(goalId); if(!g) return;
+  const entries = state.log.filter(l=>l.goalId===goalId);
+  container.innerHTML = entries.length
+    ? '<div class="log-list">'+entries.slice(-40).reverse().map(l=>
+        '<div class="log-row"><span class="log-time">'+l.time+'</span><span class="log-text">'+l.text+'</span><span class="log-delta">'+(l.delta||'')+'</span></div>'
+      ).join('')+'</div>'
+    : '<div class="empty-row">Nothing logged yet for '+esc(g.name)+'.</div>';
+}
+const DETAIL_TABS = [['roadmap','Roadmap'],['quests','Quests'],['log','Log']];
+function openQuestLineDetail(goalId, initialTab){
+  const g = goalById(goalId); if(!g) return;
+  let activeTab = DETAIL_TABS.some(t=>t[0]===initialTab) ? initialTab : 'roadmap';
+  const m = document.getElementById('modalBody');
+  m.classList.add('modal-wide');
+
+  function render(){
+    const weekSummary = focusWeekSummary(g.id);
+    m.innerHTML = '<h3>'+esc(g.name)+'</h3>'+
+      '<p>'+esc(g.flavor||'')+(weekSummary?' <span style="color:var(--teal)">&middot; '+weekSummary+' focused</span>':'')+'</p>'+
+      '<div class="detail-tabs">'+DETAIL_TABS.map(([id,label])=>
+        '<button class="detail-tab'+(id===activeTab?' active':'')+'" data-tab="'+id+'">'+label+'</button>'
+      ).join('')+'</div>'+
+      '<div id="detailBody"></div>'+
+      '<div class="actions"><button class="btn-text" id="mCancel">Close</button></div>';
+    document.getElementById('mCancel').addEventListener('click', closeModal);
+    m.querySelectorAll('.detail-tab').forEach(btn=>{
+      btn.addEventListener('click', ()=>{ activeTab = btn.dataset.tab; render(); });
+    });
+    const body = document.getElementById('detailBody');
+    if(activeTab==='roadmap') renderRoadmapBody(body, goalId);
+    else if(activeTab==='quests') renderQuestsTabBody(body, goalId);
+    else renderLogTabBody(body, goalId);
+  }
+  render();
   document.getElementById('modalVeil').classList.add('open');
+}
+function openRoadmap(goalId){
+  openQuestLineDetail(goalId, 'roadmap');
 }
 function openMilestoneGate(goalId, msId){
   const g = goalById(goalId); if(!g) return;
@@ -3544,8 +3664,8 @@ function openMilestoneGate(goalId, msId){
       (!isDone ? '<label style="margin-top:10px;">Note (optional)</label><input type="text" class="fld" id="gateNote" placeholder="What happened, what\'s left...">'+
         '<button class="rm-link" id="gateSaveNote">Save note without completing</button>' : '')+
       (isDone ? '' : '<div class="actions"><button class="btn-text" id="mBack2">Back to roadmap</button></div>');
-    if(document.getElementById('mBack')) document.getElementById('mBack').addEventListener('click', ()=>renderRoadmapBody(goalId));
-    if(document.getElementById('mBack2')) document.getElementById('mBack2').addEventListener('click', ()=>renderRoadmapBody(goalId));
+    if(document.getElementById('mBack')) document.getElementById('mBack').addEventListener('click', ()=>openQuestLineDetail(goalId, 'roadmap'));
+    if(document.getElementById('mBack2')) document.getElementById('mBack2').addEventListener('click', ()=>openQuestLineDetail(goalId, 'roadmap'));
     m.querySelectorAll('.gate-diff').forEach(btn=>{
       btn.addEventListener('click', ()=>{ pickedLevel = btn.dataset.level; render(); });
     });
@@ -3571,12 +3691,12 @@ function openMilestoneGate(goalId, msId){
       ms.status = 'completed';
       ms.completedDate = todayStr();
       unlockNextMilestone(g, ms.id);
-      pushLog('Milestone complete: <b>'+esc(ms.title)+'</b> ('+esc(g.name)+')', '+'+opt.xp+'xp', 'complete');
+      pushLog('Milestone complete: <b>'+esc(ms.title)+'</b> ('+esc(g.name)+')', '+'+opt.xp+'xp', 'complete', goalId);
       saveState(); renderAll(); checkAchievements();
       burst(window.innerWidth/2, window.innerHeight/3, g.color);
       showToast({title:'Milestone complete &middot; +'+opt.xp+' XP', sub:ms.title, big:true});
       if(levelFromXP(state.player.xp,150)>prevLevel) setTimeout(()=>showLevelUp(levelFromXP(state.player.xp,150)), 350);
-      renderRoadmapBody(goalId);
+      openQuestLineDetail(goalId, 'roadmap');
     });
   };
   render();
@@ -3689,7 +3809,7 @@ function applyRoadmapImport(goalId, parsed, msgEl){
       if(fresh) freshImportMilestones(g, parsed); else mergeImportedMilestones(g, parsed);
       saveState(); renderAll();
       showToast({title:'Roadmap imported', sub:(parsed.milestones||[]).length+' milestones for '+g.name});
-      renderRoadmapBody(goalId);
+      openQuestLineDetail(goalId, 'roadmap');
     }catch(err){
       if(msgEl) msgEl.innerHTML = '<div class="hint" style="color:var(--danger)">Could not read that file: '+esc(String(err.message||err))+'</div>';
     }
@@ -3718,7 +3838,7 @@ function openImportRoadmap(goalId){
     '<div id="rmImportMsg"></div>'+
     '<div class="actions"><button class="btn-text" id="mBack">Back</button></div>';
   document.getElementById('modalVeil').classList.add('open');
-  document.getElementById('mBack').addEventListener('click', ()=>renderRoadmapBody(goalId));
+  document.getElementById('mBack').addEventListener('click', ()=>openQuestLineDetail(goalId, 'roadmap'));
 
   const msg = document.getElementById('rmImportMsg');
   document.getElementById('rmFile').addEventListener('change', e=>{
@@ -4276,7 +4396,7 @@ function completeObjective(goalId, objId){
   const prev = levelFromXP(state.player.xp,150);
   g.objectives.splice(idx,1);
   grant(obj.xp, goalId);
-  pushLog('Objective done on <b>'+esc(g.name)+'</b>: '+esc(obj.title), '+'+obj.xp+'xp', 'complete');
+  pushLog('Objective done on <b>'+esc(g.name)+'</b>: '+esc(obj.title), '+'+obj.xp+'xp', 'complete', goalId);
   renderAll(); checkAchievements();
   const card = document.querySelector('.disc-card[data-goal="'+goalId+'"]');
   if(card){ const r = card.getBoundingClientRect(); burst(r.left+30, r.top+r.height/2, g.color); }
@@ -4382,7 +4502,11 @@ document.getElementById('discGrid').addEventListener('click', e=>{
         showToast({title:'Objective removed', sub:removed.title, undo:()=>{ g.objectives.splice(i,0,removed); saveState(); renderAll(); }});
       }
     }
+    return;
   }
+  // Anything else on the card (not one of the specific actions above) opens the detail view.
+  const card = e.target.closest('.disc-card');
+  if(card) openQuestLineDetail(card.dataset.goal, 'roadmap');
 });
 document.getElementById('rewardGrid').addEventListener('click', e=>{
   if(e.target.id==='addRewardBtn'){ openAddReward(); return; }
