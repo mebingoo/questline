@@ -1,0 +1,327 @@
+{
+  "schemaVersion": 2,
+  "questLineKey": "python-td",
+  "goalId": "python",
+  "title": "Python & TD Craft",
+  "grandGoal": "Get good enough at Python for a pipeline-TD role — building tools a whole team relies on — and to ship your own Blender extensions publicly.",
+  "note": "Blender track targets 4.2 LTS and newer, where add-ons are Extensions with a blender_manifest.toml rather than the old bl_info dict. Tooling track uses the current standard stack: uv, Ruff, pytest, and a type checker.",
+  "tiers": [
+    { "n": 1, "name": "Foundations" },
+    { "n": 2, "name": "Structure" },
+    { "n": 3, "name": "Craft" },
+    { "n": 4, "name": "Pipeline" },
+    { "n": 5, "name": "Mastery" }
+  ],
+  "tracks": [
+    { "id": "core",  "name": "Core Language",  "color": "#4fb8b0" },
+    { "id": "oop",   "name": "Design & OOP",   "color": "#5b9bd5" },
+    { "id": "tool",  "name": "Tooling & Tests","color": "#6fa86f" },
+    { "id": "data",  "name": "Data & Files",   "color": "#e0a458" },
+    { "id": "bpy",   "name": "Blender API",    "color": "#d97d4a" },
+    { "id": "addon", "name": "Extensions",     "color": "#c77fa8" },
+    { "id": "pipe",  "name": "Pipeline",       "color": "#8b7fc9" },
+    { "id": "perf",  "name": "Performance",    "color": "#9aa5b8" }
+  ],
+  "nodes": [
+    {
+      "id": "c1", "track": "core", "tier": 1, "title": "Syntax & Control Flow",
+      "unlocks": "You can write a small script and explain every line of it.",
+      "study": [
+        "Variables, the built-in types, operators, f-strings",
+        "if / elif / else, for, while, break, continue, else-on-loop",
+        "Truthiness — what counts as falsy and the bugs that follow",
+        "Functions: parameters, defaults, *args / **kwargs, return, scope",
+        "The mutable-default-argument trap",
+        "Reading a traceback properly instead of skimming to the last line"
+      ],
+      "challenge": "Write a command-line tool that takes a folder and prints a summary: file count by extension, total size, largest file.",
+      "proof": "The script, and it runs on a folder you didn't write it against.",
+      "xp": 40, "requires": [],
+      "resources": [
+        { "title": "The Python Tutorial", "url": "https://docs.python.org/3/tutorial/index.html" }
+      ]
+    },
+    {
+      "id": "c2", "track": "core", "tier": 2, "title": "Data Structures in Anger",
+      "unlocks": "You reach for the right container without thinking about it.",
+      "study": [
+        "list, dict, set, tuple — cost and behaviour of each, not just syntax",
+        "Comprehensions for list / dict / set, and when they stop being readable",
+        "Slicing, unpacking, star-unpacking, enumerate, zip",
+        "sorted() with key functions; itemgetter and lambda",
+        "collections: defaultdict, Counter, deque, namedtuple",
+        "Shallow vs. deep copy — the aliasing bug everyone hits once"
+      ],
+      "challenge": "Parse a messy CSV or log file into a clean nested structure and answer three questions about it that would be painful by hand.",
+      "proof": "Script plus the three answers.",
+      "xp": 60, "requires": ["c1"],
+      "resources": [
+        { "title": "Python — Data Structures", "url": "https://docs.python.org/3/tutorial/datastructures.html" }
+      ]
+    },
+    {
+      "id": "c3", "track": "core", "tier": 3, "title": "Idiomatic Python",
+      "unlocks": "Your code starts reading like Python instead of translated C.",
+      "study": [
+        "Iterators and generators; yield, and why it saves memory",
+        "Context managers and the with statement; contextlib",
+        "Decorators — writing them, and functools.wraps",
+        "Exceptions: custom classes, try/except/else/finally, never bare except",
+        "Type hints: annotations, Optional, Union, generics, and what they buy",
+        "The standard library tour: pathlib, itertools, functools, dataclasses"
+      ],
+      "challenge": "Refactor an earlier script using a generator, a context manager and a decorator — each earning its place, not shoehorned in.",
+      "proof": "Before and after, with a note on what each change bought.",
+      "xp": 90, "requires": ["c2"],
+      "resources": [
+        { "title": "Python — Functional Programming HOWTO", "url": "https://docs.python.org/3/howto/functional.html" }
+      ]
+    },
+    {
+      "id": "o1", "track": "oop", "tier": 2, "title": "Classes & Objects",
+      "unlocks": "You can model a problem with your own types.",
+      "study": [
+        "class, __init__, attributes, methods, and what self really is",
+        "Instance vs. class attributes — a classic source of shared-state bugs",
+        "Dunder methods: __str__, __repr__, __eq__, __len__",
+        "@property, @staticmethod, @classmethod",
+        "dataclasses — and why they replace most boilerplate classes",
+        "Composition over inheritance, with a concrete example of each"
+      ],
+      "challenge": "Build a small asset-manager library: an Asset type, a collection that holds them, JSON save/load, and a search.",
+      "proof": "The module plus a script that uses it without touching internals.",
+      "xp": 60, "requires": ["c1"],
+      "resources": [
+        { "title": "Python — Classes", "url": "https://docs.python.org/3/tutorial/classes.html" }
+      ]
+    },
+    {
+      "id": "o2", "track": "oop", "tier": 4, "title": "Architecture & Patterns",
+      "unlocks": "You can structure a tool so it survives other people changing it.",
+      "study": [
+        "Separating core logic from the UI layer — the single most useful rule for TD work",
+        "Dependency injection in plain Python, without a framework",
+        "Patterns that actually come up: Strategy, Observer, Factory, Adapter",
+        "ABCs and Protocols for defining an interface",
+        "Module and package layout; __init__.py and public API surface",
+        "Configuration handling and avoiding hard-coded paths"
+      ],
+      "challenge": "Take a working tool and split it so the logic runs headless with no Blender import at all, with the UI as a thin shell over it.",
+      "proof": "The logic layer under test with no bpy imported.",
+      "xp": 130, "requires": ["o1", "t2"],
+      "resources": [
+        { "title": "Python — ABCs", "url": "https://docs.python.org/3/library/abc.html" }
+      ]
+    },
+    {
+      "id": "t1", "track": "tool", "tier": 2, "title": "Git & Environments",
+      "unlocks": "You can version work and reproduce an environment on another machine.",
+      "study": [
+        "Git: commit, branch, merge, rebase, .gitignore, resolving conflicts",
+        "GitHub: repos, pull requests, issues, and a README worth reading",
+        "Virtual environments, and why never to install into system Python",
+        "uv for environments and dependency management, and committing uv.lock",
+        "pyproject.toml as the single place project config lives",
+        "Command line basics — pipeline work happens there"
+      ],
+      "challenge": "Publish one earlier script as a GitHub repo with a pyproject.toml, a locked environment and a README a stranger could follow.",
+      "proof": "The repo URL, cloned fresh and run from the README alone.",
+      "xp": 60, "requires": ["c1"],
+      "resources": [
+        { "title": "uv documentation", "url": "https://docs.astral.sh/uv/" },
+        { "title": "Python Packaging User Guide", "url": "https://packaging.python.org/en/latest/" }
+      ]
+    },
+    {
+      "id": "t2", "track": "tool", "tier": 3, "title": "Testing & Quality",
+      "unlocks": "You can change code without fear because something else checks it.",
+      "study": [
+        "pytest: test functions, assertions, fixtures, parametrize",
+        "What is worth testing — and what testing is a waste of time on",
+        "Mocking and monkeypatching, especially for code that touches the filesystem",
+        "Ruff for linting and formatting, configured in pyproject.toml",
+        "A type checker (mypy or pyright) in CI",
+        "GitHub Actions: run tests and lint on every push",
+        "Logging done properly — levels, handlers, never print() in a tool"
+      ],
+      "challenge": "Get one project to a green CI badge: tests, lint and type check all running on push.",
+      "proof": "A passing Actions run on the repo.",
+      "xp": 90, "requires": ["t1"],
+      "resources": [
+        { "title": "pytest documentation", "url": "https://docs.pytest.org/en/stable/" },
+        { "title": "Ruff documentation", "url": "https://docs.astral.sh/ruff/" }
+      ]
+    },
+    {
+      "id": "d1", "track": "data", "tier": 2, "title": "Files, Paths & Formats",
+      "unlocks": "You can move data between tools without hand-editing anything.",
+      "study": [
+        "pathlib for every path operation — never string concatenation",
+        "Reading and writing text and binary safely, with encodings understood",
+        "JSON: load, dump, and custom encoders for your own types",
+        "CSV, and when a spreadsheet is the wrong answer",
+        "YAML/TOML for configuration; tomllib in the standard library",
+        "Atomic writes and backups — not corrupting a file on a failed run"
+      ],
+      "challenge": "Write a converter between two real formats you use, that survives malformed input without losing data.",
+      "proof": "The converter plus a test with deliberately broken input.",
+      "xp": 60, "requires": ["c1"],
+      "resources": [
+        { "title": "Python — pathlib", "url": "https://docs.python.org/3/library/pathlib.html" }
+      ]
+    },
+    {
+      "id": "d2", "track": "data", "tier": 4, "title": "APIs, Databases & Scraping",
+      "unlocks": "You can pull data from somewhere else and make it useful.",
+      "study": [
+        "HTTP basics: methods, status codes, headers, JSON payloads",
+        "requests / httpx: calling an API, handling errors, retries and timeouts",
+        "Authentication patterns and keeping secrets out of source control",
+        "SQLite with the sqlite3 module — enough SQL to be dangerous",
+        "Rate limiting, caching and being a polite client",
+        "Scheduling: cron or Task Scheduler for jobs that must just run"
+      ],
+      "challenge": "Build a tool that pulls from an API on a schedule, stores results in SQLite, and reports what changed since last time.",
+      "proof": "The tool plus two runs showing a detected change.",
+      "xp": 130, "requires": ["d1", "t2"],
+      "resources": [
+        { "title": "Python — sqlite3", "url": "https://docs.python.org/3/library/sqlite3.html" }
+      ]
+    },
+    {
+      "id": "b1", "track": "bpy", "tier": 3, "title": "bpy Fundamentals",
+      "unlocks": "You can drive Blender from the console instead of clicking.",
+      "study": [
+        "The four pillars: bpy.data, bpy.context, bpy.ops, bpy.types",
+        "bpy.data for direct data-block access — the reliable way to work",
+        "Why bpy.ops is context-dependent and fragile in scripts",
+        "The Python Console and Info editor for discovering calls",
+        "Creating, duplicating and deleting objects, meshes and materials in code",
+        "Collections, parenting and transforms via the API",
+        "Overriding context when an operator genuinely is the only option"
+      ],
+      "challenge": "Script a scene from nothing: geometry, materials, lights and a camera, then render it — without touching the UI once.",
+      "proof": "The script and its render, run from a fresh Blender.",
+      "xp": 90, "requires": ["c3", "o1"],
+      "resources": [
+        { "title": "Blender Python API", "url": "https://docs.blender.org/api/current/index.html" },
+        { "title": "Blender API — Gotchas", "url": "https://docs.blender.org/api/current/info_gotcha.html" }
+      ]
+    },
+    {
+      "id": "b2", "track": "bpy", "tier": 4, "title": "Mesh Data & bmesh",
+      "unlocks": "You can edit geometry itself, not just objects.",
+      "study": [
+        "Mesh data: vertices, edges, polygons, loops — and how loops tie it together",
+        "bmesh: opening from a mesh, editing, writing back",
+        "Selection, and building geometry procedurally in bmesh",
+        "Custom data layers: UVs, vertex colours, attributes",
+        "Foreach_get / foreach_set for bulk transfer at speed",
+        "Matrices and mathutils: Vector, Matrix, Quaternion, and world vs. local space"
+      ],
+      "challenge": "Write a mesh tool that does real work — a retopo helper, a UV checker, a geometry validator that reports problems.",
+      "proof": "The tool run on a messy mesh, with its report.",
+      "xp": 130, "requires": ["b1"],
+      "resources": [
+        { "title": "Blender API — bmesh", "url": "https://docs.blender.org/api/current/bmesh.html" },
+        { "title": "Blender API — mathutils", "url": "https://docs.blender.org/api/current/mathutils.html" }
+      ]
+    },
+    {
+      "id": "e1", "track": "addon", "tier": 4, "title": "Operators, Panels & Properties",
+      "unlocks": "You can give a script a real interface inside Blender.",
+      "study": [
+        "bpy.types.Operator: bl_idname, bl_label, poll(), execute(), invoke()",
+        "Registration and unregistration, and why the lifecycle matters",
+        "bpy.types.Panel and laying out UI with the layout API",
+        "Property types: StringProperty, EnumProperty, PointerProperty and friends",
+        "Where to store settings: Scene, Object, or AddonPreferences",
+        "Modal operators and handlers for anything long-running",
+        "undo_push and keeping the undo stack honest"
+      ],
+      "challenge": "Turn one of your scripts into a proper tool with a panel, exposed settings that persist in the .blend, and working undo.",
+      "proof": "A screen recording: change settings, run, undo cleanly.",
+      "xp": 130, "requires": ["b1"],
+      "resources": [
+        { "title": "Blender API — Operators", "url": "https://docs.blender.org/api/current/bpy.types.Operator.html" }
+      ]
+    },
+    {
+      "id": "e2", "track": "addon", "tier": 5, "title": "Ship an Extension",
+      "unlocks": "Strangers can install your tool and it keeps working.",
+      "study": [
+        "Extensions (Blender 4.2+): blender_manifest.toml replaces the old bl_info",
+        "Declaring permissions, and bundling wheels for Python dependencies",
+        "Building and validating locally with blender --command extension build",
+        "Publishing to extensions.blender.org, and the review expectations",
+        "Versioning, changelogs, and not breaking users on update",
+        "Supporting multiple Blender versions without branching the code",
+        "Handling user bug reports and writing docs people actually read"
+      ],
+      "challenge": "Publish one extension that solves a real problem you personally hit, with docs and a version history.",
+      "proof": "The listing URL, or the built .zip installing cleanly from scratch.",
+      "xp": 180, "requires": ["e1", "t2"],
+      "resources": [
+        { "title": "Blender Extensions Platform", "url": "https://extensions.blender.org/" },
+        { "title": "Extensions — Getting Started", "url": "https://docs.blender.org/manual/en/latest/advanced/extensions/getting_started.html" }
+      ]
+    },
+    {
+      "id": "pi1", "track": "pipe", "tier": 4, "title": "Batch & Headless",
+      "unlocks": "You can make Blender do work with nobody watching.",
+      "study": [
+        "blender --background --python for headless jobs",
+        "Passing arguments to a script past the -- separator",
+        "Batch rendering, batch import/export, and processing whole folders",
+        "Render layers and command-line frame ranges for splitting jobs",
+        "Failing loudly: exit codes and logs a scheduler can act on",
+        "Wrapping it all in a CLI with argparse"
+      ],
+      "challenge": "Build a batch tool that processes an entire folder of .blend files unattended and writes a report of what it did.",
+      "proof": "A log from a run over at least five files, including one that failed on purpose.",
+      "xp": 130, "requires": ["b1", "d1"],
+      "resources": [
+        { "title": "Blender — Command Line", "url": "https://docs.blender.org/manual/en/latest/advanced/command_line/index.html" }
+      ]
+    },
+    {
+      "id": "pi2", "track": "pipe", "tier": 5, "title": "Pipeline Tooling",
+      "unlocks": "You can build the thing a team depends on daily.",
+      "study": [
+        "Asset libraries and the Asset Browser API",
+        "Linking vs. appending, library overrides, and why productions link",
+        "Naming conventions and folder structures enforced by tooling, not by hope",
+        "Publish/version systems: what a 'publish' actually guarantees",
+        "USD and Alembic interchange between applications",
+        "Validation tools that catch problems before they reach the renderer",
+        "Rolling out a tool to other people, and supporting it afterwards"
+      ],
+      "challenge": "Build a small end-to-end pipeline: ingest, validate, publish, and pull back into a scene — with rules enforced by code.",
+      "proof": "A walkthrough of an asset going the whole way through.",
+      "xp": 180, "requires": ["pi1", "o2"],
+      "resources": [
+        { "title": "Blender — Asset Libraries", "url": "https://docs.blender.org/manual/en/latest/files/asset_libraries/index.html" }
+      ]
+    },
+    {
+      "id": "x1", "track": "perf", "tier": 5, "title": "Performance & Scale",
+      "unlocks": "Your tools stay usable on production-sized data.",
+      "study": [
+        "Profiling first: cProfile and timeit, before optimising anything",
+        "NumPy for bulk numeric work, and foreach_get into arrays",
+        "Avoiding per-element Python loops over mesh data",
+        "Threads vs. processes in Python, and where the GIL actually bites",
+        "Keeping the UI responsive: modal operators and timers",
+        "Memory: generators, chunking, and not loading a scene twice",
+        "Caching results that are expensive and stable"
+      ],
+      "challenge": "Take a tool that crawls on a heavy scene and make it at least 10x faster, with profiler output proving where the time went.",
+      "proof": "Before/after timings and both profiles.",
+      "xp": 180, "requires": ["b2", "t2"],
+      "resources": [
+        { "title": "Python — Profilers", "url": "https://docs.python.org/3/library/profile.html" },
+        { "title": "NumPy documentation", "url": "https://numpy.org/doc/stable/" }
+      ]
+    }
+  ]
+}

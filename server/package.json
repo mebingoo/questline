@@ -7,7 +7,7 @@
     "dev": "wrangler dev",
     "setup:kv": "wrangler kv namespace create STATE",
     "setup:token": "wrangler secret put SYNC_TOKEN",
-    "predeploy": "node -e \"require('fs').copyFileSync('../index.html','public/index.html')\""
+    "predeploy": "node -e \"const f=require('fs');f.copyFileSync('../index.html','public/index.html');f.mkdirSync('public/data/roadmaps',{recursive:true});for(const n of f.readdirSync('../data/roadmaps')) if(n.endsWith('-tree.json')) f.copyFileSync('../data/roadmaps/'+n,'public/data/roadmaps/'+n);\""
   },
   "devDependencies": {
     "wrangler": "^3.90.0"

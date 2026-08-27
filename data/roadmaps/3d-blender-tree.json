@@ -1,0 +1,407 @@
+{
+  "schemaVersion": 2,
+  "questLineKey": "3d-blender",
+  "goalId": "blender",
+  "title": "3D & Blender",
+  "grandGoal": "Become a 3D generalist who can carry an idea alone from blank scene to finished render or shot — modelling, UVs, texturing, shading, lighting, rigging, animation, FX and compositing.",
+  "note": "Built for Blender 4.2 LTS and newer. Tiers are roughly 6-10 weeks each at 8-12 h/week, but the tree unlocks on skill, not on dates.",
+  "tiers": [
+    { "n": 1, "name": "Foundations" },
+    { "n": 2, "name": "Craft" },
+    { "n": 3, "name": "Fidelity" },
+    { "n": 4, "name": "Motion" },
+    { "n": 5, "name": "Mastery" }
+  ],
+  "tracks": [
+    { "id": "model",  "name": "Modelling",   "color": "#d97d4a" },
+    { "id": "uv",     "name": "UV & Texture","color": "#e0a458" },
+    { "id": "shade",  "name": "Shading",     "color": "#c77fa8" },
+    { "id": "light",  "name": "Light & Render","color": "#e8c15c" },
+    { "id": "geo",    "name": "Geometry Nodes","color": "#6fa86f" },
+    { "id": "rig",    "name": "Rigging",     "color": "#5b87c7" },
+    { "id": "anim",   "name": "Animation",   "color": "#7fb3d5" },
+    { "id": "fx",     "name": "FX & Sim",    "color": "#8b7fc9" },
+    { "id": "post",   "name": "Compositing", "color": "#9aa5b8" }
+  ],
+  "nodes": [
+    {
+      "id": "m1", "track": "model", "tier": 1, "title": "Interface & Navigation",
+      "unlocks": "You can move around a scene and manipulate objects without hunting for buttons.",
+      "study": [
+        "Viewport navigation: orbit, pan, zoom, numpad views, walk/fly mode",
+        "Editors, areas, workspaces — and how to split and join them",
+        "Outliner and Collections: naming, nesting, visibility vs. render visibility",
+        "Transforms G/R/S with axis locking, and what Object Origin actually is",
+        "Snapping, pivot points, and the 3D cursor",
+        "Saving: .blend files, incremental saves, Pack Resources, Append vs. Link"
+      ],
+      "challenge": "Rebuild a simple still life (3-5 primitives) matching a reference photo's rough proportions and camera angle. No modelling tools yet — position, rotation and scale only.",
+      "proof": "A screenshot from the camera view next to the reference.",
+      "xp": 40, "requires": [],
+      "resources": [
+        { "title": "Blender Manual — Interface", "url": "https://docs.blender.org/manual/en/latest/interface/index.html" }
+      ]
+    },
+    {
+      "id": "m2", "track": "model", "tier": 2, "title": "Box & Hard-Surface Modelling",
+      "unlocks": "You can model a man-made object from reference with clean, deliberate geometry.",
+      "study": [
+        "Edit Mode: vertex / edge / face selection, select linked, loops and rings",
+        "Core tools: Extrude, Inset, Bevel, Loop Cut, Knife, Bridge Edge Loops",
+        "Modifier stack: Mirror, Array, Solidify, Subdivision Surface, Boolean",
+        "Non-destructive thinking — why the stack beats baking changes in early",
+        "Support loops and how Subdivision Surface reacts to edge density",
+        "Reference setup: background images, real-world scale, unit settings"
+      ],
+      "challenge": "Model a hard-surface prop from a reference photo — a lantern, a camera, a mechanical keyboard. Mirror and Array must do work you did not do by hand.",
+      "proof": "Wireframe screenshot plus a clay render.",
+      "xp": 60, "requires": ["m1"],
+      "resources": [
+        { "title": "Blender Manual — Modeling", "url": "https://docs.blender.org/manual/en/latest/modeling/index.html" }
+      ]
+    },
+    {
+      "id": "m3", "track": "model", "tier": 3, "title": "Topology & Retopo",
+      "unlocks": "You can judge whether a mesh will deform and subdivide well, and fix it when it won't.",
+      "study": [
+        "Quads, tris, n-gons — where each is fine and where each bites",
+        "Edge flow: following form, and loops around eyes, mouths and joints",
+        "Poles (3, 5 and 6-point) and how to move them somewhere harmless",
+        "Manual retopology with the Shrinkwrap modifier and Poly Build",
+        "Common cleanup: Merge by Distance, Recalculate Normals, non-manifold hunting",
+        "Shading artefacts: Auto Smooth, custom split normals, Weighted Normal"
+      ],
+      "challenge": "Take a dense or messy mesh (a sculpt or a scan) and retopologise it to under 5k quads with clean loops around the main forms.",
+      "proof": "Before/after wireframes and a smooth-shaded turntable.",
+      "xp": 90, "requires": ["m2"],
+      "resources": [
+        { "title": "Blender Manual — Normals", "url": "https://docs.blender.org/manual/en/latest/modeling/meshes/editing/mesh/normals.html" }
+      ]
+    },
+    {
+      "id": "m4", "track": "model", "tier": 4, "title": "Sculpting & Organic Form",
+      "unlocks": "You can build organic shapes by feel instead of by vertex.",
+      "study": [
+        "Sculpt mode brushes: Draw, Clay Strips, Grab, Crease, Smooth, Inflate",
+        "Dyntopo vs. Multiresolution vs. Voxel Remesh — when each is the right tool",
+        "Blocking with basic forms, then refining — silhouette first, detail last",
+        "Masking, Face Sets, Hide/Show for isolating what you are working on",
+        "Anatomy fundamentals: primary, secondary and tertiary forms",
+        "Baking sculpt detail down to a low-poly normal map"
+      ],
+      "challenge": "Sculpt a creature or character bust from a blockout, then retopologise it and bake the detail into a normal map.",
+      "proof": "Sculpt turntable plus the baked low-poly beside it.",
+      "xp": 130, "requires": ["m3"],
+      "resources": [
+        { "title": "Blender Manual — Sculpting", "url": "https://docs.blender.org/manual/en/latest/sculpt_paint/sculpting/index.html" }
+      ]
+    },
+    {
+      "id": "u1", "track": "uv", "tier": 2, "title": "UV Unwrapping",
+      "unlocks": "You can flatten a model so textures land on it without stretching.",
+      "study": [
+        "What UV space actually is, and why 0-1 matters",
+        "Marking seams — hiding them where the eye won't follow",
+        "Unwrap, Smart UV Project, Follow Active Quads, Project From View",
+        "Reading the checker/stretch overlay to spot distortion",
+        "Packing, margins and consistent texel density across objects",
+        "Multiple UV maps, and when a second set earns its keep"
+      ],
+      "challenge": "Unwrap your hard-surface prop so a checker texture reads evenly everywhere, with no visible seam on a camera-facing surface.",
+      "proof": "UV layout screenshot plus the model with a checker applied.",
+      "xp": 60, "requires": ["m2"],
+      "resources": [
+        { "title": "Blender Manual — UV Editing", "url": "https://docs.blender.org/manual/en/latest/modeling/meshes/uv/index.html" }
+      ]
+    },
+    {
+      "id": "u2", "track": "uv", "tier": 3, "title": "Texturing & PBR Maps",
+      "unlocks": "You can author textures that describe a real material, not just a colour.",
+      "study": [
+        "The PBR map set: Base Colour, Roughness, Metallic, Normal, Height, AO",
+        "What roughness actually communicates — wear, dust, fingerprints, polish",
+        "Texture painting in Blender: brushes, stencils, masks, layers via nodes",
+        "Baking: AO, normal, curvature — high-poly to low-poly cage setup",
+        "Trim sheets and tiling textures, and why they save enormous time",
+        "Texel density, texture resolution, and when 4K is a waste"
+      ],
+      "challenge": "Texture your prop as a used object with a believable story — where has it been gripped, scratched, dirtied?",
+      "proof": "Flat map sheet plus a close render showing the wear.",
+      "xp": 90, "requires": ["u1"],
+      "resources": [
+        { "title": "Blender Manual — Baking", "url": "https://docs.blender.org/manual/en/latest/render/cycles/baking.html" }
+      ]
+    },
+    {
+      "id": "s1", "track": "shade", "tier": 2, "title": "Shader Editor Basics",
+      "unlocks": "You can build a material from nodes rather than tweaking sliders blindly.",
+      "study": [
+        "Principled BSDF, input by input — what each one physically means",
+        "Node types: Texture, Colour, Vector, Converter, and the Mix nodes",
+        "Image Texture nodes, colour space (sRGB vs Non-Colour — the classic bug)",
+        "Texture coordinates and Mapping: UV, Generated, Object",
+        "Bump vs. Normal vs. Displacement",
+        "Material slots, and assigning several materials to one mesh"
+      ],
+      "challenge": "Build five materials from scratch with no downloaded textures: brushed metal, worn wood, rough ceramic, frosted glass, car paint.",
+      "proof": "A single render of five spheres, each labelled.",
+      "xp": 60, "requires": ["m2"],
+      "resources": [
+        { "title": "Blender Manual — Shader Nodes", "url": "https://docs.blender.org/manual/en/latest/render/shader_nodes/index.html" }
+      ]
+    },
+    {
+      "id": "s2", "track": "shade", "tier": 3, "title": "Procedural Shading",
+      "unlocks": "You can generate detail mathematically instead of painting every pixel.",
+      "study": [
+        "Noise, Voronoi, Musgrave/Wave textures and their scale/detail inputs",
+        "ColorRamp as the workhorse for shaping any grayscale signal",
+        "Geometry and Object Info nodes: pointiness, random per island",
+        "Node Groups — packaging a material so it has clean exposed controls",
+        "Layering masks: how procedural dirt, edge wear and grime stack",
+        "Where procedural stops paying off and painted maps take over"
+      ],
+      "challenge": "Build one fully procedural material with exposed controls (a node group) that a stranger could re-use — no image textures at all.",
+      "proof": "The node group with named inputs, plus three looks from the same group.",
+      "xp": 90, "requires": ["s1", "u1"],
+      "resources": [
+        { "title": "Blender Manual — Texture Nodes", "url": "https://docs.blender.org/manual/en/latest/render/shader_nodes/textures/index.html" }
+      ]
+    },
+    {
+      "id": "l1", "track": "light", "tier": 1, "title": "Lighting Fundamentals",
+      "unlocks": "You can light a subject so its form reads clearly.",
+      "study": [
+        "Light types: Point, Sun, Spot, Area — and what each is physically like",
+        "Three-point lighting: key, fill, rim, and what each one is for",
+        "Inverse-square falloff — why moving a light beats changing its power",
+        "Size equals softness: the single biggest control over mood",
+        "Colour temperature, and warm/cool contrast",
+        "HDRI environment lighting and world settings"
+      ],
+      "challenge": "Light one object three ways — dramatic, neutral product, soft overcast — changing only lights, never the model.",
+      "proof": "Three renders side by side.",
+      "xp": 40, "requires": ["m1"],
+      "resources": [
+        { "title": "Blender Manual — Lighting", "url": "https://docs.blender.org/manual/en/latest/render/lights/index.html" }
+      ]
+    },
+    {
+      "id": "l2", "track": "light", "tier": 3, "title": "Render Engines & Optimisation",
+      "unlocks": "You can get a clean render out in reasonable time and know why it took that long.",
+      "study": [
+        "Cycles vs. EEVEE Next: what each is actually good at",
+        "Samples, adaptive sampling, and the denoisers (OptiX / OpenImageDenoise)",
+        "Light paths and bounces — the usual cause of both noise and slowness",
+        "Colour management: Filmic vs. AgX, View Transform, Look, Exposure",
+        "Render passes and why you should almost always output multi-layer EXR",
+        "Output settings: resolution, file formats, and rendering animation safely"
+      ],
+      "challenge": "Take a noisy 10-minute render and get it to equal or better quality in under 3 minutes. Write down every change and what it bought.",
+      "proof": "Both renders, both times, and the list of changes.",
+      "xp": 90, "requires": ["l1", "s1"],
+      "resources": [
+        { "title": "Blender Manual — Cycles", "url": "https://docs.blender.org/manual/en/latest/render/cycles/index.html" },
+        { "title": "Blender Manual — Color Management", "url": "https://docs.blender.org/manual/en/latest/render/color_management.html" }
+      ]
+    },
+    {
+      "id": "l3", "track": "light", "tier": 4, "title": "Composition & Camera",
+      "unlocks": "You can frame a shot that holds attention rather than merely showing the model.",
+      "study": [
+        "Focal length and what it does to perceived depth and distortion",
+        "Depth of field: f-stop, focus object, and when shallow is a crutch",
+        "Composition: thirds, leading lines, negative space, silhouette reading",
+        "Value structure — squint until it's grayscale and check it still reads",
+        "Camera rigs, and animating a camera along a path",
+        "Turntables and the standard portfolio presentation formats"
+      ],
+      "challenge": "Present one finished asset as a portfolio piece: hero render, three-quarter view, wireframe, clay, and a turntable.",
+      "proof": "The full presentation sheet.",
+      "xp": 130, "requires": ["l2"],
+      "resources": [
+        { "title": "Blender Manual — Cameras", "url": "https://docs.blender.org/manual/en/latest/render/cameras.html" }
+      ]
+    },
+    {
+      "id": "g1", "track": "geo", "tier": 3, "title": "Geometry Nodes Basics",
+      "unlocks": "You can build geometry from rules instead of placing it by hand.",
+      "study": [
+        "The fields system: what a field is, and Value vs. Field sockets",
+        "Distribute Points on Faces, Instance on Points — the scattering backbone",
+        "Attributes: named attributes, Capture Attribute, Store Named Attribute",
+        "Randomisation: Random Value, per-instance rotation and scale",
+        "Realize Instances, and why it matters before exporting",
+        "Simple modifier-style rigs with exposed inputs on the modifier panel"
+      ],
+      "challenge": "Build a scatter system that populates a surface with three asset variants, with controls for density, scale spread and rotation.",
+      "proof": "The node tree plus two very different results from the same setup.",
+      "xp": 90, "requires": ["m2"],
+      "resources": [
+        { "title": "Blender Manual — Geometry Nodes", "url": "https://docs.blender.org/manual/en/latest/modeling/geometry_nodes/index.html" }
+      ]
+    },
+    {
+      "id": "g2", "track": "geo", "tier": 5, "title": "Procedural Systems",
+      "unlocks": "You can ship a parametric asset that someone else can drive.",
+      "study": [
+        "Curves in Geometry Nodes: Curve to Mesh, profiles, resampling",
+        "Repeat Zones and Simulation Zones (4.x) for iterative and stateful setups",
+        "Instancing at scale — memory behaviour and viewport performance",
+        "Building a node group with a clean, documented interface",
+        "Combining Geometry Nodes with shading via named attributes",
+        "Knowing when a procedural rig costs more than modelling it by hand"
+      ],
+      "challenge": "Build one fully parametric asset — a modular staircase, a tree, a city block — driven only by modifier inputs.",
+      "proof": "Four wildly different outputs from the same node group.",
+      "xp": 180, "requires": ["g1", "s2"],
+      "resources": [
+        { "title": "Blender Manual — Simulation Nodes", "url": "https://docs.blender.org/manual/en/latest/modeling/geometry_nodes/simulation.html" }
+      ]
+    },
+    {
+      "id": "r1", "track": "rig", "tier": 3, "title": "Armatures & Weight Painting",
+      "unlocks": "You can make a model deform properly when it moves.",
+      "study": [
+        "Armatures, bones, roll, and the parent/child hierarchy",
+        "Bone layers/collections and naming conventions (.L / .R and symmetry)",
+        "Skinning: automatic weights, then fixing them by hand",
+        "Weight painting: brushes, normalisation, the 4-influence practical limit",
+        "Testing deformation with extreme poses before you trust a rig",
+        "Shape keys and corrective shapes for problem areas"
+      ],
+      "challenge": "Rig a simple character and prove it holds up — no candy-wrapper twists at shoulders, elbows or hips at full range.",
+      "proof": "A pose test video hitting extreme angles.",
+      "xp": 90, "requires": ["m3"],
+      "resources": [
+        { "title": "Blender Manual — Rigging", "url": "https://docs.blender.org/manual/en/latest/animation/armatures/index.html" }
+      ]
+    },
+    {
+      "id": "r2", "track": "rig", "tier": 4, "title": "Constraints & Control Rigs",
+      "unlocks": "You can build a rig an animator can actually use.",
+      "study": [
+        "Constraints: Copy Transforms, Child Of, Damped Track, Limit Rotation",
+        "IK vs. FK, and building an IK/FK switch",
+        "Custom bone shapes, colours and a readable control layout",
+        "Drivers: linking a control to several outputs with an expression",
+        "Rigify — using it, and reading its output to learn from it",
+        "Rig hygiene: locking unused channels, hiding deform bones"
+      ],
+      "challenge": "Build a control rig with IK/FK switching on the limbs and at least one driver-based control (a hand-open slider, say).",
+      "proof": "A screen recording of the controls being driven.",
+      "xp": 130, "requires": ["r1"],
+      "resources": [
+        { "title": "Blender Manual — Constraints", "url": "https://docs.blender.org/manual/en/latest/animation/constraints/index.html" }
+      ]
+    },
+    {
+      "id": "a1", "track": "anim", "tier": 4, "title": "Animation Principles",
+      "unlocks": "You can make motion that reads as intentional rather than floaty.",
+      "study": [
+        "Keyframes, the Dope Sheet, and the Graph Editor as the real workspace",
+        "Interpolation and easing — Bezier handles, and why linear looks robotic",
+        "Timing and spacing: the two things that actually sell weight",
+        "Anticipation, follow-through, overlapping action, arcs",
+        "Pose-to-pose vs. straight-ahead workflows",
+        "Onion skinning, playblasts, and reviewing at real speed"
+      ],
+      "challenge": "Animate a bouncing ball with squash, stretch and arcs, then the same ball as bowling-ball heavy — only timing and spacing change.",
+      "proof": "Both animations plus the graph editor curves.",
+      "xp": 130, "requires": ["r1"],
+      "resources": [
+        { "title": "Blender Manual — Animation", "url": "https://docs.blender.org/manual/en/latest/animation/index.html" }
+      ]
+    },
+    {
+      "id": "a2", "track": "anim", "tier": 5, "title": "Character Performance",
+      "unlocks": "You can make a character act, not just move.",
+      "study": [
+        "Body mechanics: walk and run cycles, weight shift, contact poses",
+        "Silhouette and readable key poses",
+        "Facial animation with shape keys and driven controls",
+        "Lip sync basics and phoneme shapes",
+        "Acting choices — intention before motion",
+        "The Non-Linear Animation editor and reusing actions"
+      ],
+      "challenge": "Animate a 5-10 second acted shot: the character wants something, tries, and reacts to the outcome.",
+      "proof": "The rendered shot plus a playblast of your blocking pass.",
+      "xp": 180, "requires": ["a1", "r2"],
+      "resources": [
+        { "title": "Blender Manual — NLA", "url": "https://docs.blender.org/manual/en/latest/editors/nla/index.html" }
+      ]
+    },
+    {
+      "id": "f1", "track": "fx", "tier": 4, "title": "Physics & Simulation",
+      "unlocks": "You can let the solver do work that would be miserable by hand.",
+      "study": [
+        "Rigid bodies: active/passive, collision shapes, margins",
+        "Cloth: pressure, self-collision, and pinning with vertex groups",
+        "Particles: emitters vs. hair, and children",
+        "Force fields and how they combine",
+        "Baking caches — and why an unbaked sim will betray you at render time",
+        "Substeps and quality settings: the accuracy/time trade"
+      ],
+      "challenge": "Produce a controlled destruction or cloth shot that lands where you want — not merely wherever physics threw it.",
+      "proof": "The rendered sim plus your cache settings.",
+      "xp": 130, "requires": ["m2", "l1"],
+      "resources": [
+        { "title": "Blender Manual — Physics", "url": "https://docs.blender.org/manual/en/latest/physics/index.html" }
+      ]
+    },
+    {
+      "id": "f2", "track": "fx", "tier": 5, "title": "Volumes & Advanced FX",
+      "unlocks": "You can produce smoke, fire and atmosphere that supports a shot.",
+      "study": [
+        "Mantaflow smoke and fire: domain resolution, adaptive domain, noise",
+        "Fluid simulation, and why it costs so much more than it looks",
+        "Volume shading: density, emission, anisotropy, and scattering",
+        "Atmospheric depth — god rays, haze, and using volume to sell scale",
+        "VDB import/export for interchange",
+        "Simulating small and scaling up, so iteration stays survivable"
+      ],
+      "challenge": "Create an atmospheric shot where volumetrics carry the mood — not decoration bolted on at the end.",
+      "proof": "Final render plus one without the volumes, for comparison.",
+      "xp": 180, "requires": ["f1", "l2"],
+      "resources": [
+        { "title": "Blender Manual — Fluid", "url": "https://docs.blender.org/manual/en/latest/physics/fluid/index.html" }
+      ]
+    },
+    {
+      "id": "p1", "track": "post", "tier": 4, "title": "Compositing & Passes",
+      "unlocks": "You can finish a render instead of shipping the raw output.",
+      "study": [
+        "The Compositor: Render Layers, Viewer, and the backdrop",
+        "Render passes: Combined, Z, Cryptomatte, Mist, AO, Emission",
+        "Cryptomatte for isolating objects without re-rendering",
+        "Glare, bloom, lens distortion, chromatic aberration — used sparingly",
+        "Colour grading nodes and matching a target look",
+        "Multi-layer EXR round-trips, and denoising in comp rather than in render"
+      ],
+      "challenge": "Take one raw render and grade it into two clearly different moods using passes alone — no re-rendering.",
+      "proof": "Raw plus both graded versions, and the node tree.",
+      "xp": 130, "requires": ["l2"],
+      "resources": [
+        { "title": "Blender Manual — Compositing", "url": "https://docs.blender.org/manual/en/latest/compositing/index.html" }
+      ]
+    },
+    {
+      "id": "p2", "track": "post", "tier": 5, "title": "Shot Assembly & Delivery",
+      "unlocks": "You can deliver a finished piece to spec, not just a pretty frame.",
+      "study": [
+        "Video Sequencer: cuts, transitions, audio sync",
+        "Frame rates, resolutions and codecs — and which to master vs. deliver in",
+        "Render farms and command-line rendering for long jobs",
+        "Naming, versioning and archiving a project so it survives you",
+        "Portfolio and breakdown presentation — showing the work behind the shot",
+        "Getting and using critique without drowning in it"
+      ],
+      "challenge": "Deliver one complete 10-20 second piece: modelled, textured, lit, animated, composited, cut and exported to spec.",
+      "proof": "The final video plus a breakdown showing each stage.",
+      "xp": 180, "requires": ["p1", "a1"],
+      "resources": [
+        { "title": "Blender Manual — Video Sequencer", "url": "https://docs.blender.org/manual/en/latest/video_editing/index.html" }
+      ]
+    }
+  ]
+}

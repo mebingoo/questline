@@ -937,6 +937,83 @@
     .course-side{max-height:300px;}
   }
 
+  /* ============ SKILL TREE ============ */
+  .tree-veil{position:fixed; inset:0; background:var(--bg); display:none; z-index:280; flex-direction:column;}
+  .tree-veil.open{display:flex;}
+  .tree-head{flex:none; padding:16px 22px 12px; border-bottom:1px solid var(--border-soft); position:relative;}
+  .tree-head h2{font-family:var(--font-display); font-size:17px; letter-spacing:0.05em; margin:0 0 3px;}
+  .tree-grand{font-size:11.5px; color:var(--text-dim); max-width:760px; line-height:1.5;}
+  .tree-close{position:absolute; top:14px; right:18px; background:none; border:none; color:var(--text-dim); cursor:pointer; padding:6px;}
+  .tree-close svg{width:18px; height:18px;}
+  .tree-close:hover{color:var(--gold);}
+  .tree-stats{display:flex; gap:20px; align-items:center; margin-top:9px; flex-wrap:wrap;}
+  .tree-stat{font-family:var(--font-mono); font-size:11px; color:var(--text-faint);}
+  .tree-stat b{color:var(--gold); font-size:13px;}
+  .tree-bar{flex:1; min-width:140px; height:5px; background:var(--surface-3); border-radius:3px; overflow:hidden; max-width:340px;}
+  .tree-bar i{display:block; height:100%; background:linear-gradient(90deg, var(--gold), var(--teal)); transition:width .4s;}
+
+  .tree-body{flex:1; display:flex; min-height:0;}
+  .tree-scroll{flex:1; overflow:auto; padding:0 0 30px;}
+  .tree-canvas{position:relative; min-width:max-content;}
+  .tree-tiers{display:flex; position:sticky; top:0; z-index:3; background:var(--bg); border-bottom:1px solid var(--border-soft);}
+  .tree-tier-h{flex:none; text-align:center; font-family:var(--font-display); font-size:10.5px;
+    letter-spacing:0.1em; color:var(--text-faint); padding:9px 0;}
+  .tree-tier-h b{display:block; color:var(--teal); font-size:11.5px;}
+  .tree-grid{position:relative;}
+  .tree-links{position:absolute; inset:0; pointer-events:none; z-index:1;}
+  .tree-link{fill:none; stroke:var(--border); stroke-width:2;}
+  .tree-link.lit{stroke:var(--success); stroke-width:2.5;}
+  .tree-link.next{stroke:var(--gold); stroke-width:2.5; stroke-dasharray:5 4;}
+
+  .tree-rowlabel{position:absolute; left:10px; font-family:var(--font-display); font-size:10px;
+    letter-spacing:0.09em; text-transform:uppercase; color:var(--text-faint); z-index:2; white-space:nowrap;}
+
+  .tnode{position:absolute; z-index:2; width:158px; height:68px; background:var(--surface); border:1px solid var(--border);
+    border-radius:var(--radius-m); padding:9px 10px; cursor:pointer; text-align:left;
+    display:flex; flex-direction:column; justify-content:space-between;
+    transition:transform .12s, border-color .15s, box-shadow .15s;}
+  .tnode:hover{transform:translateY(-2px);}
+  .tnode .tn-title{font-family:var(--font-display); font-size:11.5px; color:var(--text); line-height:1.3;
+    display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;}
+  .tnode .tn-meta{font-family:var(--font-mono); font-size:9.5px; color:var(--text-faint);
+    display:flex; justify-content:space-between; gap:6px;}
+  .tnode .tn-dot{position:absolute; top:-6px; left:-6px; width:15px; height:15px; border-radius:50%;
+    display:flex; align-items:center; justify-content:center; background:var(--surface-3); border:1px solid var(--border);}
+  .tnode .tn-dot svg{width:9px; height:9px;}
+
+  .tnode.locked{opacity:0.45; cursor:not-allowed;}
+  .tnode.locked:hover{transform:none;}
+  .tnode.available{border-color:var(--nodecolor); box-shadow:0 0 0 1px var(--nodecolor), 0 0 16px -4px var(--nodecolor);}
+  .tnode.available .tn-dot{background:var(--nodecolor); border-color:var(--nodecolor);}
+  .tnode.done{border-color:var(--success); background:var(--surface-2);}
+  .tnode.done .tn-title{color:var(--text-dim);}
+  .tnode.done .tn-dot{background:var(--success); border-color:var(--success); color:#04140a;}
+  .tnode.sel{box-shadow:0 0 0 2px var(--gold), 0 0 22px -4px var(--gold-glow);}
+
+  .tree-side{flex:none; width:360px; border-left:1px solid var(--border); overflow-y:auto; padding:18px; background:var(--surface);}
+  .tree-side .ts-track{font-family:var(--font-display); font-size:10px; letter-spacing:0.1em; text-transform:uppercase; color:var(--nodecolor);}
+  .tree-side h3{font-family:var(--font-display); font-size:15px; margin:5px 0 8px; color:var(--text); line-height:1.3;}
+  .tree-side .ts-unlock{font-size:12.5px; color:var(--text); background:var(--surface-2); border-left:2px solid var(--nodecolor);
+    padding:9px 11px; border-radius:var(--radius-s); line-height:1.5; margin-bottom:14px;}
+  .tree-side .ts-label{font-family:var(--font-display); font-size:10px; letter-spacing:0.09em; color:var(--teal);
+    text-transform:uppercase; margin:16px 0 7px;}
+  .ts-study{list-style:none; padding:0; margin:0;}
+  .ts-study li{display:flex; gap:8px; align-items:flex-start; font-size:12px; color:var(--text-dim);
+    padding:5px 0; line-height:1.45; border-bottom:1px solid var(--border-soft);}
+  .ts-study li::before{content:""; flex:none; width:5px; height:5px; margin-top:6px; border-radius:50%; background:var(--nodecolor); opacity:0.6;}
+  .ts-chal{font-size:12.5px; color:var(--text); line-height:1.55; background:var(--surface-2);
+    border:1px solid var(--border); border-radius:var(--radius-s); padding:11px;}
+  .ts-proof{font-size:11.5px; color:var(--text-faint); margin-top:7px; line-height:1.45;}
+  .ts-res{display:block; font-size:11.5px; color:var(--teal); text-decoration:none; padding:4px 0; word-break:break-word;}
+  .ts-res:hover{text-decoration:underline;}
+  .ts-locked{font-size:12px; color:var(--text-faint); line-height:1.5;}
+  .tree-empty{padding:60px 24px; text-align:center; color:var(--text-faint); font-size:12.5px;}
+
+  @media(max-width:1000px){
+    .tree-body{flex-direction:column;}
+    .tree-side{width:auto; border-left:none; border-top:1px solid var(--border); max-height:44vh;}
+  }
+
   /* ============ SETTINGS OVERLAY ============ */
   /* Sits behind everything the user has chosen as a background, and above the app. */
   #bgMedia{position:fixed; inset:0; z-index:-2; overflow:hidden; pointer-events:none;}
@@ -1370,6 +1447,20 @@
   <div class="set-body" id="setBody"></div>
 </div>
 
+<div class="tree-veil" id="treeVeil">
+  <div class="tree-head">
+    <h2 id="treeTitle">Skill Tree</h2>
+    <div class="tree-grand" id="treeGrand"></div>
+    <button class="tree-close" id="treeClose" aria-label="Close skill tree">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+    </button>
+    <div class="tree-stats" id="treeStats"></div>
+  </div>
+  <div class="tree-body">
+    <div class="tree-scroll"><div class="tree-canvas" id="treeCanvas"></div></div>
+    <aside class="tree-side" id="treeSide"></aside>
+  </div>
+</div>
 <div class="shot-veil" id="shotVeil"><img id="shotBig" alt=""></div>
 <div class="toast-stack" id="toastStack"></div>
 <canvas id="burst"></canvas>
@@ -1702,6 +1793,7 @@ function freshState(){
     focus: defaultFocus(),
     videos: [],
     courses: [],
+    trees: {},
     focusSessions: [], questFavorites: [],
     activeTimer: null,
     ai:{ model:'', count:8 },
@@ -1835,6 +1927,7 @@ function migrate(s){
     if(!hasLocalCreds){ untisCfg = Object.assign({}, untisCfg, s.untis); saveUntisCfg(); }
     delete s.untis;
   }
+  if(!s.trees || typeof s.trees !== 'object') s.trees = {};
   if(!Array.isArray(s.courses)) s.courses = [];
   s.courses.forEach(c=>{ if(!c.items) c.items = {}; });
   if(!Array.isArray(s.videos)) s.videos = [];
@@ -3841,6 +3934,9 @@ function openQuestLineDetail(goalId, initialTab){
   document.getElementById('modalVeil').classList.add('open');
 }
 function openRoadmap(goalId){
+  // Quest lines that ship a skill tree open straight into it; the rest keep the
+  // milestone list, which is still the right shape for a plain sequence.
+  if(goalHasTree(goalId)){ openSkillTree(goalId); return; }
   openQuestLineDetail(goalId, 'roadmap');
 }
 /* ---- Gate proof uploads: device-local, in IndexedDB — same reasoning as the
@@ -4991,6 +5087,257 @@ async function openWidgetSettings(host){
   document.getElementById('wsWidgetOnly').addEventListener('change', e=>{ window.widgetCtl.setPrefs({widgetOnly:e.target.checked}); });
   if(standalone) document.getElementById('modalVeil').classList.add('open');
 }
+
+/* ============ SKILL TREE ============ */
+/* A roadmap seed (schemaVersion 2) is a graph, not a list: every node names the
+ * nodes it needs first. A node is available once all of its prerequisites are
+ * done, which is what makes the thing behave like a game skill tree rather than
+ * a checklist. Progress lives in state.trees, keyed by goal, so it syncs. */
+
+const TREE_COL_W = 186, TREE_ROW_H = 100, TREE_PAD_L = 132, TREE_PAD_T = 18;
+
+let treeDef = null;          // the loaded seed
+let treeGoalId = null;
+let treeSelected = null;
+let treeSeedCache = {};
+
+function treeProgress(goalId){
+  if(!state.trees) state.trees = {};
+  if(!state.trees[goalId]) state.trees[goalId] = { key:null, done:{} };
+  if(!state.trees[goalId].done) state.trees[goalId].done = {};
+  return state.trees[goalId];
+}
+function nodeDone(goalId, id){ return !!treeProgress(goalId).done[id]; }
+function nodeUnlocked(goalId, node){
+  return (node.requires||[]).every(r=>nodeDone(goalId, r));
+}
+function nodeState(goalId, node){
+  if(nodeDone(goalId, node.id)) return 'done';
+  return nodeUnlocked(goalId, node) ? 'available' : 'locked';
+}
+
+/* Seeds ship inside the app. Electron reads them through the bridge; the phone
+   build fetches the copy served alongside the page. */
+async function loadTreeSeed(filename){
+  if(treeSeedCache[filename]) return treeSeedCache[filename];
+  let data = null;
+  try{
+    if(window.roadmaps && window.roadmaps.loadSeed){
+      data = await window.roadmaps.loadSeed(filename);
+    }else{
+      const res = await fetch('data/roadmaps/'+filename);
+      if(res.ok) data = await res.json();
+    }
+  }catch(e){ data = null; }
+  if(data) treeSeedCache[filename] = data;
+  return data;
+}
+/* Keyed by quest-line id. Saves made before the defaults were made generic use
+   'blender'/'python'; a fresh save uses 'creative'/'code'. Both map to the same
+   tree so the roadmap shows up either way. */
+const TREE_SEEDS = {
+  blender:'3d-blender-tree.json', creative:'3d-blender-tree.json',
+  python:'python-td-tree.json',   code:'python-td-tree.json'
+};
+const goalHasTree = (goalId)=> !!TREE_SEEDS[goalId];
+
+async function openSkillTree(goalId){
+  const file = TREE_SEEDS[goalId];
+  if(!file) return;
+  const def = await loadTreeSeed(file);
+  const veil = document.getElementById('treeVeil');
+  veil.classList.add('open');
+  if(!def){
+    document.getElementById('treeCanvas').innerHTML =
+      '<div class="tree-empty">Could not load this roadmap. In the browser build the seed files have to be served next to the page.</div>';
+    document.getElementById('treeSide').innerHTML = '';
+    return;
+  }
+  treeDef = def; treeGoalId = goalId; treeSelected = null;
+  const prog = treeProgress(goalId);
+  prog.key = def.questLineKey;
+  renderTree();
+  saveState();
+}
+function closeSkillTree(){
+  document.getElementById('treeVeil').classList.remove('open');
+  treeDef = null; treeSelected = null;
+}
+
+function renderTree(){
+  if(!treeDef) return;
+  const def = treeDef, goalId = treeGoalId;
+  const g = goalById(goalId);
+  document.getElementById('treeTitle').textContent = (g ? g.name : def.title) + ' — Skill Tree';
+  document.getElementById('treeGrand').textContent = def.grandGoal || '';
+
+  const nodes = def.nodes;
+  const doneCount = nodes.filter(n=>nodeDone(goalId, n.id)).length;
+  const xpTotal = nodes.reduce((a,n)=>a+(n.xp||0),0);
+  const xpDone = nodes.filter(n=>nodeDone(goalId,n.id)).reduce((a,n)=>a+(n.xp||0),0);
+  const availCount = nodes.filter(n=>nodeState(goalId,n)==='available').length;
+  const pct = nodes.length ? Math.round(doneCount/nodes.length*100) : 0;
+  document.getElementById('treeStats').innerHTML =
+    '<span class="tree-stat"><b>'+doneCount+'</b> / '+nodes.length+' skills</span>'+
+    '<span class="tree-stat"><b>'+availCount+'</b> ready now</span>'+
+    '<span class="tree-stat"><b>'+xpDone+'</b> / '+xpTotal+' xp</span>'+
+    '<div class="tree-bar"><i style="width:'+pct+'%"></i></div>'+
+    '<span class="tree-stat">'+pct+'%</span>';
+
+  const tiers  = def.tiers;
+  const tracks = def.tracks;
+  const tierX  = {}; tiers.forEach((t,i)=>{ tierX[t.n] = TREE_PAD_L + i*TREE_COL_W; });
+  const trackY = {}; tracks.forEach((t,i)=>{ trackY[t.id] = TREE_PAD_T + i*TREE_ROW_H; });
+  const width  = TREE_PAD_L + tiers.length*TREE_COL_W + 20;
+  const height = TREE_PAD_T + tracks.length*TREE_ROW_H + 20;
+
+  // tier headers
+  let head = '<div class="tree-tiers"><div style="flex:none;width:'+TREE_PAD_L+'px"></div>';
+  tiers.forEach(t=>{ head += '<div class="tree-tier-h" style="width:'+TREE_COL_W+'px">TIER '+t.n+'<b>'+esc(t.name)+'</b></div>'; });
+  head += '</div>';
+
+  // connectors, drawn under the nodes
+  const NW = 160, NH = 70;
+  let paths = '';
+  nodes.forEach(n=>{
+    (n.requires||[]).forEach(rid=>{
+      const from = nodes.find(x=>x.id===rid); if(!from) return;
+      const y1 = trackY[from.track] + NH/2, y2 = trackY[n.track] + NH/2;
+      const cls = nodeDone(goalId, rid)
+        ? (nodeDone(goalId, n.id) ? 'lit' : 'next')
+        : '';
+      let d;
+      if(from.tier === n.tier){
+        // Siblings in the same column — a prerequisite that isn't a later tier,
+        // like needing to model something before you can unwrap it. Routed as a
+        // bracket down the column's left gutter instead of a backwards loop.
+        const x = tierX[n.tier], gx = x - 17;
+        d = 'M'+x+' '+y1+' C'+gx+' '+y1+' '+gx+' '+y2+' '+x+' '+y2;
+      }else{
+        const x1 = tierX[from.tier] + NW, x2 = tierX[n.tier], mx = (x1+x2)/2;
+        d = 'M'+x1+' '+y1+' C'+mx+' '+y1+' '+mx+' '+y2+' '+x2+' '+y2;
+      }
+      paths += '<path class="tree-link '+cls+'" d="'+d+'"/>';
+    });
+  });
+
+  // track labels + nodes
+  let body = '<svg class="tree-links" width="'+width+'" height="'+height+'">'+paths+'</svg>';
+  tracks.forEach(t=>{
+    body += '<div class="tree-rowlabel" style="top:'+(trackY[t.id]+18)+'px; color:'+t.color+'">'+esc(t.name)+'</div>';
+  });
+  nodes.forEach(n=>{
+    const track = tracks.find(t=>t.id===n.track) || {color:'#888'};
+    const st = nodeState(goalId, n);
+    const mark = st==='done'
+      ? '<span class="tn-dot">'+icon('check')+'</span>'
+      : (st==='locked' ? '<span class="tn-dot">'+icon('lock')+'</span>' : '<span class="tn-dot"></span>');
+    body += '<button class="tnode '+st+(treeSelected===n.id?' sel':'')+'" data-node="'+esc(n.id)+'"'+
+      ' style="left:'+tierX[n.tier]+'px; top:'+trackY[n.track]+'px; --nodecolor:'+track.color+'">'+
+      mark+
+      '<div class="tn-title">'+esc(n.title)+'</div>'+
+      '<div class="tn-meta"><span>'+(n.study?n.study.length:0)+' topics</span><span>+'+(n.xp||0)+' xp</span></div>'+
+    '</button>';
+  });
+
+  document.getElementById('treeCanvas').innerHTML =
+    head + '<div class="tree-grid" style="width:'+width+'px;height:'+height+'px">'+body+'</div>';
+
+  document.getElementById('treeCanvas').querySelectorAll('.tnode').forEach(el=>{
+    el.addEventListener('click', ()=>{ treeSelected = el.dataset.node; renderTree(); renderTreeSide(); });
+  });
+  renderTreeSide();
+}
+
+function renderTreeSide(){
+  const side = document.getElementById('treeSide');
+  if(!treeDef){ side.innerHTML = ''; return; }
+  const goalId = treeGoalId;
+  const n = treeDef.nodes.find(x=>x.id===treeSelected);
+  if(!n){
+    const next = treeDef.nodes.filter(x=>nodeState(goalId,x)==='available');
+    side.innerHTML = '<div class="ts-label">Where to go next</div>'+
+      (next.length
+        ? '<p class="hint" style="margin-bottom:12px">'+next.length+' skill'+(next.length===1?' is':'s are')+' unlocked and ready. Pick one to see exactly what to study and how to prove it.</p>'+
+          next.slice(0,8).map(x=>{
+            const tr = treeDef.tracks.find(t=>t.id===x.track)||{};
+            return '<div class="ts-res" style="color:'+(tr.color||'var(--teal)')+'">• '+esc(x.title)+' <span style="color:var(--text-faint)">('+esc(tr.name||'')+')</span></div>';
+          }).join('')
+        : '<p class="hint">Nothing available — finish an in-progress skill to open the next ones.</p>')+
+      (treeDef.note ? '<div class="ts-label">Note</div><p class="hint">'+esc(treeDef.note)+'</p>' : '');
+    return;
+  }
+  const track = treeDef.tracks.find(t=>t.id===n.track) || {name:'', color:'#888'};
+  const st = nodeState(goalId, n);
+  const missing = (n.requires||[]).filter(r=>!nodeDone(goalId,r))
+    .map(r=>{ const q = treeDef.nodes.find(x=>x.id===r); return q?q.title:r; });
+
+  side.innerHTML = '<div style="--nodecolor:'+track.color+'">'+
+    '<div class="ts-track">'+esc(track.name)+' · Tier '+n.tier+'</div>'+
+    '<h3>'+esc(n.title)+'</h3>'+
+    '<div class="ts-unlock">'+esc(n.unlocks||'')+'</div>'+
+    (st==='locked'
+      ? '<div class="ts-locked">Locked. Finish first: <b>'+esc(missing.join(', '))+'</b></div>'
+      : '')+
+    '<div class="ts-label">What to study</div>'+
+    '<ul class="ts-study">'+(n.study||[]).map(x=>'<li>'+esc(x)+'</li>').join('')+'</ul>'+
+    '<div class="ts-label">Challenge</div>'+
+    '<div class="ts-chal">'+esc(n.challenge||'')+
+      (n.proof?'<div class="ts-proof">Proof: '+esc(n.proof)+'</div>':'')+
+    '</div>'+
+    ((n.resources||[]).length
+      ? '<div class="ts-label">Resources</div>'+n.resources.map(r=>
+          '<a class="ts-res" href="'+esc(r.url)+'" target="_blank" rel="noopener">'+esc(r.title)+'</a>').join('')
+      : '')+
+    '<div class="actions" style="justify-content:flex-start; margin-top:18px">'+
+      (st==='done'
+        ? '<button class="btn-text" id="tsUndo">Mark not done</button>'
+        : (st==='available'
+            ? '<button class="btn-primary" id="tsDone">Complete &nbsp;+'+(n.xp||0)+' xp</button>'
+            : ''))+
+    '</div>'+
+  '</div>';
+
+  const doneBtn = document.getElementById('tsDone');
+  if(doneBtn) doneBtn.addEventListener('click', ()=>completeTreeNode(n));
+  const undoBtn = document.getElementById('tsUndo');
+  if(undoBtn) undoBtn.addEventListener('click', ()=>{
+    const prog = treeProgress(goalId);
+    const xp = n.xp || 0;
+    delete prog.done[n.id];
+    // Take the XP back too, or the tree becomes a way to farm levels.
+    state.player.xp = Math.max(0, state.player.xp - xp);
+    const g = goalById(goalId); if(g) g.xp = Math.max(0, g.xp - xp);
+    saveState(); renderTree(); renderAll();
+  });
+}
+
+function completeTreeNode(n){
+  const goalId = treeGoalId;
+  const prog = treeProgress(goalId);
+  if(prog.done[n.id]) return;
+  prog.done[n.id] = todayStr();
+  const xp = n.xp || 0;
+  const prevLevel = levelFromXP(state.player.xp, 150);
+  grant(xp, goalId);
+  pushLog('Skill unlocked: <b>'+esc(n.title)+'</b>', '+'+xp+'xp', 'complete');
+  saveState();
+  renderTree();
+  renderAll();
+  checkAchievements();
+  showToast({title:'+'+xp+' XP', sub:n.title+' complete', big:true});
+  if(levelFromXP(state.player.xp,150) > prevLevel){
+    setTimeout(()=>showLevelUp(levelFromXP(state.player.xp,150)), 350);
+  }
+  // Anything newly reachable is worth calling out — that is the reward loop.
+  const opened = treeDef.nodes.filter(x=>(x.requires||[]).includes(n.id) && nodeState(goalId,x)==='available');
+  if(opened.length) setTimeout(()=>showToast({title:'New skill'+(opened.length>1?'s':'')+' unlocked', sub:opened.map(o=>o.title).join(', ')}), 900);
+}
+
+document.getElementById('treeClose').addEventListener('click', closeSkillTree);
+document.addEventListener('keydown', e=>{
+  if(e.key==='Escape' && document.getElementById('treeVeil').classList.contains('open')) closeSkillTree();
+});
 
 
 /* ============ COURSES ============ */
