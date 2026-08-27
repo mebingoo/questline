@@ -818,16 +818,21 @@
   .rm-quest-dot{width:8px; height:8px; border-radius:50%; border:2px solid var(--border); flex:none;}
   .rm-quest-title{flex:1; font-size:12.5px; color:var(--text);}
   .rm-quest-xp{font-family:var(--font-mono); font-size:10.5px; color:var(--text-faint);}
-  .gate-diff-row{display:flex; gap:8px; margin-bottom:14px;}
+  .gate-diff-row{display:flex; gap:8px; margin-bottom:10px;}
   .gate-diff{flex:1; background:var(--surface-2); border:1px solid var(--border-soft); border-radius:var(--radius-m); padding:10px; cursor:pointer; text-align:left;}
   .gate-diff.picked{border-color:var(--gold); background:var(--surface-3);}
   .gate-diff .lvl{font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--text-dim);}
   .gate-diff .xp{font-family:var(--font-mono); font-size:13px; color:var(--gold); margin-top:2px;}
+  .gate-diff-desc{font-size:12px; color:var(--text-dim); line-height:1.5; margin:0 0 14px;}
   .gate-dod-row{display:flex; align-items:flex-start; gap:9px; padding:6px 0; font-size:12.5px; border-top:1px solid var(--border-soft);}
   .gate-dod-row .qcheck{margin-top:1px;}
   .gate-dod-row.checked span{color:var(--text-faint); text-decoration:line-through;}
   .gate-attempts{margin-top:14px; padding-top:10px; border-top:1px solid var(--border-soft);}
   .gate-attempt{font-size:11px; color:var(--text-faint); margin-bottom:6px; line-height:1.4;}
+  .gate-crit-count{font-family:var(--font-mono); font-size:11px; color:var(--text-faint); align-self:center; margin-right:auto;}
+  .gate-proof{margin-top:14px; padding-top:12px; border-top:1px solid var(--border-soft);}
+  .gate-proof-row{display:flex; align-items:center; gap:10px;}
+  .gate-proof-row a{color:var(--teal); font-size:12.5px;}
 
   /* ---------- Plan Tomorrow ---------- */
   .pt-row{font-size:12.5px; color:var(--text-dim); margin-bottom:6px;}
@@ -3531,7 +3536,7 @@ function rmNodeHtml(m, g){
       (isCurrent && m.resources.length ? '<div class="rm-node-resources">'+m.resources.map(resourceHtml).join('')+'</div>' : '')+
       (expandable ? '<div class="rm-node-retro">'+
           (m.gate.selectedDifficulty ? '<div>Difficulty chosen: '+esc(m.gate.selectedDifficulty)+'</div>' : '')+
-          (m.gate.proofUrl ? '<div><a href="#" data-action="openresource" data-url="'+esc(m.gate.proofUrl)+'">View proof</a></div>' : '')+
+          (m.gate.proofUrl ? '<div><a href="#" data-action="viewproof" data-proof="'+esc(m.gate.proofUrl)+'">View proof</a></div>' : '')+
           (!m.gate.selectedDifficulty && !m.gate.proofUrl ? '<div class="hint">No extra details recorded for this one.</div>' : '')+
         '</div>' : '')+
     '</div>'+
@@ -3553,6 +3558,8 @@ function renderRoadmapBody(container, goalId){
     node.addEventListener('click', (e)=>{
       const resChip = e.target.closest('[data-action="openresource"]');
       if(resChip){ openResourceChip(resChip); return; }
+      const proofLink = e.target.closest('[data-action="viewproof"]');
+      if(proofLink){ openGateProof(proofLink.dataset.proof); return; }
       const ms2 = g.milestones.find(x=>x.id===node.dataset.id);
       if(!ms2 || ms2.status==='locked') return;
       // Completed nodes fold their retrospective open in place; there's nothing left to
@@ -3622,6 +3629,87 @@ function openQuestLineDetail(goalId, initialTab){
 function openRoadmap(goalId){
   openQuestLineDetail(goalId, 'roadmap');
 }
+/* ---- Gate proof uploads: device-local, in IndexedDB — same reasoning as the
+   background media above (Appearance tab): a screenshot doesn't belong in the
+   synced JSON blob, so gate.proofUrl only ever holds a small "idb:<key>"
+   reference, never the file itself. ---- */
+const PROOF_DB = 'questline-proofs', PROOF_STORE = 'proofs';
+function proofDb(){
+  return new Promise((res, rej)=>{
+    const r = indexedDB.open(PROOF_DB, 1);
+    r.onupgradeneeded = ()=>{ if(!r.result.objectStoreNames.contains(PROOF_STORE)) r.result.createObjectStore(PROOF_STORE); };
+    r.onsuccess = ()=>res(r.result);
+    r.onerror = ()=>rej(r.error);
+  });
+}
+async function proofPut(key, file){
+  const db = await proofDb();
+  return new Promise((res, rej)=>{
+    const tx = db.transaction(PROOF_STORE, 'readwrite');
+    tx.objectStore(PROOF_STORE).put(file, key);
+    tx.oncomplete = ()=>res(true); tx.onerror = ()=>rej(tx.error);
+  });
+}
+async function proofGet(key){
+  try{
+    const db = await proofDb();
+    return await new Promise((res)=>{
+      const tx = db.transaction(PROOF_STORE, 'readonly');
+      const q = tx.objectStore(PROOF_STORE).get(key);
+      q.onsuccess = ()=>res(q.result || null); q.onerror = ()=>res(null);
+    });
+  }catch(e){ return null; }
+}
+async function proofDelete(key){
+  try{
+    const db = await proofDb();
+    await new Promise((res)=>{
+      const tx = db.transaction(PROOF_STORE, 'readwrite');
+      tx.objectStore(PROOF_STORE).delete(key);
+      tx.oncomplete = ()=>res(); tx.onerror = ()=>res();
+    });
+  }catch(e){}
+}
+// Shared by the Gate view's own "View proof" link and the completed-milestone
+// retrospective in the roadmap ladder, so an idb: reference resolves the same way
+// wherever it's clicked from.
+async function openGateProof(proofUrl){
+  if(!proofUrl) return;
+  if(proofUrl.startsWith('idb:')){
+    const file = await proofGet(proofUrl.slice(4));
+    if(file) window.open(URL.createObjectURL(file), '_blank');
+  } else {
+    window.open(proofUrl, '_blank');
+  }
+}
+function gateProofHtml(gate, isDone){
+  return '<div class="gate-proof">'+
+    '<label>Proof'+(gate.proofRequired ? '' : ' (optional)')+'</label>'+
+    (gate.proofUrl
+      ? '<div class="gate-proof-row"><a href="#" id="gateProofView">View uploaded proof</a>'+
+          (isDone ? '' : '<button class="qdel" id="gateProofRemove" aria-label="Remove proof">'+icon('trash')+'</button>')+
+        '</div>'
+      : (isDone ? '<div class="hint">No proof attached.</div>' : '<input type="file" class="fld" id="gateProofFile" accept="image/*,.pdf">'))+
+  '</div>';
+}
+function wireGateProof(gate, rerender){
+  const fileInput = document.getElementById('gateProofFile');
+  if(fileInput) fileInput.addEventListener('change', async e=>{
+    const file = e.target.files[0]; if(!file) return;
+    const key = 'proof_'+Date.now();
+    await proofPut(key, file);
+    gate.proofUrl = 'idb:'+key;
+    saveState(); rerender();
+  });
+  const viewBtn = document.getElementById('gateProofView');
+  if(viewBtn) viewBtn.addEventListener('click', e=>{ e.preventDefault(); openGateProof(gate.proofUrl); });
+  const removeBtn = document.getElementById('gateProofRemove');
+  if(removeBtn) removeBtn.addEventListener('click', async ()=>{
+    if(gate.proofUrl && gate.proofUrl.startsWith('idb:')) await proofDelete(gate.proofUrl.slice(4));
+    gate.proofUrl = null;
+    saveState(); rerender();
+  });
+}
 function openMilestoneGate(goalId, msId){
   const g = goalById(goalId); if(!g) return;
   const ms = g.milestones.find(x=>x.id===msId); if(!ms) return;
@@ -3629,53 +3717,67 @@ function openMilestoneGate(goalId, msId){
   const isDone = ms.status==='completed';
   const m = document.getElementById('modalBody');
   m.classList.add('modal-wide');
-  let pickedLevel = gate.difficultyOptions[0] ? gate.difficultyOptions[0].level : null;
 
   const render = ()=>{
-    const doneDod = gate.definitionOfDone.filter(d=>d.done).length;
-    const allDod = gate.definitionOfDone.length===0 || doneDod===gate.definitionOfDone.length;
-    const canComplete = !isDone && (gate.verificationType==='self' || allDod);
+    const doneCrit = gate.definitionOfDone.filter(d=>d.done).length;
+    const totalCrit = gate.definitionOfDone.length;
+    const allCrit = totalCrit===0 || doneCrit===totalCrit;
+    // ai_review isn't implemented yet (spec: enum only) — it falls back to behaving
+    // like checklist rather than either blocking forever or auto-completing.
+    const canComplete = !isDone && (gate.verificationType==='self' || allCrit);
+    const selectedLevel = gate.selectedDifficulty || (gate.difficultyOptions[0] && gate.difficultyOptions[0].level);
+    const selectedOpt = gate.difficultyOptions.find(o=>o.level===selectedLevel) || gate.difficultyOptions[0];
     m.innerHTML = '<h3>'+(gate.challengeTitle ? esc(gate.challengeTitle) : 'Gate Challenge')+'</h3>'+
       '<p>'+esc(ms.title)+(ms.description?' &mdash; '+esc(ms.description):'')+'</p>'+
       (gate.difficultyOptions.length>1 && !isDone
         ? '<div class="gate-diff-row">'+gate.difficultyOptions.map(o=>
-            '<button class="gate-diff'+(pickedLevel===o.level?' picked':'')+'" data-level="'+esc(o.level)+'">'+
-              '<div class="lvl">'+esc(o.level)+'</div>'+(o.description?'<div class="rm-node-desc">'+esc(o.description)+'</div>':'')+
+            '<button class="gate-diff'+(selectedLevel===o.level?' picked':'')+'" data-level="'+esc(o.level)+'">'+
+              '<div class="lvl">'+esc(o.level)+'</div>'+
               '<div class="xp">'+o.xp+' XP</div>'+
             '</button>').join('')+'</div>'
         : '')+
-      (gate.definitionOfDone.length
-        ? '<div class="gate-dod">'+gate.definitionOfDone.map((d,i)=>
-            '<div class="gate-dod-row'+(d.done?' checked':'')+'" data-i="'+i+'">'+
-              '<button class="qcheck small'+(d.done?' stepdone':'')+'" data-action="toggledod" '+(isDone?'disabled':'')+'>'+icon('check')+'</button>'+
-              '<span>'+esc(d.text)+'</span>'+
-            '</div>').join('')+'</div>'
-        : '')+
-      (isDone
-        ? '<div class="hint" style="margin-top:12px;">Completed'+(ms.completedDate?' on '+ms.completedDate:'')+'.</div>'
-        : '<div class="actions" style="margin-top:14px;">'+
-            '<button class="btn-text" id="mBack">Back to roadmap</button>'+
-            '<button class="btn-primary" id="gateComplete"'+(canComplete?'':' disabled')+'>Complete Challenge</button>'+
-          '</div>')+
+      (selectedOpt && selectedOpt.description ? '<p class="gate-diff-desc">'+esc(selectedOpt.description)+'</p>' : '')+
       (gate.attempts.length
         ? '<div class="gate-attempts"><label>Previous attempts</label>'+gate.attempts.map(a=>
             '<div class="gate-attempt">'+esc((a.attemptedAt||'').slice(0,10))+' &mdash; '+esc(a.note||'')+'</div>').join('')+'</div>'
         : '')+
-      (!isDone ? '<label style="margin-top:10px;">Note (optional)</label><input type="text" class="fld" id="gateNote" placeholder="What happened, what\'s left...">'+
-        '<button class="rm-link" id="gateSaveNote">Save note without completing</button>' : '')+
+      (gate.definitionOfDone.length
+        ? '<div class="gate-dod">'+gate.definitionOfDone.map(d=>
+            '<div class="gate-dod-row'+(d.done?' checked':'')+'" data-id="'+esc(d.id)+'">'+
+              '<button class="qcheck small'+(d.done?' stepdone':'')+'" data-action="toggledod" '+(isDone?'disabled':'')+'>'+icon('check')+'</button>'+
+              '<span>'+esc(d.text)+'</span>'+
+            '</div>').join('')+'</div>'
+        : '')+
+      (gate.proofRequired ? gateProofHtml(gate, isDone) : '')+
+      (isDone
+        ? '<div class="hint" style="margin-top:12px;">Completed'+(ms.completedDate?' on '+ms.completedDate:'')+'.</div>'
+        : '<div class="actions" style="margin-top:14px;">'+
+            '<button class="btn-text" id="mBack">Back to roadmap</button>'+
+            (gate.verificationType==='checklist' && totalCrit>0
+              ? '<span class="gate-crit-count">'+doneCrit+'/'+totalCrit+(totalCrit>doneCrit?' &mdash; '+(totalCrit-doneCrit)+' left':'')+'</span>'
+              : '')+
+            '<button class="btn-primary" id="gateComplete"'+(canComplete?'':' disabled')+'>Complete Challenge</button>'+
+          '</div>')+
+      (!isDone ? '<label style="margin-top:14px;">What was missing? (optional)</label><input type="text" class="fld" id="gateNote" placeholder="What happened, what\'s left...">'+
+        '<button class="btn-text" id="gateSaveNote">Try again</button>' : '')+
       (isDone ? '' : '<div class="actions"><button class="btn-text" id="mBack2">Back to roadmap</button></div>');
     if(document.getElementById('mBack')) document.getElementById('mBack').addEventListener('click', ()=>openQuestLineDetail(goalId, 'roadmap'));
     if(document.getElementById('mBack2')) document.getElementById('mBack2').addEventListener('click', ()=>openQuestLineDetail(goalId, 'roadmap'));
     m.querySelectorAll('.gate-diff').forEach(btn=>{
-      btn.addEventListener('click', ()=>{ pickedLevel = btn.dataset.level; render(); });
+      // Persisted immediately, not just held in memory — you can pick a difficulty,
+      // close the app, and it's still picked when you come back to this challenge.
+      btn.addEventListener('click', ()=>{ gate.selectedDifficulty = btn.dataset.level; saveState(); render(); });
     });
     m.querySelectorAll('.gate-dod-row').forEach(row=>{
       row.addEventListener('click', e=>{
         if(!e.target.closest('[data-action="toggledod"]')) return;
-        gate.definitionOfDone[parseInt(row.dataset.i,10)].done = !gate.definitionOfDone[parseInt(row.dataset.i,10)].done;
+        const crit = gate.definitionOfDone.find(c=>c.id===row.dataset.id); if(!crit) return;
+        crit.done = !crit.done;
+        crit.checkedAt = crit.done ? new Date().toISOString() : null;
         saveState(); render();
       });
     });
+    wireGateProof(gate, render);
     const saveNoteBtn = document.getElementById('gateSaveNote');
     if(saveNoteBtn) saveNoteBtn.addEventListener('click', ()=>{
       const note = document.getElementById('gateNote').value.trim(); if(!note) return;
@@ -3685,7 +3787,8 @@ function openMilestoneGate(goalId, msId){
     const completeBtn = document.getElementById('gateComplete');
     if(completeBtn) completeBtn.addEventListener('click', ()=>{
       if(completeBtn.disabled) return;
-      const opt = gate.difficultyOptions.find(o=>o.level===pickedLevel) || gate.difficultyOptions[0] || {xp:200};
+      const opt = gate.difficultyOptions.find(o=>o.level===gate.selectedDifficulty) || gate.difficultyOptions[0] || {xp:200};
+      gate.selectedDifficulty = opt.level; // always end up recorded, even for a single-option gate never explicitly clicked
       const prevLevel = levelFromXP(state.player.xp,150);
       grant(opt.xp, goalId);
       ms.status = 'completed';
