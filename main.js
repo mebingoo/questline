@@ -32,6 +32,66 @@ function isInsideRoot(target) {
 
 const VIDEO_EXT = new Set(['.mp4', '.mkv', '.webm', '.mov', '.m4v', '.avi']);
 
+const VIDEO_MIME = {
+  '.mp4': 'video/mp4', '.m4v': 'video/mp4', '.webm': 'video/webm',
+  '.mkv': 'video/x-matroska', '.mov': 'video/quicktime', '.avi': 'video/x-msvideo'
+};
+
+/* Serves a file with real byte-range support.
+ *
+ * Chromium decides a video is seekable from Accept-Ranges plus a 206 answer to
+ * a Range request. Without them the scrub bar is dead and every seek snaps back
+ * to zero, however well the file plays from the start — so the ranges are
+ * handled here rather than handed off wholesale. */
+function serveMedia(target, rangeHeader) {
+  let size;
+  try { size = fs.statSync(target).size; }
+  catch (e) { return new Response('Not found', { status: 404 }); }
+
+  const type = VIDEO_MIME[path.extname(target).toLowerCase()] || 'application/octet-stream';
+  const base = {
+    'Content-Type': type,
+    'Accept-Ranges': 'bytes',
+    // The <video> is drawn onto a canvas by "Capture frame", which a response
+    // without CORS headers would taint.
+    'Access-Control-Allow-Origin': '*',
+    'Cache-Control': 'no-cache'
+  };
+  const toWeb = (stream) => require('stream').Readable.toWeb(stream);
+
+  const m = /^bytes=(\d*)-(\d*)$/.exec(String(rangeHeader || '').trim());
+  if (m) {
+    let start, end;
+    if (m[1] === '') {                       // bytes=-N — the final N bytes
+      const suffix = parseInt(m[2], 10);
+      if (!Number.isFinite(suffix) || suffix <= 0) return new Response('Bad range', { status: 416 });
+      start = Math.max(0, size - suffix);
+      end = size - 1;
+    } else {
+      start = parseInt(m[1], 10);
+      end = m[2] === '' ? size - 1 : parseInt(m[2], 10);
+    }
+    if (!Number.isFinite(start) || start >= size || start < 0) {
+      return new Response('Range not satisfiable', { status: 416, headers: { 'Content-Range': 'bytes */' + size } });
+    }
+    end = Math.min(Number.isFinite(end) ? end : size - 1, size - 1);
+    if (end < start) end = size - 1;
+
+    return new Response(toWeb(fs.createReadStream(target, { start, end })), {
+      status: 206,
+      headers: Object.assign({}, base, {
+        'Content-Range': 'bytes ' + start + '-' + end + '/' + size,
+        'Content-Length': String(end - start + 1)
+      })
+    });
+  }
+
+  return new Response(toWeb(fs.createReadStream(target)), {
+    status: 200,
+    headers: Object.assign({}, base, { 'Content-Length': String(size) })
+  });
+}
+
 function scanDir(dir, depth) {
   // Deep course sets are common; a generous cap still stops a runaway symlink.
   if (depth > 8) return { folders: [], videos: [] };
@@ -272,13 +332,7 @@ app.whenReady().then(() => {
       const encoded = decodeURIComponent(u.pathname.replace(/^\/+/, ''));
       const target = Buffer.from(encoded, 'base64url').toString('utf8');
       if (!isInsideRoot(target)) return new Response('Forbidden', { status: 403 });
-      const res = await net.fetch(pathToFileURL(target).toString(), { bypassCustomProtocolHandlers: true });
-      // Without CORS headers the video counts as cross-origin, which taints any
-      // canvas it is drawn onto — and "Capture frame" is exactly that. Status and
-      // Content-Range are passed through so seeking keeps working.
-      const headers = new Headers(res.headers);
-      headers.set('Access-Control-Allow-Origin', '*');
-      return new Response(res.body, { status: res.status, statusText: res.statusText, headers });
+      return serveMedia(target, request.headers.get('Range'));
     } catch (e) {
       return new Response('Bad request', { status: 400 });
     }

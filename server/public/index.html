@@ -907,6 +907,11 @@
   .course-empty{padding:70px 20px; text-align:center; color:var(--text-faint); font-size:12.5px;}
   .course-now{font-family:var(--font-display); font-size:13px; color:var(--text); margin:12px 0 4px; word-break:break-word;}
   .course-now .cn-path{display:block; font-family:var(--font-mono); font-size:10.5px; color:var(--text-faint); margin-top:3px;}
+  .course-keys{font-size:10.5px; color:var(--text-faint); margin-bottom:2px;}
+  .seek-badge{position:absolute; top:50%; left:50%; transform:translate(-50%,-50%);
+    background:rgba(0,0,0,0.72); color:#fff; font-family:var(--font-mono); font-size:15px;
+    padding:9px 15px; border-radius:3px; pointer-events:none; opacity:0; transition:opacity .18s;}
+  .seek-badge.show{opacity:1;}
 
   .course-notes{margin-top:14px; background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-m); padding:13px;}
   .course-notes-head{display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:9px;
@@ -1322,8 +1327,10 @@
           <div class="course-stage">
             <video id="courseVideo" controls preload="metadata" crossorigin="anonymous"></video>
             <div class="course-empty" id="courseStageEmpty">Pick a video on the left to start watching.</div>
+            <div class="seek-badge" id="seekBadge"></div>
           </div>
           <div class="course-now" id="courseNow"></div>
+          <div class="course-keys">&larr; &rarr; jump 5s &middot; Shift+&larr;/&rarr; or J/L jump 10s &middot; Space or K play/pause &middot; keys pause while you type in Notes</div>
           <div class="course-notes">
             <div class="course-notes-head">
               <span>Notes</span>
@@ -5420,6 +5427,56 @@ document.getElementById('courseRescan').addEventListener('click', async ()=>{
   v.addEventListener('ended', ()=>{ captureCourseProgress(); });
   setInterval(()=>{ if(activeCourseId && activeItemKey && !document.getElementById('courseVideo').paused) captureCourseProgress(); }, 10000);
 })();
+
+/* Keyboard control for the player.
+ *
+ * The notes box sits right under the video, so these deliberately stand down
+ * whenever a text field has focus — otherwise arrowing through a sentence you
+ * are writing would scrub the lesson instead. */
+let seekBadgeTimer = null;
+function flashSeek(text){
+  const b = document.getElementById('seekBadge');
+  if(!b) return;
+  b.textContent = text;
+  b.classList.add('show');
+  clearTimeout(seekBadgeTimer);
+  seekBadgeTimer = setTimeout(()=>b.classList.remove('show'), 600);
+}
+document.addEventListener('keydown', e=>{
+  if(state.activeTab !== 'courses' || !activeCourseId || !activeItemKey) return;
+  if(e.ctrlKey || e.altKey || e.metaKey) return;
+  if(document.getElementById('setVeil').classList.contains('open')) return;
+  if(document.getElementById('modalVeil').classList.contains('open')) return;
+  const t = e.target;
+  if(t && (t.tagName==='TEXTAREA' || t.tagName==='INPUT' || t.tagName==='SELECT' || t.isContentEditable)) return;
+
+  const v = document.getElementById('courseVideo');
+  if(!v || !v.src) return;
+  const jump = (d)=>{
+    const dur = isFinite(v.duration) ? v.duration : 0;
+    v.currentTime = Math.max(0, Math.min(dur, v.currentTime + d));
+    flashSeek((d>0?'▶ +':'◀ ')+Math.abs(d)+'s');
+  };
+
+  switch(e.key){
+    case 'ArrowLeft':  e.preventDefault(); jump(e.shiftKey ? -10 : -5); break;
+    case 'ArrowRight': e.preventDefault(); jump(e.shiftKey ?  10 :  5); break;
+    case 'j': case 'J': e.preventDefault(); jump(-10); break;
+    case 'l': case 'L': e.preventDefault(); jump(10); break;
+    case 'k': case 'K': case ' ':
+      e.preventDefault();
+      if(v.paused){ v.play().catch(()=>{}); flashSeek('▶'); } else { v.pause(); flashSeek('‖'); }
+      break;
+    case 'ArrowUp':   e.preventDefault(); v.volume = Math.min(1, v.volume+0.1); flashSeek('vol '+Math.round(v.volume*100)+'%'); break;
+    case 'ArrowDown': e.preventDefault(); v.volume = Math.max(0, v.volume-0.1); flashSeek('vol '+Math.round(v.volume*100)+'%'); break;
+    default: return;
+  }
+});
+// Clicking the stage takes focus off the notes box, so the keys work again.
+document.getElementById('courseVideo').addEventListener('click', ()=>{
+  const ta = document.getElementById('noteText');
+  if(document.activeElement === ta) ta.blur();
+});
 
 document.getElementById('noteText').addEventListener('input', saveNoteSoon);
 document.getElementById('noteText').addEventListener('paste', e=>{
