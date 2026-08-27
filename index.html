@@ -1512,7 +1512,7 @@ function freshState(){
   return {
     schemaVersion: SCHEMA_VERSION,
     player:{ xp:0, gold:0, streak:0, longestStreak:0, lastActiveDate:null },
-    goals: DEFAULT_GOALS.map(g=>({...g, xp:0, objectives:[], milestones:[]})),
+    goals: DEFAULT_GOALS.map(g=>({...g, xp:0, objectives:[], milestones:[], roadmapKey:null})),
     dailies: DEFAULT_DAILIES.map((d,i)=>({ id:'d'+i+'_'+now, goal:d.goal, title:d.title, xp:d.xp, gold:Math.round(d.xp/2), lastDone:null, skipDate:null, steps:[], stepsDay:null, open:false, ...questExtras() })),
     weeklies: DEFAULT_WEEKLIES.map((d,i)=>({
       id:'w'+i+'_'+now, goal:d.goal, title:d.title, xp:d.xp, gold:Math.round(d.xp/2),
@@ -1562,6 +1562,7 @@ function migrate(s){
     if(!Array.isArray(g.objectives)) g.objectives = [];
     if(!Array.isArray(g.milestones)) g.milestones = [];
     g.milestones = g.milestones.map((m,i)=>normalizeMilestone(m,i));
+    if(g.roadmapKey===undefined) g.roadmapKey = null;
     syncOverdueStatus(g);
     g.name = unescapeAmp(g.name);
     g.objectives.forEach(o=>{ o.title = unescapeAmp(o.title); });
@@ -3614,37 +3615,138 @@ function openAddMilestone(goalId){
     openRoadmap(goalId);
   });
 }
+// Re-import must not reset progress: a completed milestone stays completed, a checked
+// criterion stays checked. Milestones are matched between old and new by `order` (their
+// position in the roadmap) since the seed format has no id of its own.
+function mergeCriteria(existingList, incomingRawList){
+  return (incomingRawList||[]).map(d=>{
+    const text = typeof d==='string' ? d : String(d.text||'');
+    const prev = (existingList||[]).find(e=>e.text===text);
+    return prev ? {id:prev.id, text, done:prev.done, checkedAt:prev.checkedAt} : {text};
+  });
+}
+// Shared by both import paths below so they can't drift apart on this: sorts in place by
+// order and re-derives unlocksMilestoneId from that order, same rule the spec asks for.
+function chainUnlocks(milestones){
+  milestones.sort((a,b)=>a.order-b.order);
+  milestones.forEach((m,i)=>{ m.unlocksMilestoneId = milestones[i+1] ? milestones[i+1].id : null; });
+}
+function mergeImportedMilestones(g, parsed){
+  const list = Array.isArray(parsed.milestones) ? parsed.milestones : (Array.isArray(parsed) ? parsed : null);
+  if(!list) throw new Error('No "milestones" array found.');
+  const existingByOrder = new Map();
+  (g.milestones||[]).forEach((m,i)=>existingByOrder.set(Number.isFinite(m.order)?m.order:i, m));
+  const consumedOrders = new Set();
+
+  const merged = list.map((raw,i)=>{
+    const order = Number.isFinite(raw.order) ? raw.order : i;
+    consumedOrders.add(order);
+    const existing = existingByOrder.get(order);
+    if(!existing) return normalizeMilestone(raw, i);
+    const gate = raw.gate || {};
+    const incomingCriteria = Array.isArray(gate.criteria) ? gate.criteria : (Array.isArray(gate.definitionOfDone) ? gate.definitionOfDone : []);
+    return normalizeMilestone({
+      ...raw,
+      id: existing.id,
+      status: existing.status,
+      completedDate: existing.completedDate,
+      gate: {
+        ...gate,
+        selectedDifficulty: existing.gate.selectedDifficulty,
+        proofUrl: existing.gate.proofUrl,
+        attempts: existing.gate.attempts,
+        definitionOfDone: mergeCriteria(existing.gate.definitionOfDone, incomingCriteria)
+      }
+    }, i);
+  });
+
+  // A milestone the new file no longer lists is kept, not dropped — re-importing a
+  // trimmed file must never silently erase a finished milestone's history.
+  existingByOrder.forEach((existing, order)=>{
+    if(!consumedOrders.has(order)) merged.push(existing);
+  });
+
+  chainUnlocks(merged);
+  g.milestones = merged;
+  g.roadmapKey = parsed.questLineKey || g.roadmapKey || null;
+}
+function freshImportMilestones(g, parsed){
+  const list = Array.isArray(parsed.milestones) ? parsed.milestones : (Array.isArray(parsed) ? parsed : null);
+  if(!list) throw new Error('No "milestones" array found.');
+  const milestones = list.map((raw,i)=>normalizeMilestone(raw,i));
+  chainUnlocks(milestones);
+  g.milestones = milestones;
+  g.roadmapKey = parsed.questLineKey || null;
+}
+// Shared by the file-picker and the bundled-seed picker below. Guards the one case a
+// plain order-merge can't handle sanely: this quest line already has a *different*
+// imported roadmap, where matching by position would stitch together two unrelated
+// challenges. That case asks first instead of guessing.
+function applyRoadmapImport(goalId, parsed, msgEl){
+  const g = goalById(goalId); if(!g) return;
+  const doImport = (fresh)=>{
+    try{
+      if(fresh) freshImportMilestones(g, parsed); else mergeImportedMilestones(g, parsed);
+      saveState(); renderAll();
+      showToast({title:'Roadmap imported', sub:(parsed.milestones||[]).length+' milestones for '+g.name});
+      renderRoadmapBody(goalId);
+    }catch(err){
+      if(msgEl) msgEl.innerHTML = '<div class="hint" style="color:var(--danger)">Could not read that file: '+esc(String(err.message||err))+'</div>';
+    }
+  };
+  const hasMismatch = (g.milestones||[]).length>0 && g.roadmapKey && parsed.questLineKey && parsed.questLineKey!==g.roadmapKey;
+  if(hasMismatch){
+    openConfirm({
+      title: 'Replace the existing roadmap?',
+      body: 'This quest line already has a different imported roadmap. &ldquo;'+esc(parsed.title||parsed.questLineKey)+'&rdquo; would replace it rather than merge with it, so any progress on the current one would be gone. Continue?',
+      confirmLabel: 'Replace',
+      onConfirm: ()=>doImport(true)
+    });
+  } else {
+    doImport(false);
+  }
+}
 function openImportRoadmap(goalId){
   const g = goalById(goalId); if(!g) return;
   const m = document.getElementById('modalBody');
   m.classList.add('modal-wide');
   m.innerHTML = '<h3>Import Roadmap</h3>'+
-    '<p>Choose a <code>roadmap.json</code> file for <b style="color:'+g.color+'">'+esc(g.name)+'</b>. This replaces its current milestones.</p>'+
+    '<p>Choose a <code>roadmap.json</code> file for <b style="color:'+g.color+'">'+esc(g.name)+'</b>. Milestones you\'ve already completed and criteria you\'ve already checked off are kept — re-importing only refreshes the rest.</p>'+
     '<input type="file" class="fld" id="rmFile" accept="application/json,.json">'+
-    '<div class="hint">Expected shape: <code>{"milestones":[{"title":"...","description":"...","deadline":"YYYY-MM-DD","topics":[],"resources":[],"gate":{"challengeTitle":"...","difficultyOptions":[{"level":"easy","xp":400}],"definitionOfDone":["..."],"verificationType":"checklist"}}]}</code></div>'+
+    '<div id="rmSeeds"></div>'+
+    '<div class="hint">Expected shape: <code>{"milestones":[{"order":1,"shortLabel":"L1","title":"...","capability":"...","deadline":"YYYY-MM-DD","topics":[],"resources":[],"gate":{"challengeTitle":"...","difficulties":[{"level":"easy","xp":400}],"criteria":["..."],"verificationType":"checklist"}}]}</code></div>'+
     '<div id="rmImportMsg"></div>'+
     '<div class="actions"><button class="btn-text" id="mBack">Back</button></div>';
   document.getElementById('modalVeil').classList.add('open');
   document.getElementById('mBack').addEventListener('click', ()=>renderRoadmapBody(goalId));
+
+  const msg = document.getElementById('rmImportMsg');
   document.getElementById('rmFile').addEventListener('change', e=>{
     const file = e.target.files[0]; if(!file) return;
-    const msg = document.getElementById('rmImportMsg');
     const reader = new FileReader();
     reader.onload = ()=>{
-      try{
-        const parsed = JSON.parse(String(reader.result));
-        const list = Array.isArray(parsed.milestones) ? parsed.milestones : (Array.isArray(parsed) ? parsed : null);
-        if(!list) throw new Error('No "milestones" array found.');
-        g.milestones = list.map((raw,i)=>normalizeMilestone(raw,i));
-        saveState(); renderAll();
-        showToast({title:'Roadmap imported', sub:list.length+' milestones for '+g.name});
-        renderRoadmapBody(goalId);
-      }catch(err){
-        msg.innerHTML = '<div class="hint" style="color:var(--danger)">Could not read that file: '+esc(String(err.message||err))+'</div>';
-      }
+      try{ applyRoadmapImport(goalId, JSON.parse(String(reader.result)), msg); }
+      catch(err){ msg.innerHTML = '<div class="hint" style="color:var(--danger)">Could not read that file: '+esc(String(err.message||err))+'</div>'; }
     };
     reader.readAsText(file);
   });
+
+  // Bundled seeds only exist inside the Electron app (preload exposes window.roadmaps);
+  // skip quietly if it's ever missing instead of showing a broken picker.
+  if(window.roadmaps && window.roadmaps.listSeeds){
+    window.roadmaps.listSeeds().then(list=>{
+      const host = document.getElementById('rmSeeds');
+      if(!host || !list.length) return;
+      host.innerHTML = '<label style="margin-top:14px;">Or choose a bundled seed</label><div class="pt-chip-row">'+
+        list.map(s=>'<button class="pt-chip" data-seed="'+esc(s.filename)+'">'+esc(s.title)+'</button>').join('')+'</div>';
+      host.querySelectorAll('[data-seed]').forEach(btn=>{
+        btn.addEventListener('click', async ()=>{
+          try{ applyRoadmapImport(goalId, await window.roadmaps.loadSeed(btn.dataset.seed), msg); }
+          catch(err){ msg.innerHTML = '<div class="hint" style="color:var(--danger)">Could not load that seed: '+esc(String(err.message||err))+'</div>'; }
+        });
+      });
+    }).catch(()=>{});
+  }
 }
 const GOAL_COLORS = ['#ff8c2b','#14e6ff','#39ff6a','#4d8dff','#ff3b3b','#b026ff','#ff2ea6','#ffe135'];
 const GOAL_ICONS  = ['cube','terminal','chart','globe','flame','briefcase','quill','star'];

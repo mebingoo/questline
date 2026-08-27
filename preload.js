@@ -14,6 +14,12 @@ contextBridge.exposeInMainWorld('learn', {
   generate: (opts) => ipcRenderer.invoke('ai-generate', opts)
 });
 
+// Read-only: lists/loads the roadmap.json files bundled under data/roadmaps.
+contextBridge.exposeInMainWorld('roadmaps', {
+  listSeeds: () => ipcRenderer.invoke('roadmap-list-seeds'),
+  loadSeed: (filename) => ipcRenderer.invoke('roadmap-load-seed', filename)
+});
+
 // Shared by both the main window (toggles/configures the widget) and the
 // widget window itself (resizes its own frame, jumps back to the main window).
 contextBridge.exposeInMainWorld('widgetCtl', {

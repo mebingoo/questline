@@ -147,6 +147,31 @@ ipcMain.handle('prefs-set', (event, patch) => {
   return prefs;
 });
 
+/* ------------------------------------------------------------------ *
+ * Bundled roadmap seeds — the renderer is sandboxed (contextIsolation,
+ * no nodeIntegration) and can't read these off disk itself. Only the
+ * app's own data/roadmaps/*.json files are ever exposed here: filenames
+ * the renderer asks for are checked against the real directory listing,
+ * never joined onto a path straight from the renderer.
+ * ------------------------------------------------------------------ */
+const ROADMAPS_DIR = path.join(__dirname, 'data', 'roadmaps');
+function listRoadmapSeedFiles() {
+  try { return fs.readdirSync(ROADMAPS_DIR).filter((f) => f.endsWith('.json')); }
+  catch (e) { return []; }
+}
+ipcMain.handle('roadmap-list-seeds', () => {
+  return listRoadmapSeedFiles().map((filename) => {
+    try {
+      const parsed = JSON.parse(fs.readFileSync(path.join(ROADMAPS_DIR, filename), 'utf8'));
+      return { filename, title: String(parsed.title || filename), questLineKey: parsed.questLineKey || null };
+    } catch (e) { return { filename, title: filename, questLineKey: null }; }
+  });
+});
+ipcMain.handle('roadmap-load-seed', (event, filename) => {
+  if (!listRoadmapSeedFiles().includes(filename)) throw new Error('Unknown roadmap seed: ' + filename);
+  return JSON.parse(fs.readFileSync(path.join(ROADMAPS_DIR, filename), 'utf8'));
+});
+
 app.whenReady().then(() => {
   const prefs = loadPrefs();
   const loginInfo = app.getLoginItemSettings();
