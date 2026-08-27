@@ -1,0 +1,388 @@
+{
+  "schemaVersion": 1,
+  "questLineKey": "3d-generalist",
+  "title": "3D Generalist",
+  "grandGoal": "Ein vielseitiger 3D-Generalist werden – jemand, der eine Idee allein von Konzept bis fertigem Render/Shot durchziehen kann: Modeling, UVs, Texturing, Shading, Lighting, Rigging, Animation, FX, Compositing.",
+  "totalMonths": 24,
+  "weeklyHours": { "min": 8, "max": 12 },
+  "milestones": [
+    {
+      "order": 1,
+      "shortLabel": "L1",
+      "title": "Fundament & Hard-Surface Basics",
+      "capability": "Du kannst ein Hard-Surface-Objekt nach Referenz non-destruktiv modellieren und mit sauberem 3-Punkt-Licht präsentabel rendern.",
+      "description": "Interface, Modeling-Grundwerkzeuge, Modifier-Stack, erste Renders.",
+      "startDate": "2026-09-01",
+      "deadline": "2026-10-31",
+      "topics": [
+        "Interface, Navigation, Workspaces, Collections, Outliner",
+        "Transformationen (G/R/S), Snapping, Pivot Points, Object Origins",
+        "Object Mode vs. Edit Mode — Vertices, Edges, Faces",
+        "Kern-Tools: Extrude, Inset, Bevel, Loop Cut, Knife, Solidify",
+        "Modifier-Stack: Mirror, Array, Subdivision Surface, Boolean",
+        "Non-destruktives Arbeiten verstehen (warum Modifier > Destructive Edits)",
+        "Erste Render-Basics: Kamera, 3-Punkt-Licht, EEVEE vs. Cycles"
+      ],
+      "resources": [
+        { "title": "Blender Fundamentals (offiziell, Blender Foundation)", "url": "https://www.blender.org/support/tutorials/", "type": "course", "free": true },
+        { "title": "Blender Guru — Donut Tutorial", "url": "", "type": "video", "free": true },
+        { "title": "Grant Abbitt — Blender Beginner Series", "url": "", "type": "video", "free": true },
+        { "title": "Blender Manual (Nachschlagewerk)", "url": "https://docs.blender.org/manual/en/latest/", "type": "docs", "free": true },
+        { "title": "Blender Secrets", "url": "", "type": "video", "free": true }
+      ],
+      "gate": {
+        "challengeTitle": "Hard-Surface Objekt",
+        "difficulties": [
+          { "level": "easy", "description": "Modelliere eine Kaffeemaschine / einen Controller / eine Kamera nach Referenzfoto.", "xp": 300 },
+          { "level": "hard", "description": "Modelliere ein eigenes Gerät-Design (kein direktes Referenzfoto, nur Inspirationsboard).", "xp": 500 }
+        ],
+        "criteria": [
+          { "text": "Mindestens 8 Referenzbilder in einem PureRef-Board gesammelt" },
+          { "text": "Modell nutzt mind. 3 verschiedene Modifier non-destruktiv" },
+          { "text": "Objekt-Origins sinnvoll gesetzt, alle Transforms applied wo nötig" },
+          { "text": "Sauber benannte Objekte + Collections (keine \"Cube.003\")" },
+          { "text": "1 finaler Render mit 3-Punkt-Licht, 1920×1080, gespeichert als PNG" },
+          { "text": "Ich kann 5 Shortcuts blind ausführen ohne im Menü zu suchen" }
+        ],
+        "verificationType": "checklist",
+        "proofRequired": true
+      }
+    },
+    {
+      "order": 2,
+      "shortLabel": "L2",
+      "title": "Topology & Modeling-Handwerk",
+      "capability": "Du kannst ein Modell mit sauberer, fehlerfreier Topologie bauen, das auch unter Subdivision ohne Artefakte glatt schattiert.",
+      "description": "Was ist gute Topologie und warum, Shading-Fehler lesen, Boolean-Cleanup, Poly-Budget-Denken.",
+      "startDate": "2026-11-01",
+      "deadline": "2026-12-31",
+      "topics": [
+        "Was ist gute Topologie und warum — Quads, Edge Flow, Poles",
+        "N-Gons und Triangles: wann okay, wann tödlich",
+        "Support Loops / Edge Creasing bei Subdivision",
+        "Shading-Fehler lesen (Shade Smooth, Auto Smooth, Normals, Custom Normals)",
+        "Boolean-Cleanup (Booleans erzeugen fast immer Müll — aufräumen lernen)",
+        "Poly-Budget-Denken: wie viel ist zu viel",
+        "Scale & Real-World-Units, Apply Scale-Disziplin"
+      ],
+      "resources": [
+        { "title": "CG Cookie — Modeling-Kurse (Free Tier vorhanden)", "url": "https://cgcookie.com", "type": "course", "free": true },
+        { "title": "Grant Abbitt — Topology-Videos", "url": "", "type": "video", "free": true },
+        { "title": "Blender Manual: Modeling-Kapitel", "url": "https://docs.blender.org/manual/en/latest/modeling/index.html", "type": "docs", "free": true },
+        { "title": "Vertiefung: \"edge flow\", \"support loops\", \"subdivision topology\"", "url": "", "type": "video", "free": true }
+      ],
+      "gate": {
+        "challengeTitle": "Clean Topology Test",
+        "difficulties": [
+          { "level": "easy", "description": "Modelliere einen stilisierten Low-Poly-Kopf (Mensch oder Tier) mit sauberem Edge Flow.", "xp": 400 },
+          { "level": "hard", "description": "Modelliere ein Hard-Surface-Objekt mit gekrümmter Oberfläche + Löchern (z.B. Helm mit Belüftungsschlitzen) ohne Shading-Artefakte.", "xp": 650 }
+        ],
+        "criteria": [
+          { "text": "Keine N-Gons auf sichtbaren, gekrümmten Flächen (Select → Faces by Sides geprüft)" },
+          { "text": "Edge Flow folgt der Form (bei Gesicht: Loops um Augen und Mund)" },
+          { "text": "Unter 5.000 Polys (Easy) bzw. sauber unter Subdivision Level 2 (Hard)" },
+          { "text": "Shade Smooth ohne dunkle Flecken oder komische Kanten" },
+          { "text": "Wireframe-Screenshot gespeichert (das ist der Beweis)" },
+          { "text": "Scale applied, Normals nach außen (Recalculate Outside gemacht)" }
+        ],
+        "verificationType": "checklist",
+        "proofRequired": true
+      }
+    },
+    {
+      "order": 3,
+      "shortLabel": "L3",
+      "title": "UV Unwrapping & Texturing",
+      "capability": "Du kannst ein Modell sauber UV-entfalten und mit PBR-Texturen materialisieren, ohne Überlappungen oder Texel-Density-Sprünge.",
+      "description": "UV-Konzept, Seams, Texel Density, PBR-Prinzip, Texture Painting.",
+      "startDate": "2027-01-01",
+      "deadline": "2027-02-28",
+      "topics": [
+        "UV-Konzept: warum überhaupt entfalten",
+        "Seams setzen — wo verstecken, wo nötig",
+        "Unwrap-Methoden: Smart UV, Follow Active Quads, manuell",
+        "Texel Density — der Punkt, den 90 % der Anfänger überspringen",
+        "UV-Packing, Overlaps, UDIMs (Grundverständnis)",
+        "PBR-Prinzip: Base Color, Roughness, Metallic, Normal, AO",
+        "Texture Painting in Blender, Stencils, Masken",
+        "Trim Sheets (Grundidee)"
+      ],
+      "resources": [
+        { "title": "Poly Haven — CC0 PBR-Texturen & HDRIs, kein Login", "url": "https://polyhaven.com", "type": "asset", "free": true },
+        { "title": "ambientCG — 2000+ CC0 Materials & HDRIs", "url": "https://ambientcg.com", "type": "asset", "free": true },
+        { "title": "CGBookcase", "url": "https://cgbookcase.com", "type": "asset", "free": true },
+        { "title": "3Dassets.one — Suchmaschine über alle Free-Texture-Seiten", "url": "https://3dassets.one", "type": "tool", "free": true },
+        { "title": "Material Maker — kostenlose Substance-Designer-Alternative", "url": "https://rodzilla.itch.io/material-maker", "type": "tool", "free": true },
+        { "title": "Blender Manual: UV-Kapitel", "url": "https://docs.blender.org/manual/en/latest/modeling/meshes/uv/index.html", "type": "docs", "free": true }
+      ],
+      "gate": {
+        "challengeTitle": "Unwrap & Texture",
+        "difficulties": [
+          { "level": "easy", "description": "Nimm dein Level-2-Modell, unwrappe es und texturiere es mit Free-PBR-Maps.", "xp": 450 },
+          { "level": "hard", "description": "Modelliere + unwrappe + texturiere ein Prop mit mind. 3 verschiedenen Materialzonen (Metall, Stoff, Gummi) auf einem UV-Set.", "xp": 700 }
+        ],
+        "criteria": [
+          { "text": "Keine überlappenden UVs (außer bewusst gespiegelt — dann dokumentiert)" },
+          { "text": "Texel Density konsistent über alle Teile (mit Checker-Textur geprüft)" },
+          { "text": "Seams liegen an unauffälligen Stellen, nicht mitten im Blickfeld" },
+          { "text": "UV-Layout füllt min. 70 % des UV-Raums" },
+          { "text": "Alle 4 PBR-Maps angeschlossen und sichtbar wirksam" },
+          { "text": "Screenshot vom UV-Layout + Checker-Test gespeichert" }
+        ],
+        "verificationType": "checklist",
+        "proofRequired": true
+      }
+    },
+    {
+      "order": 4,
+      "shortLabel": "L4",
+      "title": "Shading, Lighting & Rendering",
+      "capability": "Du kannst eine Szene in mehreren Lichtstimmungen überzeugend shaden, beleuchten und rendern — und jeden verwendeten Node erklären.",
+      "description": "Principled BSDF, Node-Denken, Lichtgestaltung, Color Management, Compositing-Basics.",
+      "startDate": "2027-03-01",
+      "deadline": "2027-04-30",
+      "topics": [
+        "Shader Editor: Principled BSDF komplett verstehen (jeder Slot!)",
+        "Node-Denken: Mix, ColorRamp, Noise, Musgrave, Mapping, UV-Node",
+        "Prozedurale Materialien (ohne Texturen auskommen können)",
+        "Lichtarten: Area, Point, Sun, HDRI-Lighting",
+        "Lichtgestaltung: Key/Fill/Rim, Motivation, Farbtemperatur, Kontrast",
+        "Kamera: Brennweite, DoF, Komposition (Rule of Thirds, Leading Lines)",
+        "Cycles-Settings: Samples, Denoising, Light Paths, Render-Zeit-Optimierung",
+        "Color Management: Filmic / AgX, Exposure, warum Renders \"flach\" aussehen",
+        "Compositing-Basics: Glare, Color Balance, Vignette"
+      ],
+      "resources": [
+        { "title": "Blender Guru — Lighting- & Rendering-Videos", "url": "", "type": "video", "free": true },
+        { "title": "CG Cookie — Shading/Lighting Kurse", "url": "https://cgcookie.com", "type": "course", "free": true },
+        { "title": "Ducky 3D — prozedurale Shader & Looks", "url": "", "type": "video", "free": true },
+        { "title": "Polyfjord — Workflow & Look-Development", "url": "", "type": "video", "free": true },
+        { "title": "Poly Haven HDRIs", "url": "https://polyhaven.com/hdris", "type": "asset", "free": true }
+      ],
+      "gate": {
+        "challengeTitle": "Look Development",
+        "difficulties": [
+          { "level": "easy", "description": "Rendere dein Level-3-Modell in 3 komplett unterschiedlichen Lichtsituationen (Studio, Sonnenuntergang, Nacht/Neon).", "xp": 500 },
+          { "level": "hard", "description": "Baue ein rein prozedurales Material (keine Bildtexturen) und präsentiere es auf einer Material-Sphere + im Kontext.", "xp": 800 }
+        ],
+        "criteria": [
+          { "text": "3 Renders, klar unterscheidbare Stimmung, gleiche Geometrie" },
+          { "text": "In jedem Render sind Key/Fill/Rim identifizierbar" },
+          { "text": "Render-Zeit pro Bild unter 10 Minuten (Optimierung geübt)" },
+          { "text": "Denoising sauber, kein Fireflies-Rauschen" },
+          { "text": "Compositing angewendet (min. Glare + Color Grade)" },
+          { "text": "Ich kann jeden benutzten Node erklären" }
+        ],
+        "verificationType": "checklist",
+        "proofRequired": true
+      }
+    },
+    {
+      "order": 5,
+      "shortLabel": "L5",
+      "title": "Sculpting & Retopology",
+      "capability": "Du kannst einen High-Poly-Sculpt retopologisieren und die Details verlustarm auf ein Game-Ready-Low-Poly-Modell backen.",
+      "description": "Sculpt Mode, Anatomie-Grundlagen, Formsprache, Retopology-Workflow, Baking.",
+      "startDate": "2027-05-01",
+      "deadline": "2027-07-31",
+      "topics": [
+        "Sculpt Mode: Brushes, Dyntopo, Multires, Voxel Remesh",
+        "Anatomie-Grundlagen (Proportionen, Landmarks) — auch für stilisiert wichtig",
+        "Formsprache: Primary / Secondary / Tertiary Forms",
+        "Retopology: warum Sculpts nicht direkt nutzbar sind",
+        "Retopo-Workflow: Poly Build, Shrinkwrap, Snapping, Quad Remesher-Prinzip",
+        "Baking: High-Poly → Low-Poly (Normal Map, AO, Curvature)",
+        "Cage, Ray Distance, Baking-Fehler debuggen"
+      ],
+      "resources": [
+        { "title": "Grant Abbitt — Sculpting-Serie (sehr anfängerfreundlich)", "url": "", "type": "video", "free": true },
+        { "title": "CG Cookie — Sculpting & Retopology Kurse", "url": "https://cgcookie.com", "type": "course", "free": true },
+        { "title": "Blender Manual: Sculpting & Baking", "url": "https://docs.blender.org/manual/en/latest/sculpt_paint/index.html", "type": "docs", "free": true },
+        { "title": "Anatomy For Sculptors (Anatomie-Referenz, Standardwerk)", "url": "", "type": "book", "free": false }
+      ],
+      "gate": {
+        "challengeTitle": "Sculpt → Game-Ready",
+        "difficulties": [
+          { "level": "easy", "description": "Sculpte einen stilisierten Charakterkopf, retopologisiere ihn, bake die Normal Map.", "xp": 700 },
+          { "level": "hard", "description": "Sculpte eine Kreatur oder Rüstung mit Detail-Pass, retopo + bake + texturieren, komplett game-ready.", "xp": 1100 }
+        ],
+        "criteria": [
+          { "text": "High-Poly-Sculpt mit erkennbaren Primary/Secondary/Tertiary Forms" },
+          { "text": "Low-Poly-Retopo unter 15.000 Tris, sauberer Quad-Flow" },
+          { "text": "Normal Map gebaked, keine sichtbaren Bake-Artefakte (Nähte, schwarze Flecken)" },
+          { "text": "Side-by-Side-Render: Low-Poly mit Bake sieht ~wie High-Poly aus" },
+          { "text": "AO + Curvature Map zusätzlich gebaked" },
+          { "text": "Wireframe des Low-Poly gespeichert" }
+        ],
+        "verificationType": "checklist",
+        "proofRequired": true
+      }
+    },
+    {
+      "order": 6,
+      "shortLabel": "L6",
+      "title": "Rigging & Animation",
+      "capability": "Du kannst einen Charakter riggen und eine flüssige, auf den 12 Animationsprinzipien basierende Bewegung animieren.",
+      "description": "Armatures, Weight Painting, IK/FK, Shape Keys, 12 Principles of Animation.",
+      "startDate": "2027-08-01",
+      "deadline": "2027-10-31",
+      "topics": [
+        "Armatures, Bones, Parenting, Bone Roll",
+        "Weight Painting — der schmerzhafteste, aber wichtigste Teil",
+        "IK vs. FK, Constraints, Pole Targets",
+        "Custom Bone Shapes, Bone Layers, Rig-UX (ein Rig muss benutzbar sein)",
+        "Rigify verstehen (und wissen, wann man es NICHT nutzt)",
+        "Shape Keys / Blendshapes, Drivers",
+        "12 Principles of Animation (Squash & Stretch, Anticipation, Timing, Easing…)",
+        "Graph Editor, F-Curves, Dope Sheet",
+        "Walk Cycle, Bouncing Ball, Weight Shift"
+      ],
+      "resources": [
+        { "title": "CG Cookie — Rigging-Kurse (Wayne Dixon)", "url": "https://cgcookie.com", "type": "course", "free": true },
+        { "title": "SouthernShotty — Character & Rigging Workflows", "url": "", "type": "video", "free": true },
+        { "title": "CrossMind Studio — animierte Charaktererstellung", "url": "", "type": "video", "free": true },
+        { "title": "Blender Manual: Rigging & Animation", "url": "https://docs.blender.org/manual/en/latest/animation/index.html", "type": "docs", "free": true },
+        { "title": "The Animator's Survival Kit (Richard Williams) — Branchenstandard", "url": "", "type": "book", "free": false }
+      ],
+      "gate": {
+        "challengeTitle": "Rig & Move",
+        "difficulties": [
+          { "level": "easy", "description": "Rigge dein Level-5-Modell und animiere einen 2-Sekunden-Idle oder eine Geste.", "xp": 750 },
+          { "level": "hard", "description": "Biped-Rig mit IK/FK-Switch + animierter Walk Cycle (mind. 24 Frames, loopend).", "xp": 1200 }
+        ],
+        "criteria": [
+          { "text": "Weight Painting sauber: keine kaputten Deformationen in Extrempose" },
+          { "text": "IK/FK funktioniert und ist über Custom Property umschaltbar (Hard)" },
+          { "text": "Controls haben Custom Shapes, sind farblich unterscheidbar" },
+          { "text": "Animation nutzt mind. 4 der 12 Prinzipien — benennbar!" },
+          { "text": "F-Curves aufgeräumt (kein Linear-Interpolation-Chaos)" },
+          { "text": "Playblast als MP4 exportiert" }
+        ],
+        "verificationType": "checklist",
+        "proofRequired": true
+      }
+    },
+    {
+      "order": 7,
+      "shortLabel": "L7",
+      "title": "Environment & Geometry Nodes",
+      "capability": "Du kannst eine komplette Environment-Szene aus eigenen Assets bauen und mit Geometry Nodes prozedural Details streuen.",
+      "description": "Scene Assembly, Modularität, Geometry Nodes, große Szenen managen, Atmosphäre.",
+      "startDate": "2027-11-01",
+      "deadline": "2028-01-31",
+      "topics": [
+        "Scene Assembly: Blocking → Detailing → Set Dressing",
+        "Modularität, Kit-Bashing, Instancing (Performance!)",
+        "Geometry Nodes: Attribute-Denken, Scatter, Instance on Points",
+        "Prozedurale Streuung (Gras, Steine, Fenster, Nieten)",
+        "Große Szenen managen: Linking, Library Override, Collections",
+        "Atmosphäre: Volumetrics, Fog, Godrays",
+        "Kompositionsaufbau im 3D-Raum (Foreground/Midground/Background)"
+      ],
+      "resources": [
+        { "title": "Blender Manual: Geometry Nodes", "url": "https://docs.blender.org/manual/en/latest/modeling/geometry_nodes/index.html", "type": "docs", "free": true },
+        { "title": "CG Geek — Environment-Tutorials", "url": "", "type": "video", "free": true },
+        { "title": "Polyfjord — prozedurale Workflows", "url": "", "type": "video", "free": true },
+        { "title": "Poly Haven — HDRIs + Models fürs Set Dressing", "url": "https://polyhaven.com", "type": "asset", "free": true },
+        { "title": "Vertiefung: \"geometry nodes scatter tutorial\"", "url": "", "type": "video", "free": true }
+      ],
+      "gate": {
+        "challengeTitle": "Full Environment",
+        "difficulties": [
+          { "level": "easy", "description": "Baue eine komplette Innenraum-Szene (Zimmer, Werkstatt, Café) mit min. 15 eigenen Assets.", "xp": 800 },
+          { "level": "hard", "description": "Außen-Environment mit prozeduraler Streuung via Geometry Nodes + Atmosphäre.", "xp": 1300 }
+        ],
+        "criteria": [
+          { "text": "Min. 15 selbst modellierte Assets (keine reinen Downloads)" },
+          { "text": "Geometry Nodes für mind. 1 Streuungs-Aufgabe eingesetzt" },
+          { "text": "Szene rendert unter 20 Min/Frame trotz Komplexität" },
+          { "text": "Klare Komposition: Blickführung erkennbar, Foreground/Mid/Background definiert" },
+          { "text": "3 Kamerawinkel gerendert" },
+          { "text": "Scene Organization: alles in benannten Collections" }
+        ],
+        "verificationType": "checklist",
+        "proofRequired": true
+      }
+    },
+    {
+      "order": 8,
+      "shortLabel": "L8",
+      "title": "FX, Compositing & Realtime",
+      "capability": "Du kannst einen VFX-Shot mit Simulation und Compositing produzieren und Layer für Layer als Breakdown erklären.",
+      "description": "Physics, Particles, Fluid/Smoke, Compositing tiefer, Tracking, Realtime-Export.",
+      "startDate": "2028-02-01",
+      "deadline": "2028-04-30",
+      "topics": [
+        "Physics: Rigid Body, Cloth, Soft Body, Collisions",
+        "Particles & Simulation Nodes",
+        "Fluid / Smoke / Fire (Mantaflow) — Grundlagen",
+        "Compositing tiefer: Render Passes, Cryptomatte, AOVs, Z-Depth",
+        "Camera Tracking / Motion Tracking (Grundlagen)",
+        "Green Screen Keying",
+        "Video Sequence Editor: Schnitt, Sound, Export-Settings",
+        "Realtime: Export nach Godot oder Unreal, glTF/FBX, Realtime-Constraints",
+        "EEVEE Next-Workflow für schnelle Iteration"
+      ],
+      "resources": [
+        { "title": "Blender Manual: Physics & Compositing", "url": "https://docs.blender.org/manual/en/latest/physics/index.html", "type": "docs", "free": true },
+        { "title": "CG Geek — VFX & Tracking", "url": "", "type": "video", "free": true },
+        { "title": "Blender Studio — Production Breakdowns", "url": "https://studio.blender.org", "type": "docs", "free": true },
+        { "title": "Ryan King Art — schnelle praktische FX-Tutorials", "url": "", "type": "video", "free": true }
+      ],
+      "gate": {
+        "challengeTitle": "VFX Shot",
+        "difficulties": [
+          { "level": "easy", "description": "5-Sekunden-Shot mit einer Simulation (Cloth ODER Rigid Body) + Compositing.", "xp": 850 },
+          { "level": "hard", "description": "Live-Action-Footage tracken und ein 3D-Objekt realistisch integrieren (Lighting-Match + Schatten + Grain).", "xp": 1400 }
+        ],
+        "criteria": [
+          { "text": "Simulation läuft stabil, kein Clipping / Explodieren" },
+          { "text": "Min. 3 Render Passes im Compositor genutzt" },
+          { "text": "Bei Tracking: Solve Error unter 1.0 px" },
+          { "text": "Farb- und Lichtstimmung zwischen 3D und Plate matcht (Hard)" },
+          { "text": "Finaler Export als MP4, H.264, mit Ton oder Ambient" },
+          { "text": "Breakdown-Video (Layer nacheinander eingeblendet) erstellt" }
+        ],
+        "verificationType": "checklist",
+        "proofRequired": true
+      }
+    },
+    {
+      "order": 9,
+      "shortLabel": "L9",
+      "title": "Spezialisierung & Portfolio",
+      "capability": "Du kannst ein kuratiertes 3D-Portfolio mit Demoreel präsentieren, das jede Kerndisziplin der Pipeline abdeckt und externes Feedback eingearbeitet hat.",
+      "description": "Ehrliche Selbsteinschätzung, Vertiefung in 2 Stärken, Portfolio-Kuratierung, Präsentation.",
+      "startDate": "2028-05-01",
+      "deadline": "2028-08-31",
+      "topics": [
+        "Ehrliche Selbsteinschätzung: In welchen 2 Bereichen bin ich am stärksten?",
+        "Vertiefung in genau diesen 2 (T-Shape: breit + 2 tiefe Säulen)",
+        "Portfolio-Kuratierung: 6–8 beste Stücke, Rest weg",
+        "Präsentation: Turntables, Breakdowns, Wireframe-Shots, Clay Renders",
+        "ArtStation-Profil aufbauen, Projektbeschreibungen schreiben",
+        "Demoreel schneiden (60–90 Sekunden, bestes zuerst)",
+        "Feedback einholen: Blender Artists Forum, Discord-Communities, Reddit r/blender"
+      ],
+      "resources": [
+        { "title": "Blender Artists Forum — Coding-/Showcase-Sektion", "url": "https://blenderartists.org", "type": "forum", "free": true }
+      ],
+      "gate": {
+        "challengeTitle": "Portfolio & Demoreel",
+        "difficulties": [
+          { "level": "hard", "description": "6–8 finalisierte Portfolio-Stücke, jede Kerndisziplin vertreten, 1 vollständiges End-to-End-Projekt, ArtStation live, Demoreel geschnitten.", "xp": 1500 }
+        ],
+        "criteria": [
+          { "text": "6–8 finalisierte Portfolio-Stücke, jedes mit Breakdown" },
+          { "text": "Jede Kern-Disziplin ist mit min. 1 Stück vertreten (Modeling, Texturing, Lighting, Animation, FX)" },
+          { "text": "1 vollständiges eigenes Projekt End-to-End (Idee → fertiger Shot), kein Tutorial" },
+          { "text": "ArtStation-Profil live mit allen Stücken" },
+          { "text": "Demoreel 60–90 Sek geschnitten, mit Musik" },
+          { "text": "Feedback von min. 3 externen Personen eingeholt und eingearbeitet" }
+        ],
+        "verificationType": "checklist",
+        "proofRequired": true
+      }
+    }
+  ]
+}

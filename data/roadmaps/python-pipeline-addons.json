@@ -1,0 +1,366 @@
+{
+  "schemaVersion": 1,
+  "questLineKey": "python-pipeline-addons",
+  "title": "Python Mastery → Pipeline & Blender Addons",
+  "grandGoal": "Python auf professionellem Niveau beherrschen — gut genug für eine Pipeline-TD-Rolle (Tools bauen, die ein ganzes Team benutzt) und für eigene, veröffentlichte Blender-Addons.",
+  "totalMonths": 18,
+  "weeklyHours": { "min": 6, "max": 10 },
+  "milestones": [
+    {
+      "order": 1,
+      "shortLabel": "P1",
+      "title": "Python Fundamentals",
+      "capability": "Du kannst kleine Skripte mit Funktionen und Fehlerbehandlung selbst schreiben und jede Zeile deines eigenen Codes erklären.",
+      "description": "Variablen, Kontrollfluss, Datenstrukturen, Funktionen, Comprehensions, Tracebacks lesen.",
+      "startDate": "2026-09-01",
+      "deadline": "2026-10-31",
+      "topics": [
+        "Variablen, Typen, Operatoren, f-Strings",
+        "Kontrollfluss: if/elif/else, for, while, break/continue",
+        "Datenstrukturen: list, dict, set, tuple — und wann welche",
+        "Funktionen: Parameter, Defaults, *args/**kwargs, Return-Werte, Scope",
+        "List/Dict Comprehensions",
+        "Slicing, Unpacking, Enumerate, Zip",
+        "Fehler lesen: Traceback verstehen statt panisch googeln",
+        "print()-Debugging → dann Debugger im Editor"
+      ],
+      "resources": [
+        { "title": "CS50P — Harvard, Introduction to Programming with Python", "url": "https://cs50.harvard.edu/python/", "type": "course", "free": true },
+        { "title": "Automate the Boring Stuff (Al Sweigart) — komplettes Buch gratis online", "url": "https://automatetheboringstuff.com", "type": "book", "free": true },
+        { "title": "Python Programming MOOC (Uni Helsinki)", "url": "https://programming-24.mooc.fi/", "type": "course", "free": true },
+        { "title": "Official Python Tutorial", "url": "https://docs.python.org/3/tutorial/", "type": "docs", "free": true },
+        { "title": "Corey Schafer — Python-Serie", "url": "", "type": "video", "free": true },
+        { "title": "Real Python", "url": "https://realpython.com", "type": "docs", "free": true }
+      ],
+      "gate": {
+        "challengeTitle": "50 Übungen + 1 Skript",
+        "difficulties": [
+          { "level": "easy", "description": "50 Übungsaufgaben lösen (CS50P Problem Sets oder MOOC-Aufgaben) + ein Skript, das Dateien in einem Ordner nach Datum umbenennt.", "xp": 400 },
+          { "level": "hard", "description": "Zusätzlich ein CLI-Tool, das eine CSV einliest, filtert und eine Zusammenfassung ausgibt.", "xp": 600 }
+        ],
+        "criteria": [
+          { "text": "50 Aufgaben gelöst, jede läuft fehlerfrei" },
+          { "text": "Skript hat Funktionen (nicht alles in einem Block)" },
+          { "text": "Skript hat Fehlerbehandlung (was, wenn der Ordner nicht existiert?)" },
+          { "text": "Ich kann jede Zeile meines eigenen Codes erklären" },
+          { "text": "Kein einziges Copy-Paste ohne Verständnis" }
+        ],
+        "verificationType": "checklist",
+        "proofRequired": true
+      }
+    },
+    {
+      "order": 2,
+      "shortLabel": "P2",
+      "title": "OOP, Dateien, Module",
+      "capability": "Du kannst ein Programm mit eigenen Klassen, Exceptions und JSON-Persistenz sauber strukturieren und in einer venv mit requirements.txt betreiben.",
+      "description": "Klassen, Vererbung vs. Composition, Dunder-Methoden, Exceptions, Dateien/pathlib, Module & venv.",
+      "startDate": "2026-11-01",
+      "deadline": "2026-12-31",
+      "topics": [
+        "Klassen, __init__, Attribute, Methoden, self",
+        "Vererbung, Composition — und warum Composition oft besser ist",
+        "Dunder-Methoden: __str__, __repr__, __eq__, __len__",
+        "@property, @staticmethod, @classmethod",
+        "Exceptions: try/except/finally, eigene Exception-Klassen, raise",
+        "Dateien: open(), Context Manager (with), pathlib statt os.path",
+        "Formate: JSON, CSV, YAML lesen/schreiben",
+        "Module & Packages, __init__.py, Imports richtig strukturieren",
+        "Virtual Environments (venv), pip, requirements.txt"
+      ],
+      "resources": [
+        { "title": "Corey Schafer — OOP-Playlist (sehr klar)", "url": "", "type": "video", "free": true },
+        { "title": "Real Python — OOP & pathlib Artikel", "url": "https://realpython.com", "type": "docs", "free": true },
+        { "title": "Python Docs: Classes", "url": "https://docs.python.org/3/tutorial/classes.html", "type": "docs", "free": true },
+        { "title": "Fluent Python (Luciano Ramalho) — für später, sehr gut", "url": "", "type": "book", "free": false }
+      ],
+      "gate": {
+        "challengeTitle": "Asset-Manager (Mini)",
+        "difficulties": [
+          { "level": "easy", "description": "Ein Programm, das eine Ordnerstruktur scannt und alle 3D-Dateien (.blend, .fbx, .obj) in einer JSON-Datenbank katalogisiert (Pfad, Größe, Datum).", "xp": 500 },
+          { "level": "hard", "description": "Zusätzlich: Klassenstruktur mit Asset, AssetLibrary, Suche/Filter nach Kriterien, und ein Report als Markdown-Export.", "xp": 800 }
+        ],
+        "criteria": [
+          { "text": "Mind. 3 eigene Klassen mit sinnvoller Verantwortungstrennung" },
+          { "text": "pathlib benutzt, nicht String-Konkatenation für Pfade" },
+          { "text": "Eigene Exception-Klasse definiert und genutzt" },
+          { "text": "JSON wird korrekt geschrieben UND wieder eingelesen" },
+          { "text": "Programm läuft in einer venv mit requirements.txt" },
+          { "text": "__repr__ implementiert (Debug-Ausgabe ist lesbar)" }
+        ],
+        "verificationType": "checklist",
+        "proofRequired": true
+      }
+    },
+    {
+      "order": 3,
+      "shortLabel": "P3",
+      "title": "Automation, Git & Tooling",
+      "capability": "Du kannst ein CLI-Tool mit argparse und Logging bauen und es sauber versioniert auf GitHub veröffentlichen.",
+      "description": "Git-Workflow, GitHub, Bash-Basics, argparse, logging, subprocess, regex, Code-Style.",
+      "startDate": "2027-01-01",
+      "deadline": "2027-02-28",
+      "topics": [
+        "Git richtig: commit, branch, merge, rebase, .gitignore, Merge-Konflikte lösen",
+        "GitHub: Repos, Pull Requests, Issues, README schreiben",
+        "Kommandozeile / Bash-Basics (Pipeline-TDs arbeiten viel auf Linux)",
+        "argparse — CLI-Tools mit Argumenten",
+        "logging statt print() (Profi-Unterschied!)",
+        "subprocess — andere Programme aus Python starten",
+        "Reguläre Ausdrücke (regex) — Grundlagen",
+        "Automatisierung: Dateiverarbeitung, Batch-Umbenennung, Backups",
+        "Code-Style: PEP 8, black, ruff"
+      ],
+      "resources": [
+        { "title": "Learn Git Branching — interaktiv, visuell", "url": "https://learngitbranching.js.org", "type": "tool", "free": true },
+        { "title": "Pro Git Book (kostenlos online)", "url": "https://git-scm.com/book", "type": "book", "free": true },
+        { "title": "Automate the Boring Stuff Kap. 9–18", "url": "https://automatetheboringstuff.com", "type": "book", "free": true },
+        { "title": "PEP 8 Style Guide", "url": "https://peps.python.org/pep-0008/", "type": "docs", "free": true },
+        { "title": "Python logging Doku", "url": "https://docs.python.org/3/howto/logging.html", "type": "docs", "free": true }
+      ],
+      "gate": {
+        "challengeTitle": "Render-Batch-Tool",
+        "difficulties": [
+          { "level": "easy", "description": "CLI-Tool, das mehrere .blend-Dateien nacheinander per subprocess rendert und ein Log schreibt.", "xp": 550 },
+          { "level": "hard", "description": "Zusätzlich: Konfigurierbar über YAML/JSON-Config, Fortschrittsanzeige, Fehler-Retry, und alles auf GitHub mit ordentlichem README.", "xp": 900 }
+        ],
+        "criteria": [
+          { "text": "Tool nutzt argparse, --help funktioniert und ist verständlich" },
+          { "text": "logging mit min. 3 Leveln (INFO, WARNING, ERROR), Log-Datei wird geschrieben" },
+          { "text": "Code ist mit black/ruff formatiert, PEP 8 konform" },
+          { "text": "Git-Repo mit min. 15 sinnvollen Commits (keine \"update\" Commits)" },
+          { "text": "README erklärt Installation + Nutzung mit Beispiel" },
+          { "text": ".gitignore korrekt (keine venv/Cache im Repo)" }
+        ],
+        "verificationType": "checklist",
+        "proofRequired": true
+      }
+    },
+    {
+      "order": 4,
+      "shortLabel": "P4",
+      "title": "Blender Python API (bpy) Grundlagen",
+      "capability": "Du kannst Blender-Szenen per bpy.data-Skript automatisiert bearbeiten und prüfen, ohne dich auf bpy.ops oder die aktuelle Selektion zu verlassen.",
+      "description": "bpy.data vs. bpy.context vs. bpy.ops, Objekte/Mesh-Daten/Materialien per Skript, API-Gotchas.",
+      "startDate": "2027-03-01",
+      "deadline": "2027-04-30",
+      "topics": [
+        "Blender's Python Console & Text Editor, externes IDE-Setup (VS Code)",
+        "bpy.data vs. bpy.context vs. bpy.ops — der wichtigste Unterschied",
+        "Warum bpy.ops fragil ist und wann man bpy.data nutzt",
+        "Objekte erzeugen, manipulieren, löschen per Skript",
+        "Mesh-Daten direkt lesen: vertices, edges, polygons",
+        "Materialien und Node-Trees per Skript aufbauen",
+        "Szenen-Traversierung, Collections per Code",
+        "Tooltips als API-Hinweis nutzen (Python Tooltips in Preferences aktivieren)",
+        "Info-Editor: Blender zeigt dir den Python-Befehl jeder Aktion"
+      ],
+      "resources": [
+        { "title": "Blender Python API Reference (offiziell)", "url": "https://docs.blender.org/api/current/", "type": "docs", "free": true },
+        { "title": "Blender API — Quickstart Intro", "url": "https://docs.blender.org/api/current/info_quickstart.html", "type": "docs", "free": true },
+        { "title": "Blender API — Gotchas (sehr wichtig lesen!)", "url": "https://docs.blender.org/api/current/info_gotcha.html", "type": "docs", "free": true },
+        { "title": "Blender Artists Forum — Coding-Sektion", "url": "https://blenderartists.org", "type": "forum", "free": true },
+        { "title": "Blender Stack Exchange", "url": "https://blender.stackexchange.com", "type": "forum", "free": true }
+      ],
+      "gate": {
+        "challengeTitle": "Scene-Automation-Skript",
+        "difficulties": [
+          { "level": "easy", "description": "Skript, das alle Objekte einer Szene nach einer Namenskonvention umbenennt und in passende Collections sortiert.", "xp": 600 },
+          { "level": "hard", "description": "Skript, das eine Szene auf Fehler prüft (unapplied Scale, N-Gons, fehlende UVs, unbenutzte Materialien) und einen Report ausgibt.", "xp": 950 }
+        ],
+        "criteria": [
+          { "text": "Skript nutzt überwiegend bpy.data, nicht bpy.ops" },
+          { "text": "Funktioniert unabhängig davon, was gerade selektiert ist" },
+          { "text": "Keine Abstürze bei leerer Szene oder ungewöhnlichen Objekttypen" },
+          { "text": "Report ist lesbar formatiert (Konsole oder Textblock in Blender)" },
+          { "text": "Ich habe die \"Gotchas\"-Seite komplett gelesen und kann 3 Fallen nennen" },
+          { "text": "Skript spart mir persönlich echte Zeit bei einem echten Projekt" }
+        ],
+        "verificationType": "checklist",
+        "proofRequired": true
+      }
+    },
+    {
+      "order": 5,
+      "shortLabel": "P5",
+      "title": "Erstes echtes Addon",
+      "capability": "Du kannst ein eigenes Blender-Addon mit UI-Panel, Operatoren und sauberem Register/Unregister bauen und produktiv selbst nutzen.",
+      "description": "Addon-Struktur, register()/unregister(), Operators, Panels & UI, Properties, Preferences.",
+      "startDate": "2027-05-01",
+      "deadline": "2027-06-30",
+      "topics": [
+        "Addon-Struktur: bl_info / blender_manifest.toml (Extensions-Format ab 4.2)",
+        "register() / unregister() — und warum sauberes Unregister wichtig ist",
+        "Operators: bpy.types.Operator, poll(), execute(), invoke()",
+        "Panels & UI: bpy.types.Panel, Layout-System, Regions",
+        "Properties: bpy.props, PropertyGroup, wo man State speichert",
+        "Addon Preferences",
+        "Menüs, Pie Menus, Keymaps registrieren",
+        "Multi-File-Addon: Code auf Module aufteilen",
+        "Live-Reload beim Entwickeln"
+      ],
+      "resources": [
+        { "title": "Blender Addon Tutorial (offiziell)", "url": "https://docs.blender.org/api/current/info_tutorial_addon.html", "type": "docs", "free": true },
+        { "title": "Blender Extensions — Developer Handbook", "url": "https://developer.blender.org/docs/handbook/extensions/", "type": "docs", "free": true },
+        { "title": "Add-on Guidelines (Anforderungen für Veröffentlichung)", "url": "https://developer.blender.org/docs/handbook/extensions/addon_guidelines/", "type": "docs", "free": true },
+        { "title": "Bestehende Addons als Quellcode lesen", "url": "https://projects.blender.org/extensions", "type": "tool", "free": true },
+        { "title": "Extensions-Plattform (Vorbilder anschauen)", "url": "https://extensions.blender.org", "type": "tool", "free": true }
+      ],
+      "gate": {
+        "challengeTitle": "Mein erstes Addon",
+        "difficulties": [
+          { "level": "easy", "description": "Ein Addon mit UI-Panel im N-Panel, das 3 nützliche Operatoren für deinen eigenen Modeling-Workflow bündelt.", "xp": 700 },
+          { "level": "hard", "description": "Addon mit PropertyGroup-State, Addon Preferences, eigenem Keymap-Eintrag, aufgeteilt auf mehrere Python-Dateien.", "xp": 1100 }
+        ],
+        "criteria": [
+          { "text": "Installierbar als .zip über Preferences → Extensions" },
+          { "text": "Sauberes unregister() — nach Deaktivieren ist Blender komplett clean" },
+          { "text": "Alle Operatoren haben poll() (Buttons sind ausgegraut wenn nicht sinnvoll)" },
+          { "text": "Tooltips für jeden Button geschrieben" },
+          { "text": "UI ist selbsterklärend ohne Erklärung von mir" },
+          { "text": "Ich benutze es selbst mindestens 2 Wochen lang produktiv" }
+        ],
+        "verificationType": "checklist",
+        "proofRequired": true
+      }
+    },
+    {
+      "order": 6,
+      "shortLabel": "P6",
+      "title": "Fortgeschrittene Blender-Entwicklung",
+      "capability": "Du kannst einen interaktiven Modal Operator mit bmesh-Geometrie und eigenem GPU-Overlay bauen, der auch auf großen Meshes stabil läuft.",
+      "description": "bmesh, Modal Operators, gpu/blf module, Ray Casting, Handler & Timer, Performance.",
+      "startDate": "2027-07-01",
+      "deadline": "2027-08-31",
+      "topics": [
+        "bmesh: Mesh-Daten prozedural manipulieren (der eigentliche Power-Move)",
+        "Geometrie erzeugen: Vertices/Faces programmatisch bauen",
+        "Modal Operators: interaktive Tools mit Maus-/Tastatur-Input",
+        "gpu module: eigene Viewport-Grafik zeichnen (Overlays, Guides)",
+        "blf module: Text im Viewport rendern",
+        "Ray Casting, Snapping, Screen-Space ↔ World-Space Konvertierung",
+        "Handler & Timer (bpy.app.handlers, bpy.app.timers)",
+        "Performance: foreach_get/foreach_set, NumPy statt Python-Loops",
+        "Threading-Grenzen in Blender kennen"
+      ],
+      "resources": [
+        { "title": "bmesh API Doku", "url": "https://docs.blender.org/api/current/bmesh.html", "type": "docs", "free": true },
+        { "title": "gpu Module Doku", "url": "https://docs.blender.org/api/current/gpu.html", "type": "docs", "free": true },
+        { "title": "Modal Operator Beispiele in API-Doku", "url": "https://docs.blender.org/api/current/bpy.types.Operator.html", "type": "docs", "free": true },
+        { "title": "Blender Stack Exchange (spezifische Probleme)", "url": "https://blender.stackexchange.com", "type": "forum", "free": true },
+        { "title": "Addon Development With Python Vol 1 (KenzoCG, 15 h)", "url": "https://blendatlas.com", "type": "course", "free": false }
+      ],
+      "gate": {
+        "challengeTitle": "Interaktives Tool",
+        "difficulties": [
+          { "level": "easy", "description": "Ein Modal Operator, bei dem Mausbewegung einen Parameter live steuert (mit Viewport-Feedback).", "xp": 800 },
+          { "level": "hard", "description": "Ein bmesh-basiertes Tool, das prozedural Geometrie erzeugt oder modifiziert + eigenes GPU-Overlay als visuelle Hilfe.", "xp": 1300 }
+        ],
+        "criteria": [
+          { "text": "Modal Operator reagiert auf Maus, ESC bricht sauber ab, ENTER bestätigt" },
+          { "text": "Viewport-Overlay zeichnet korrekt und wird sauber aufgeräumt" },
+          { "text": "bmesh wird korrekt freigegeben (bm.free()) — kein Memory Leak" },
+          { "text": "Tool funktioniert auf Mesh mit 100k+ Vertices ohne Einfrieren" },
+          { "text": "Undo funktioniert korrekt" },
+          { "text": "Kein bpy.ops innerhalb der Hauptlogik" }
+        ],
+        "verificationType": "checklist",
+        "proofRequired": true
+      }
+    },
+    {
+      "order": 7,
+      "shortLabel": "P7",
+      "title": "Software-Engineering & Veröffentlichung",
+      "capability": "Du kannst ein Addon mit Tests, CI und sauberer Dokumentation eigenständig auf extensions.blender.org veröffentlichen.",
+      "description": "Testing, Type Hints, Refactoring, Design Patterns, CI/CD, Packaging, Veröffentlichung.",
+      "startDate": "2027-09-01",
+      "deadline": "2027-10-31",
+      "topics": [
+        "Testing: pytest, Unit Tests, Test-Driven-Denken",
+        "Type Hints (typing, mypy) — in Produktions-Python inzwischen Standard",
+        "Docstrings, Dokumentation generieren",
+        "Refactoring: Code lesbar machen, Duplikate eliminieren",
+        "Design Patterns die real vorkommen: Factory, Singleton (sparsam!), Observer",
+        "CI/CD: GitHub Actions — Tests laufen automatisch bei jedem Push",
+        "Packaging: pyproject.toml, Wheels, Dependencies bündeln",
+        "Semantic Versioning, Changelog pflegen",
+        "Extension veröffentlichen auf extensions.blender.org (GPL-Kompatibilität, kein obfuscated Code, bpy.app.online_access respektieren, self-contained, kein Auto-Updater)"
+      ],
+      "resources": [
+        { "title": "Extensions Moderation Guidelines (was geprüft wird)", "url": "https://developer.blender.org/docs/features/extensions/moderation/guidelines/", "type": "docs", "free": true },
+        { "title": "Add-on Guidelines", "url": "https://developer.blender.org/docs/handbook/extensions/addon_guidelines/", "type": "docs", "free": true },
+        { "title": "pytest Doku", "url": "https://docs.pytest.org", "type": "docs", "free": true },
+        { "title": "Real Python — Testing & Type Checking", "url": "https://realpython.com", "type": "docs", "free": true },
+        { "title": "GitHub Actions Doku", "url": "https://docs.github.com/actions", "type": "docs", "free": true }
+      ],
+      "gate": {
+        "challengeTitle": "Veröffentlichtes Addon",
+        "difficulties": [
+          { "level": "hard", "description": "Nur Hard — hier gibt's keinen Easy-Weg. Addon aus Phase 5/6 überarbeitet und auf extensions.blender.org eingereicht.", "xp": 1500 }
+        ],
+        "criteria": [
+          { "text": "Addon aus Phase 5/6 überarbeitet: Type Hints, Docstrings, saubere Modulstruktur" },
+          { "text": "Min. 10 Unit Tests, alle grün" },
+          { "text": "GitHub Actions läuft automatisch bei Push" },
+          { "text": "blender_manifest.toml korrekt, alle Guidelines erfüllt" },
+          { "text": "Bei extensions.blender.org eingereicht" },
+          { "text": "Öffentliches Repo mit Issue Tracker als Support-URL" },
+          { "text": "Dokumentation + min. 1 GIF/Video das die Funktion zeigt" },
+          { "text": "Bonus: Erste Fremd-Person nutzt es und gibt Feedback" }
+        ],
+        "verificationType": "checklist",
+        "proofRequired": true
+      }
+    },
+    {
+      "order": 8,
+      "shortLabel": "P8",
+      "title": "Pipeline-Denken",
+      "capability": "Du kannst ein Publisher-Addon und einen eigenständigen PySide-Manager auf einer gemeinsamen, getesteten Python-Library aufbauen — eine echte kleine Pipeline.",
+      "description": "Namenskonventionen, Asset-Management, Qt/PySide, USD-Grundverständnis, DCC-übergreifendes Denken, Datenbanken light.",
+      "startDate": "2027-11-01",
+      "deadline": "2028-02-29",
+      "topics": [
+        "Was ein Pipeline TD wirklich macht: Systeme bauen, auf die alle Abteilungen angewiesen sind",
+        "Namenskonventionen & Ordnerstrukturen für Produktionen (s010_ANIM_v003)",
+        "Asset-Management: Versionierung, Publishing, Dependencies",
+        "Konfiguration statt Hardcoding: JSON/YAML/TOML-basierte Setups",
+        "Qt / PySide — Standard-GUI-Toolkit in der Branche (Maya, Nuke, Houdini nutzen es)",
+        "USD (Universal Scene Description) — Grundverständnis, wird Branchenstandard",
+        "DCC-übergreifend denken: dieselbe Logik in Blender UND Maya lauffähig",
+        "Render-Farm-Konzepte (Deadline & Co. — verstehen, nicht besitzen müssen)",
+        "Linux-Basics: Shell, Permissions, Pfade, Umgebungsvariablen",
+        "Datenbanken light: SQLite für Asset-Tracking",
+        "APIs & REST-Grundlagen"
+      ],
+      "resources": [
+        { "title": "OpenUSD (offizielle Doku + Tutorials)", "url": "https://openusd.org", "type": "docs", "free": true },
+        { "title": "Blender USD-Integration Manual", "url": "https://docs.blender.org/manual/en/latest/files/import_export/usd.html", "type": "docs", "free": true },
+        { "title": "PySide6 / Qt for Python Doku", "url": "https://doc.qt.io/qtforpython/", "type": "docs", "free": true },
+        { "title": "Alexander Richter — Pipeline-TD-Blog", "url": "https://www.alexanderrichtertd.com", "type": "docs", "free": true },
+        { "title": "ScreenSkills — Pipeline TD Berufsprofil", "url": "https://www.screenskills.com", "type": "docs", "free": true },
+        { "title": "Stellenanzeigen für \"Pipeline TD\" lesen (echte Anforderungen!)", "url": "", "type": "docs", "free": true }
+      ],
+      "gate": {
+        "challengeTitle": "Mini-Pipeline",
+        "difficulties": [
+          { "level": "hard", "description": "Nur Hard. Baue ein zusammenhängendes Tool-Set für deinen eigenen 3D-Workflow: Asset-Publisher-Addon + Standalone PySide-Manager auf einer gemeinsamen Library.", "xp": 2000 }
+        ],
+        "criteria": [
+          { "text": "Asset-Publisher: Blender-Addon, das ein Asset nach Konvention exportiert, versioniert und in einer Bibliothek registriert" },
+          { "text": "Standalone-Manager: PySide-GUI außerhalb von Blender, die die Bibliothek durchsucht und anzeigt" },
+          { "text": "Beide teilen sich eine gemeinsame Python-Library (kein doppelter Code)" },
+          { "text": "Konfiguration über eine Config-Datei, nichts hardcoded" },
+          { "text": "SQLite oder JSON als Datenspeicher, sauber gekapselt" },
+          { "text": "Vollständige Tests für die geteilte Library" },
+          { "text": "Logging über alle Komponenten" },
+          { "text": "Ein Dokument, das die Pipeline erklärt, als hätte ich neue Kollegen" },
+          { "text": "Ich benutze es selbst für meine 3D-Roadmap-Projekte" }
+        ],
+        "verificationType": "checklist",
+        "proofRequired": true
+      }
+    }
+  ]
+}

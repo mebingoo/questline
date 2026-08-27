@@ -1395,6 +1395,10 @@ function yyyymmdd(d){ return d.getFullYear()*10000 + (d.getMonth()+1)*100 + d.ge
 /* ============ STATE ============ */
 const STORAGE_KEY = 'questline_state_v2';
 const LEGACY_KEY  = 'questline_state_v1';
+// Bumped whenever the shape of `state` changes in a way migrate() needs to know about.
+// Separate from STORAGE_KEY (which only ever changed for a full localStorage-key cutover) —
+// this is the field migrate() stamps so future changes can tell old saves apart in-place.
+const SCHEMA_VERSION = 2;
 
 /* WebUntis credentials (incl. the school password) live in their own local-only
  * key, never inside `state` — state gets pushed to the sync server, this doesn't. */
@@ -1425,30 +1429,60 @@ function questExtras(){
   };
 }
 /* ============ MILESTONES / ROADMAP ============ */
+// Resource.type is constrained to the roadmap.json seed vocabulary; anything else
+// (legacy "article", an unmapped markdown label) falls back to the neutral 'docs'.
+const RESOURCE_TYPES = ['course','video','docs','book','tool','asset','forum'];
 function normalizeMilestone(raw, i){
   const gate = raw.gate || {};
+  const id = raw.id || ('ms'+Date.now()+'_'+i);
+  const order = Number.isFinite(raw.order) ? raw.order : i;
   return {
-    id: raw.id || ('ms'+Date.now()+'_'+i),
-    order: Number.isFinite(raw.order) ? raw.order : i,
+    id,
+    order,
+    shortLabel: String(raw.shortLabel || ('M'+(order+1))),
     title: String(raw.title||'Untitled milestone'),
+    capability: String(raw.capability||''),
     description: String(raw.description||''),
     startDate: raw.startDate || null,
     deadline: raw.deadline || null,
     status: ['locked','active','completed','overdue'].includes(raw.status) ? raw.status : (i===0 ? 'active' : 'locked'),
     completedDate: raw.completedDate || null,
     topics: Array.isArray(raw.topics) ? raw.topics.map(String) : [],
-    resources: Array.isArray(raw.resources) ? raw.resources.map(r=>({type:r.type||'article', url:r.url||'', title:r.title||r.url||''})) : [],
+    resources: Array.isArray(raw.resources) ? raw.resources.map(r=>({
+      title: String(r.title || r.url || ''),
+      url: String(r.url || ''),
+      type: RESOURCE_TYPES.includes(r.type) ? r.type : 'docs',
+      free: r.free !== false
+    })) : [],
     gate: {
       challengeTitle: String(gate.challengeTitle||''),
-      difficultyOptions: Array.isArray(gate.difficultyOptions) && gate.difficultyOptions.length
-        ? gate.difficultyOptions.map(o=>({level:o.level||'easy', description:o.description||'', xp:parseInt(o.xp,10)||100}))
-        : [{level:'standard', description:'', xp:200}],
-      definitionOfDone: Array.isArray(gate.definitionOfDone)
-        ? gate.definitionOfDone.map(d=>typeof d==='string' ? {text:d, done:false} : {text:String(d.text||''), done:!!d.done})
-        : [],
-      verificationType: ['self','checklist'].includes(gate.verificationType) ? gate.verificationType : 'checklist',
+      // Accept both the internal shape (difficultyOptions/definitionOfDone, used by state
+      // already saved to disk) and the roadmap.json seed shape (difficulties/criteria, per
+      // the import format) — one normalizer, no separate translation step for imports.
+      difficultyOptions: (()=>{
+        const list = Array.isArray(gate.difficultyOptions) ? gate.difficultyOptions : gate.difficulties;
+        return Array.isArray(list) && list.length
+          ? list.map(o=>({level: o.level==='hard' ? 'hard' : 'easy', description:String(o.description||''), xp:parseInt(o.xp,10)||100}))
+          : [{level:'easy', description:'', xp:200}];
+      })(),
+      selectedDifficulty: ['easy','hard'].includes(gate.selectedDifficulty) ? gate.selectedDifficulty : null,
+      definitionOfDone: (()=>{
+        const list = Array.isArray(gate.definitionOfDone) ? gate.definitionOfDone : gate.criteria;
+        return Array.isArray(list)
+          ? list.map((d,di)=>typeof d==='string'
+              ? {id:id+'_c'+di, text:d, done:false, checkedAt:null}
+              : {id:d.id||(id+'_c'+di), text:String(d.text||''), done:!!d.done, checkedAt:d.checkedAt||null})
+          : [];
+      })(),
+      verificationType: ['self','checklist','ai_review'].includes(gate.verificationType) ? gate.verificationType : 'checklist',
       proofRequired: !!gate.proofRequired,
-      attempts: Array.isArray(gate.attempts) ? gate.attempts : []
+      proofUrl: gate.proofUrl || null,
+      attempts: Array.isArray(gate.attempts)
+        ? gate.attempts.map(a=>({
+            attemptedAt: a.attemptedAt || (a.date ? a.date+'T00:00:00.000Z' : new Date().toISOString()),
+            note: String(a.note||'')
+          }))
+        : []
     },
     unlocksMilestoneId: raw.unlocksMilestoneId || null
   };
@@ -1460,9 +1494,23 @@ function unlockNextMilestone(g, fromId){
     || g.milestones.filter(m=>m.order>g.milestones[idx].order).sort((a,b)=>a.order-b.order)[0];
   if(next && next.status==='locked') next.status = 'active';
 }
+// "Current" milestone = the one you're actually working on. Overdue is active-but-late,
+// not a dead end, so anything that means "the active milestone" must include it too.
+function currentMilestone(g){
+  return (g.milestones||[]).find(m=>m.status==='active'||m.status==='overdue');
+}
+// Flip active -> overdue in place whenever this runs (on load, and again whenever the
+// roadmap view opens) so a deadline that passes while the app sits open still gets caught,
+// not just on next restart.
+function syncOverdueStatus(g){
+  (g.milestones||[]).forEach(m=>{
+    if(m.status==='active' && m.deadline && daysBetween(todayStr(), m.deadline) < 0) m.status = 'overdue';
+  });
+}
 function freshState(){
   const now = Date.now();
   return {
+    schemaVersion: SCHEMA_VERSION,
     player:{ xp:0, gold:0, streak:0, longestStreak:0, lastActiveDate:null },
     goals: DEFAULT_GOALS.map(g=>({...g, xp:0, objectives:[], milestones:[]})),
     dailies: DEFAULT_DAILIES.map((d,i)=>({ id:'d'+i+'_'+now, goal:d.goal, title:d.title, xp:d.xp, gold:Math.round(d.xp/2), lastDone:null, skipDate:null, steps:[], stepsDay:null, open:false, ...questExtras() })),
@@ -1514,6 +1562,7 @@ function migrate(s){
     if(!Array.isArray(g.objectives)) g.objectives = [];
     if(!Array.isArray(g.milestones)) g.milestones = [];
     g.milestones = g.milestones.map((m,i)=>normalizeMilestone(m,i));
+    syncOverdueStatus(g);
     g.name = unescapeAmp(g.name);
     g.objectives.forEach(o=>{ o.title = unescapeAmp(o.title); });
   });
@@ -1593,6 +1642,7 @@ function migrate(s){
   if(!s.activeTab) s.activeTab = 'overview';
   if(typeof s.showAllQuests !== 'boolean') s.showAllQuests = false;
   s.appearance = Object.assign(defaultAppearance(), s.appearance || {});
+  s.schemaVersion = SCHEMA_VERSION;
   return s;
 }
 
@@ -3072,7 +3122,7 @@ function milestoneSummaryHtml(g){
   const ms = g.milestones || [];
   if(!ms.length) return '';
   const completed = ms.filter(m=>m.status==='completed').length;
-  const active = ms.find(m=>m.status==='active');
+  const active = currentMilestone(g);
   let sub = completed+'/'+ms.length+' milestones';
   if(active && active.deadline){
     const days = daysBetween(todayStr(), active.deadline);
@@ -3488,7 +3538,7 @@ function openMilestoneGate(goalId, msId){
           '</div>')+
       (gate.attempts.length
         ? '<div class="gate-attempts"><label>Previous attempts</label>'+gate.attempts.map(a=>
-            '<div class="gate-attempt">'+esc(a.date||'')+' &mdash; '+esc(a.note||'')+'</div>').join('')+'</div>'
+            '<div class="gate-attempt">'+esc((a.attemptedAt||'').slice(0,10))+' &mdash; '+esc(a.note||'')+'</div>').join('')+'</div>'
         : '')+
       (!isDone ? '<label style="margin-top:10px;">Note (optional)</label><input type="text" class="fld" id="gateNote" placeholder="What happened, what\'s left...">'+
         '<button class="rm-link" id="gateSaveNote">Save note without completing</button>' : '')+
@@ -3508,7 +3558,7 @@ function openMilestoneGate(goalId, msId){
     const saveNoteBtn = document.getElementById('gateSaveNote');
     if(saveNoteBtn) saveNoteBtn.addEventListener('click', ()=>{
       const note = document.getElementById('gateNote').value.trim(); if(!note) return;
-      gate.attempts.push({date:todayStr(), note});
+      gate.attempts.push({attemptedAt:new Date().toISOString(), note});
       saveState(); render();
     });
     const completeBtn = document.getElementById('gateComplete');
@@ -3555,7 +3605,7 @@ function openAddMilestone(goalId){
       order: g.milestones.length,
       gate: {
         challengeTitle: document.getElementById('msChallenge').value.trim(),
-        difficultyOptions: [{level:'standard', description:'', xp}],
+        difficultyOptions: [{level:'easy', description:'', xp}],
         definitionOfDone: dod, verificationType: dod.length ? 'checklist' : 'self'
       }
     };
@@ -3930,7 +3980,7 @@ document.getElementById('timerPill').addEventListener('click', ()=>{
 function activeMilestoneSuggestions(){
   const out = [];
   state.goals.forEach(g=>{
-    const active = g.milestones.find(m=>m.status==='active');
+    const active = currentMilestone(g);
     if(!active) return;
     active.gate.definitionOfDone.forEach(d=>{
       if(!d.done) out.push({text:d.text, goalId:g.id, goalName:g.name, goalColor:g.color, msId:active.id});

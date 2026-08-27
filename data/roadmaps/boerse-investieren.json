@@ -1,0 +1,363 @@
+{
+  "schemaVersion": 1,
+  "questLineKey": "boerse-investieren",
+  "title": "Börse & Investieren",
+  "grandGoal": "Genug verstehen, um langfristig eigenständig und fundiert zu investieren — mit realistischen Erwartungen, Risikobewusstsein und einer schriftlich festgehaltenen Strategie.",
+  "totalMonths": 12,
+  "weeklyHours": { "min": 2, "max": 4 },
+  "milestones": [
+    {
+      "order": 1,
+      "shortLabel": "P1",
+      "title": "Geld-Grundlagen & Psychologie",
+      "capability": "Du kannst deine eigene Sparquote berechnen, den Zinseszinseffekt an einem Beispiel korrekt vorrechnen und benennen, welche psychologischen Fallen bei dir am ehesten zuschlagen.",
+      "description": "Einnahmen/Ausgaben/Sparquote, Notgroschen, Zinseszinseffekt, Inflation, Behavioral Finance.",
+      "startDate": "2026-09-01",
+      "deadline": "2026-09-30",
+      "topics": [
+        "Einnahmen/Ausgaben/Sparquote — die Basis, ohne die Investieren egal ist",
+        "Notgroschen: warum zuerst, wie viel",
+        "Zinseszinseffekt — rechnerisch verstehen, nicht nur \"ist mächtig\"",
+        "Inflation: warum Sparbuch real Geld verliert",
+        "Anlagehorizont & Risikotragfähigkeit",
+        "Behavioral Finance: Verlustaversion, FOMO, Herdentrieb, Overconfidence, Recency Bias",
+        "Warum Anlegerpsychologie oft mehr Rendite kostet als Gebühren"
+      ],
+      "resources": [
+        { "title": "Finanzfluss Bildungsinitiative — 9-Modul-Videokurs", "url": "https://www.finanzfluss.de/bildung/", "type": "course", "free": true },
+        { "title": "Finanzfluss YouTube-Kanal", "url": "", "type": "video", "free": true },
+        { "title": "Finanztip — gemeinnützige Stiftung, werbefrei-orientiert", "url": "https://www.finanztip.de", "type": "docs", "free": true },
+        { "title": "The Psychology of Money (Morgan Housel)", "url": "", "type": "book", "free": false },
+        { "title": "Finanzfluss Rechner (Zinseszins, Sparplan)", "url": "https://www.finanzfluss.de", "type": "tool", "free": true }
+      ],
+      "gate": {
+        "challengeTitle": "Finanz-Bestandsaufnahme",
+        "difficulties": [
+          { "level": "easy", "description": "Einnahmen/Ausgaben tracken, Sparquote berechnen, Zinseszins-Rechnung nachvollziehen, eigene psychologische Fallen und Notgroschen-Ziel festhalten.", "xp": 300 }
+        ],
+        "criteria": [
+          { "text": "4 Wochen lang alle Einnahmen/Ausgaben getrackt" },
+          { "text": "Eigene Sparquote in % berechnet" },
+          { "text": "Zinseszins-Rechnung selbst gemacht: 50 €/Monat, 30 Jahre, 6 % p.a. — Ergebnis notiert" },
+          { "text": "5 psychologische Fallen aufgeschrieben, die auf MICH zutreffen könnten" },
+          { "text": "Notgroschen-Zielsumme definiert" }
+        ],
+        "verificationType": "checklist",
+        "proofRequired": true
+      }
+    },
+    {
+      "order": 2,
+      "shortLabel": "P2",
+      "title": "Wie Märkte funktionieren",
+      "capability": "Du kannst zentrale Börsenbegriffe in eigenen Worten erklären und Indizes anhand ihrer Zusammensetzung, Länder und Unternehmenszahl vergleichen.",
+      "description": "Was ist eine Aktie wirklich, Kursbildung, Ordertypen, Indizes, Anlageklassen.",
+      "startDate": "2026-10-01",
+      "deadline": "2026-10-31",
+      "topics": [
+        "Was ist eine Aktie wirklich (Unternehmensanteil, nicht Zahl auf Bildschirm)",
+        "Wie entsteht ein Kurs: Angebot/Nachfrage, Orderbuch, Spread",
+        "Börsenplätze, Handelszeiten, außerbörslicher Handel",
+        "Ordertypen: Market, Limit, Stop-Loss, Stop-Limit",
+        "Indizes: DAX, S&P 500, MSCI World, MSCI ACWI — was sie abbilden",
+        "Anlageklassen: Aktien, Anleihen, Rohstoffe, Immobilien, Cash",
+        "Marktkapitalisierung, Volatilität, Liquidität",
+        "Was Zinsen mit Aktienkursen zu tun haben"
+      ],
+      "resources": [
+        { "title": "Finanzfluss — Grundlagen-Playlists", "url": "", "type": "video", "free": true },
+        { "title": "Aktien für Einsteiger — strukturierte Lernpfade", "url": "https://www.aktien-fuer-einsteiger.de/lernpfade/", "type": "docs", "free": true },
+        { "title": "Investopedia (sehr gutes Nachschlagewerk, englisch)", "url": "https://www.investopedia.com", "type": "docs", "free": true },
+        { "title": "Deutsche Börse / BaFin Verbraucherinformationen", "url": "https://www.bafin.de", "type": "docs", "free": true }
+      ],
+      "gate": {
+        "challengeTitle": "Markt-Vokabeltest",
+        "difficulties": [
+          { "level": "easy", "description": "30 Fachbegriffe in eigenen Worten erklären, Order-Arten und Indizes vergleichen.", "xp": 350 }
+        ],
+        "criteria": [
+          { "text": "30 Fachbegriffe schriftlich in eigenen Worten erklärt (nicht kopiert)" },
+          { "text": "Unterschied Market- vs. Limit-Order in 3 Sätzen erklärt" },
+          { "text": "3 Indizes verglichen: Zusammensetzung, Länder, Anzahl Unternehmen" },
+          { "text": "Erklärt, warum ein Kurs fällt, obwohl das Unternehmen Gewinn macht" }
+        ],
+        "verificationType": "checklist",
+        "proofRequired": true
+      }
+    },
+    {
+      "order": 3,
+      "shortLabel": "P3",
+      "title": "ETFs, Diversifikation & Kosten",
+      "capability": "Du kannst ETFs anhand von TER, Tracking Difference, Replikationsart und Domizil vergleichen und ein Klumpenrisiko in einem \"breiten\" ETF erkennen.",
+      "description": "Physisch vs. synthetisch, thesaurierend vs. ausschüttend, TER, Diversifikation, Cost-Average-Effekt.",
+      "startDate": "2026-11-01",
+      "deadline": "2026-11-30",
+      "topics": [
+        "Was ein ETF ist, wie er den Index abbildet",
+        "Physisch vs. synthetisch (Swap), Sampling vs. Full Replication",
+        "Thesaurierend vs. ausschüttend — und die Steuerfolgen",
+        "TER (laufende Kosten) + Tracking Difference — TER allein reicht nicht",
+        "Fondsvolumen, Auflagedatum, Schließungsrisiko",
+        "Domizil (Irland vs. Luxemburg) und Quellensteuer",
+        "Diversifikation: Länder, Branchen, Größenklassen, Währungen",
+        "Klumpenrisiko erkennen (auch in \"breiten\" ETFs)",
+        "Sparplan vs. Einmalanlage, Cost-Average-Effekt — was daran Mythos ist"
+      ],
+      "resources": [
+        { "title": "justETF Academy — sehr solide ETF-Erklärungen", "url": "https://www.justetf.com/de/academy/", "type": "docs", "free": true },
+        { "title": "Finanzfluss ETF-Suche & Vergleich", "url": "https://www.finanzfluss.de", "type": "tool", "free": true },
+        { "title": "Finanztip ETF-Ratgeber", "url": "https://www.finanztip.de", "type": "docs", "free": true },
+        { "title": "Stiftung Warentest / Finanztest", "url": "https://www.test.de", "type": "docs", "free": false },
+        { "title": "Souverän investieren (Gerd Kommer)", "url": "", "type": "book", "free": false }
+      ],
+      "gate": {
+        "challengeTitle": "ETF-Analyse",
+        "difficulties": [
+          { "level": "easy", "description": "3 Welt-ETFs im Detail vergleichen: TER, Tracking Difference, Volumen, Replikation, Ausschüttung, Domizil.", "xp": 400 }
+        ],
+        "criteria": [
+          { "text": "3 Welt-ETFs im Detail verglichen: TER, Tracking Difference, Volumen, Replikation, Ausschüttung, Domizil" },
+          { "text": "Für jeden: Top-10-Positionen und Länderverteilung notiert" },
+          { "text": "Erklärt, warum zwei ETFs auf denselben Index unterschiedlich performen können" },
+          { "text": "Ein Klumpenrisiko in einem \"breiten\" ETF identifiziert und benannt" }
+        ],
+        "verificationType": "checklist",
+        "proofRequired": true
+      }
+    },
+    {
+      "order": 4,
+      "shortLabel": "P4",
+      "title": "Steuern, Recht & Broker (Deutschland)",
+      "capability": "Du kannst die Vorabpauschale an einem Beispiel erklären, Broker anhand Kosten und Regulierung vergleichen und einen Anbieter in der BaFin-Datenbank prüfen.",
+      "description": "Abgeltungsteuer, Sparer-Pauschbetrag, Vorabpauschale, Junior-Depot, Broker-Auswahl, Warnsignale.",
+      "startDate": "2026-12-01",
+      "deadline": "2026-12-31",
+      "topics": [
+        "Abgeltungsteuer, Solidaritätszuschlag, ggf. Kirchensteuer",
+        "Sparer-Pauschbetrag und Freistellungsauftrag",
+        "Vorabpauschale bei thesaurierenden Fonds — der Punkt, den fast alle übersehen",
+        "Teilfreistellung bei Aktienfonds",
+        "Quellensteuer auf Auslandsdividenden",
+        "Junior-Depot vs. eigenes Depot: Regeln, Freibeträge, Nichtveranlagungsbescheinigung",
+        "Broker-Auswahl: BaFin-Regulierung, Einlagensicherung, Depotkosten, Sparplan-Kosten, Handelsplätze",
+        "Warnsignale: Anbieter ohne EU-Regulierung, Hebelprodukte-Werbung, \"Trading-Coaches\""
+      ],
+      "resources": [
+        { "title": "Finanztip — Steuern auf Aktien & ETFs", "url": "https://www.finanztip.de", "type": "docs", "free": true },
+        { "title": "Finanztip — Junior-Depot-Vergleich", "url": "https://www.finanztip.de/wertpapierdepot/juniordepot/", "type": "docs", "free": true },
+        { "title": "Finanzfluss — Junior-Depot-Vergleich", "url": "https://www.finanzfluss.de/vergleich/junior-depot/", "type": "docs", "free": true },
+        { "title": "BaFin — Verbraucherschutz & Unternehmensdatenbank", "url": "https://www.bafin.de", "type": "docs", "free": true },
+        { "title": "justETF Academy — Junior-Depot & ETFs", "url": "https://www.justetf.com/de/academy/junior-depot-und-etfs.html", "type": "docs", "free": true }
+      ],
+      "gate": {
+        "challengeTitle": "Steuer- & Broker-Check",
+        "difficulties": [
+          { "level": "easy", "description": "Vorabpauschale erklären, Sparer-Pauschbetrag nachschlagen, Broker und Warnsignale vergleichen.", "xp": 400 }
+        ],
+        "criteria": [
+          { "text": "Vorabpauschale in eigenen Worten erklärt, mit Beispielrechnung" },
+          { "text": "Aktuellen Sparer-Pauschbetrag auf offizieller Quelle nachgeschlagen" },
+          { "text": "3 Broker verglichen: Depotkosten, Sparplangebühr, Handelsplätze, Regulierung" },
+          { "text": "Bei einem Anbieter geprüft, ob er in der BaFin-Datenbank eingetragen ist" },
+          { "text": "5 Warnsignale für unseriöse Anbieter aufgelistet" }
+        ],
+        "verificationType": "checklist",
+        "proofRequired": true
+      }
+    },
+    {
+      "order": 5,
+      "shortLabel": "P5",
+      "title": "Musterdepot / Paper Trading",
+      "capability": "Du kannst ein Musterdepot mit Investment-Journal führen, seine Performance gegen einen Index messen und deine eigenen emotionalen Reaktionen auf Kursbewegungen benennen.",
+      "description": "Musterdepot ohne echtes Geld, Investment-Journal, Rebalancing, Performance-Messung, eigene Emotionen beobachten.",
+      "startDate": "2027-01-01",
+      "deadline": "2027-02-28",
+      "topics": [
+        "Musterdepot führen — ohne echtes Geld, mit echtem Protokoll",
+        "Investment-Journal: Für jede Entscheidung VORHER aufschreiben: Was, warum, Erwartung, Ausstiegskriterium",
+        "Rebalancing verstehen",
+        "Performance messen: TWR, Benchmark-Vergleich",
+        "Eigene Emotionen beobachten: Was fühle ich bei -15 %?"
+      ],
+      "resources": [
+        { "title": "Portfolio Performance — kostenlose Open-Source-Depotsoftware", "url": "https://www.portfolio-performance.info", "type": "tool", "free": true },
+        { "title": "justETF Musterportfolios", "url": "https://www.justetf.com", "type": "tool", "free": true },
+        { "title": "Finanzfluss Portfolio-Tracker", "url": "https://www.finanzfluss.de", "type": "tool", "free": true }
+      ],
+      "gate": {
+        "challengeTitle": "8 Wochen Musterdepot",
+        "difficulties": [
+          { "level": "easy", "description": "8 Wochen ein Musterdepot mit fiktiven 10.000 € führen, mit Investment-Journal und ehrlichem Fazit.", "xp": 600 }
+        ],
+        "criteria": [
+          { "text": "Musterdepot mit fiktiven 10.000 € über 8 Wochen geführt" },
+          { "text": "Min. 10 Journal-Einträge, jeweils VOR der Entscheidung geschrieben" },
+          { "text": "Performance gegen einen Welt-Index verglichen" },
+          { "text": "Ehrliches Fazit: Hätte ich mit Nichtstun besser abgeschnitten?" },
+          { "text": "Mind. 1 emotionale Reaktion dokumentiert und analysiert" }
+        ],
+        "verificationType": "checklist",
+        "proofRequired": true
+      }
+    },
+    {
+      "order": 6,
+      "shortLabel": "P6",
+      "title": "Fundamentalanalyse",
+      "capability": "Du kannst einen Geschäftsbericht lesen, die zentralen Kennzahlen selbst berechnen und eine Unternehmensanalyse schreiben, die auch die Gegenargumente ernst nimmt.",
+      "description": "Geschäftsbericht lesen, Kennzahlen, Free Cash Flow, Geschäftsmodell & Burggraben, Grenzen der Fundamentalanalyse.",
+      "startDate": "2027-03-01",
+      "deadline": "2027-04-30",
+      "topics": [
+        "Geschäftsbericht lesen: GuV, Bilanz, Cashflow-Rechnung",
+        "Kennzahlen: KGV, KBV, KUV, EV/EBITDA, Eigenkapitalquote, ROE, ROIC",
+        "Free Cash Flow — warum wichtiger als Gewinn",
+        "Verschuldung: Net Debt / EBITDA",
+        "Geschäftsmodell & Burggraben (Moat) verstehen",
+        "Warum niedriges KGV nicht \"billig\" heißt",
+        "Grenzen der Fundamentalanalyse: alles ist bereits eingepreist"
+      ],
+      "resources": [
+        { "title": "The Intelligent Investor (Benjamin Graham)", "url": "", "type": "book", "free": false },
+        { "title": "A Random Walk Down Wall Street (Burton Malkiel) — die Gegenposition, unbedingt auch lesen", "url": "", "type": "book", "free": false },
+        { "title": "Investopedia — Financial Statement Analysis", "url": "https://www.investopedia.com", "type": "docs", "free": true },
+        { "title": "Originalquellen: Investor-Relations-Seiten von Unternehmen", "url": "", "type": "docs", "free": true }
+      ],
+      "gate": {
+        "challengeTitle": "Unternehmensanalyse",
+        "difficulties": [
+          { "level": "easy", "description": "Einen kompletten Geschäftsbericht lesen, Kennzahlen selbst berechnen und eine 2-Seiten-Analyse mit Steelman-Gegenargumenten schreiben.", "xp": 700 }
+        ],
+        "criteria": [
+          { "text": "Einen kompletten Geschäftsbericht eines Unternehmens gelesen (ja, wirklich)" },
+          { "text": "8 Kennzahlen selbst berechnet — nicht von einer Website kopiert" },
+          { "text": "2-Seiten-Analyse geschrieben: Geschäftsmodell, Stärken, Risiken, Bewertung" },
+          { "text": "Bewusst 3 Argumente GEGEN das Investment formuliert (Steelman)" },
+          { "text": "Erklärt, warum meine Analyse dem Markt vermutlich nichts Neues sagt" }
+        ],
+        "verificationType": "checklist",
+        "proofRequired": true
+      }
+    },
+    {
+      "order": 7,
+      "shortLabel": "P7",
+      "title": "Risikomanagement",
+      "capability": "Du kannst deine maximale Positionsgröße begründen und hast schriftlich festgelegt, wie du bei einem -30 %- oder -50 %-Crash reagierst, bevor er passiert.",
+      "description": "Positionsgrößen, Maximum Drawdown, Korrelation, Sequence-of-Returns-Risiko, was nicht ins Depot gehört.",
+      "startDate": "2027-05-01",
+      "deadline": "2027-05-31",
+      "topics": [
+        "Positionsgrößen: wie viel % maximal in eine Position",
+        "Maximum Drawdown — historisch, was Märkte wirklich gemacht haben",
+        "Korrelation zwischen Anlageklassen",
+        "Sequence-of-Returns-Risiko",
+        "Warum Stop-Loss bei langfristigen Investments oft schadet",
+        "Was NICHT ins Depot gehört: Hebelprodukte, CFDs, Optionsscheine",
+        "Der wichtigste Satz: Nur Geld investieren, das du 10+ Jahre nicht brauchst"
+      ],
+      "resources": [
+        { "title": "Finanzfluss — Risiko & Crash-Verhalten", "url": "", "type": "video", "free": true },
+        { "title": "Aktien für Einsteiger — Risiken-Lernpfad", "url": "https://www.aktien-fuer-einsteiger.de/lernpfade/", "type": "docs", "free": true },
+        { "title": "Historische Drawdown-Daten (MSCI World, S&P 500)", "url": "", "type": "docs", "free": true }
+      ],
+      "gate": {
+        "challengeTitle": "Crash-Plan",
+        "difficulties": [
+          { "level": "easy", "description": "Historische Crashs recherchieren und schriftlich festlegen, wie du bei -30 % / -50 % reagierst.", "xp": 450 }
+        ],
+        "criteria": [
+          { "text": "Die 5 größten Crashs der letzten 100 Jahre recherchiert: Ausmaß + Erholungsdauer" },
+          { "text": "Schriftlich beantwortet: Was tue ich bei -30 %? Bei -50 %?" },
+          { "text": "Maximale Positionsgröße pro Einzelwert für mich festgelegt" },
+          { "text": "Erklärt, warum ich keine Hebelprodukte nutze" },
+          { "text": "Meine persönliche \"Das darf ich NIE tun\"-Liste geschrieben" }
+        ],
+        "verificationType": "checklist",
+        "proofRequired": true
+      }
+    },
+    {
+      "order": 8,
+      "shortLabel": "P8",
+      "title": "Aktiv vs. Passiv: Der Reality-Check",
+      "capability": "Du kannst mit eigenen SPIVA-Daten begründen, wie viel deines Depots aktiv gemanagt sein darf, statt es aus Bauchgefühl zu entscheiden.",
+      "description": "Effizienzmarkthypothese, SPIVA-Scorecards, Survivorship Bias, Backtesting-Fallen, Faktor-Investing.",
+      "startDate": "2027-06-01",
+      "deadline": "2027-07-31",
+      "topics": [
+        "Effizienzmarkthypothese — Grundidee, Kritik, wo sie schwächelt",
+        "SPIVA-Scorecards selbst lesen (nicht nur zusammengefasst hören)",
+        "Survivorship Bias in Fonds-Statistiken",
+        "Backtesting-Fallen: Overfitting, Data Mining, Look-ahead Bias",
+        "Faktor-Investing (Value, Size, Momentum, Quality) — Evidenz und Grenzen",
+        "Kosten als sicherste Renditequelle",
+        "Warum \"Zeit im Markt\" statistisch schlägt \"Markt-Timing\"",
+        "Ehrliche Frage: Habe ich einen echten Vorteil? Wenn ja, welchen?"
+      ],
+      "resources": [
+        { "title": "SPIVA Scorecards (S&P Dow Jones, Originaldaten)", "url": "https://www.spglobal.com/spdji/en/research-insights/spiva/", "type": "docs", "free": true },
+        { "title": "Bogleheads Wiki (sehr fundiert, englisch)", "url": "https://www.bogleheads.org/wiki/", "type": "forum", "free": true },
+        { "title": "A Random Walk Down Wall Street (Burton Malkiel)", "url": "", "type": "book", "free": false },
+        { "title": "Souverän investieren (Gerd Kommer)", "url": "", "type": "book", "free": false }
+      ],
+      "gate": {
+        "challengeTitle": "Positionspapier",
+        "difficulties": [
+          { "level": "easy", "description": "SPIVA-Scorecard selbst lesen und ein 3-seitiges Positionspapier zu aktiv vs. passiv schreiben, beide Seiten fair dargestellt.", "xp": 600 }
+        ],
+        "criteria": [
+          { "text": "Aktuelle SPIVA-Scorecard selbst gelesen (nicht Zusammenfassung)" },
+          { "text": "3-seitiges Papier: Meine Position zu aktiv vs. passiv, mit Daten begründet" },
+          { "text": "Beide Seiten fair dargestellt — auch die, die ich nicht teile" },
+          { "text": "Konkret beantwortet: Welchen Informationsvorteil habe ich gegenüber Profis? (Ehrliche Antwort ist meistens: keinen)" },
+          { "text": "Daraus abgeleitet: Wie viel % meines Depots darf überhaupt \"aktiv\" sein" }
+        ],
+        "verificationType": "checklist",
+        "proofRequired": true
+      }
+    },
+    {
+      "order": 9,
+      "shortLabel": "P9",
+      "title": "Eigene Strategie & Umsetzung",
+      "capability": "Du kannst ein unterschriebenes Investment Policy Statement vorlegen, das deine komplette Anlagestrategie inklusive Verkaufsregeln und Verbotsliste schriftlich festhält.",
+      "description": "Das Investment Policy Statement (IPS) — ein schriftliches Dokument, das deine Strategie festhält, bevor Emotionen ins Spiel kommen. Danach: Quartals-Review statt täglichem Blick ins Depot.",
+      "startDate": "2027-08-01",
+      "deadline": "2027-08-31",
+      "topics": [
+        "Was ein Investment Policy Statement ist und warum Profis so arbeiten",
+        "Ziel & Horizont, Risikotoleranz mit Begründung",
+        "Asset Allocation als konkrete Prozentzahlen",
+        "Produktauswahl mit Begründung",
+        "Sparplan- und Rebalancing-Regeln",
+        "Verkaufsregeln und eine persönliche Verbotsliste",
+        "Laufender Modus: Quartals-Review statt täglichem Depot-Blick"
+      ],
+      "resources": [],
+      "gate": {
+        "challengeTitle": "Investment Policy Statement (IPS)",
+        "difficulties": [
+          { "level": "hard", "description": "Ein vollständiges, unterschriebenes Investment Policy Statement schreiben, das deine gesamte Anlagestrategie festhält — der einzige echte Schutz gegen dich selbst im Crash.", "xp": 1200 }
+        ],
+        "criteria": [
+          { "text": "Ziel & Horizont: Wofür, bis wann, welche Summe" },
+          { "text": "Risikotoleranz: Welchen Drawdown halte ich aus (mit Begründung aus Phase 7)" },
+          { "text": "Asset Allocation: Konkrete Prozentzahlen pro Anlageklasse" },
+          { "text": "Produktauswahl: Welche ETFs/Werte, mit Begründung aus Phase 3" },
+          { "text": "Sparplan-Regel: Betrag, Rhythmus, automatisiert" },
+          { "text": "Rebalancing-Regel: Wann, wie, nach welchem Schwellenwert" },
+          { "text": "Verkaufsregeln: Unter welchen Bedingungen verkaufe ich — und unter welchen NICHT" },
+          { "text": "Verbotsliste: Was ich nie mache (Hebel, Einzelwette >X %, Panikverkauf)" },
+          { "text": "Review-Rhythmus: Quartalsweise, mit festem Termin" },
+          { "text": "Unterschrieben mit Datum. Ausgedruckt oder als PDF gesichert." }
+        ],
+        "verificationType": "checklist",
+        "proofRequired": true
+      }
+    }
+  ]
+}
