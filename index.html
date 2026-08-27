@@ -506,6 +506,11 @@
   .disc-track > i{display:block; height:100%; background:var(--dcolor); border-radius:4px; transition:width .5s ease;}
   .disc-actions{display:flex; gap:8px; margin-top:12px;}
   .roadmap-sub{font-family:var(--font-mono); font-size:10px; color:var(--text-faint); margin-top:8px;}
+  .roadmap-current{display:flex; align-items:baseline; gap:6px; margin-top:4px; flex-wrap:wrap;}
+  .roadmap-current-title{font-size:12px; color:var(--text); font-weight:600;}
+  .roadmap-current-days{font-family:var(--font-mono); font-size:10px; color:var(--text-faint); margin-left:auto;}
+  .roadmap-current-track{height:4px; border-radius:3px; background:var(--surface-3); overflow:hidden; margin-top:5px;}
+  .roadmap-current-track > i{display:block; height:100%; background:var(--dcolor,var(--gold)); border-radius:3px; transition:width .35s ease;}
   .disc-actions button{flex:1;}
   .btn-ghost-sm{background:none; border:1px solid var(--border); color:var(--text-dim); border-radius:var(--radius-s); padding:6px 8px; font-size:11px; cursor:pointer; transition:border-color .15s, color .15s;}
   .btn-ghost-sm:hover{border-color:var(--dcolor); color:var(--dcolor);}
@@ -818,6 +823,7 @@
   .rm-quest-dot{width:8px; height:8px; border-radius:50%; border:2px solid var(--border); flex:none;}
   .rm-quest-title{flex:1; font-size:12.5px; color:var(--text);}
   .rm-quest-xp{font-family:var(--font-mono); font-size:10.5px; color:var(--text-faint);}
+  .rm-quest-filter{display:flex; align-items:center; gap:6px; font-size:11.5px; color:var(--text-dim); cursor:pointer;}
   .gate-diff-row{display:flex; gap:8px; margin-bottom:10px;}
   .gate-diff{flex:1; background:var(--surface-2); border:1px solid var(--border-soft); border-radius:var(--radius-m); padding:10px; cursor:pointer; text-align:left;}
   .gate-diff.picked{border-color:var(--gold); background:var(--surface-3);}
@@ -1095,6 +1101,7 @@
                 <select class="fld" id="dailyGoal"></select>
                 <input type="number" class="fld" id="dailyXp" placeholder="XP" value="12" min="1" max="200">
               </div>
+              <div id="dailySuggest"></div>
               <div class="actions">
                 <button class="btn-text" data-close="dailyForm">Cancel</button>
                 <button class="btn-primary" id="dailySubmit">Add Quest</button>
@@ -1116,6 +1123,7 @@
                 <select class="fld" id="weeklyGoal"></select>
                 <input type="number" class="fld" id="weeklyXp" placeholder="XP" value="50" min="1" max="500">
               </div>
+              <div id="weeklySuggest"></div>
               <div class="actions">
                 <button class="btn-text" data-close="weeklyForm">Cancel</button>
                 <button class="btn-primary" id="weeklySubmit">Add Quest</button>
@@ -1582,8 +1590,36 @@ function defaultAppearance(){
   return { accent:'#ff2ea6', accent2:'#14e6ff', bgOpacity:100, bgBlur:0, font:'', textScale:100, contrast:'auto' };
 }
 
+// Collapses however many layers of accidental re-escaping piled up (a save/render
+// round trip gone wrong can compound this more than once), not just one - loops until
+// a pass changes nothing. Safe: it only ever touches an actual "&amp;" substring, so a
+// clean string with a real "&" in it is never touched.
 function unescapeAmp(s){
-  return typeof s === 'string' ? s.replace(/&amp;/g,'&') : s;
+  if(typeof s !== 'string') return s;
+  let prev, cur = s;
+  do{ prev = cur; cur = prev.replace(/&amp;/g,'&'); }while(cur !== prev);
+  return cur;
+}
+// The original fix only covered goal/objective/quest titles. Milestone text, gate
+// content, quest notes and resource titles can carry the same double-escaped
+// artifact from an old save and never got repaired — this closes that gap.
+function unescapeMilestoneAmp(m){
+  m.title = unescapeAmp(m.title);
+  m.description = unescapeAmp(m.description);
+  m.capability = unescapeAmp(m.capability);
+  m.shortLabel = unescapeAmp(m.shortLabel);
+  m.topics = m.topics.map(unescapeAmp);
+  m.resources.forEach(r=>{ r.title = unescapeAmp(r.title); });
+  m.gate.challengeTitle = unescapeAmp(m.gate.challengeTitle);
+  m.gate.definitionOfDone.forEach(d=>{ d.text = unescapeAmp(d.text); });
+  m.gate.attempts.forEach(a=>{ a.note = unescapeAmp(a.note); });
+}
+function unescapeQuestAmp(q){
+  q.title = unescapeAmp(q.title);
+  if(q.note) q.note = unescapeAmp(q.note);
+  if(q.definitionOfDone) q.definitionOfDone = unescapeAmp(q.definitionOfDone);
+  if(q.resource && q.resource.title) q.resource.title = unescapeAmp(q.resource.title);
+  (q.steps||[]).forEach(st=>{ st.title = unescapeAmp(st.title); });
 }
 function fillQuestExtras(q){
   const extras = questExtras();
@@ -1607,7 +1643,9 @@ function migrate(s){
     if(g.roadmapKey===undefined) g.roadmapKey = null;
     syncOverdueStatus(g);
     g.name = unescapeAmp(g.name);
+    g.flavor = unescapeAmp(g.flavor);
     g.objectives.forEach(o=>{ o.title = unescapeAmp(o.title); });
+    g.milestones.forEach(unescapeMilestoneAmp);
   });
   if(!s.goals.some(g=>g.id==='school')){
     const sd = DEFAULT_GOALS.find(g=>g.id==='school');
@@ -1616,23 +1654,22 @@ function migrate(s){
   const DEAD_QUEST_FIELDS = ['bonusXpMax','lootRoll','chainId','unlocksQuestId','proofUrl','mood'];
   if(!Array.isArray(s.dailies)) s.dailies = [];
   s.dailies.forEach(d=>{
-    d.title = unescapeAmp(d.title);
     if(!Array.isArray(d.steps)) d.steps = [];
     if(typeof d.open !== 'boolean') d.open = false;
     if(d.stepsDay === undefined) d.stepsDay = null;
     if(d.skipDate === undefined) d.skipDate = null;
     fillQuestExtras(d);
+    unescapeQuestAmp(d);
     DEAD_QUEST_FIELDS.forEach(k=>delete d[k]);
   });
   if(!Array.isArray(s.weeklies)) s.weeklies = [];
   s.weeklies.forEach((q,i)=>{
     if(!Array.isArray(q.steps)) q.steps = [];
-    q.title = unescapeAmp(q.title);
-    q.steps.forEach(st=>{ st.title = unescapeAmp(st.title); });
     if(typeof q.open !== 'boolean') q.open = false;
     if(q.stepsWeek === undefined) q.stepsWeek = null;
     if(q.skipWeek === undefined) q.skipWeek = null;
     fillQuestExtras(q);
+    unescapeQuestAmp(q);
     DEAD_QUEST_FIELDS.forEach(k=>delete q[k]);
   });
   if(!Array.isArray(s.focusSessions)) s.focusSessions = [];
@@ -1640,6 +1677,7 @@ function migrate(s){
   if(s.activeTimer === undefined) s.activeTimer = null;
   delete s.streakState; delete s.mealLog; delete s.mealFavorites; delete s.dailyCheckins; delete s.pinnedItems;
   if(!Array.isArray(s.rewards)) s.rewards = [];
+  s.rewards.forEach(r=>{ r.name = unescapeAmp(r.name); });
   if(!s.achievements) s.achievements = {};
   if(!Array.isArray(s.log)) s.log = [];
   s.log.forEach(l=>{ if(l.goalId===undefined) l.goalId = null; });
@@ -2174,6 +2212,24 @@ function cellHtml(day, slotKey, periodNum, isToday){
 function goalOptionsHtml(selected){
   return state.goals.map(g=>'<option value="'+g.id+'"'+(g.id===selected?' selected':'')+'>'+esc(g.name)+'</option>').join('');
 }
+// Refreshes the suggestion chips in the daily/weekly add-quest form to match whichever
+// goal is currently selected there — called on open and whenever that goal changes.
+function renderQuestSuggestions(prefix){
+  const host = document.getElementById(prefix+'Suggest'); if(!host) return;
+  const goalSelect = document.getElementById(prefix+'Goal');
+  const g = goalSelect ? goalById(goalSelect.value) : null;
+  const suggestions = g ? milestoneQuestSuggestions(g).slice(0,8) : [];
+  host.innerHTML = suggestions.length
+    ? '<div class="pt-chip-row">'+suggestions.map(s=>'<button type="button" class="pt-chip" data-suggest="'+esc(s)+'">'+esc(s)+'</button>').join('')+'</div>'
+    : '';
+  host.querySelectorAll('[data-suggest]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const titleFld = document.getElementById(prefix+'Title');
+      titleFld.value = btn.dataset.suggest;
+      titleFld.dispatchEvent(new Event('input'));
+    });
+  });
+}
 
 function openSlotEditor(day, slotKey, periodNum){
   const lesson = periodNum ? schoolAt(day, periodNum) : null;
@@ -2544,7 +2600,7 @@ function dailyItemHtml(q, done){
   const pct = steps.length ? Math.round(doneSteps/steps.length*100) : 0;
   return '<div class="quest-item'+(done?' done':'')+(q.open?' open':'')+'" data-id="'+q.id+'" style="--dcolor:'+g.color+'">'+
     '<div class="quest-head" data-action="toggleopen">'+
-      '<span class="wchev">'+icon('chevron')+'</span>'+
+      (steps.length ? '<span class="wchev">'+icon('chevron')+'</span>' : '')+
       '<button class="qcheck" data-action="'+(done?'noop':'complete')+'" aria-label="Complete quest">'+icon('check')+'</button>'+
       '<div class="qmeta"><div class="qtitle">'+esc(q.title)+'</div>'+
         (steps.length
@@ -2586,7 +2642,7 @@ function weeklyItemHtml(q, done){
 
   return '<div class="quest-item'+(done?' done':'')+(q.open?' open':'')+'" data-id="'+q.id+'" style="--dcolor:'+g.color+'">'+
     '<div class="quest-head" data-action="toggleopen">'+
-      '<span class="wchev">'+icon('chevron')+'</span>'+
+      (steps.length ? '<span class="wchev">'+icon('chevron')+'</span>' : '')+
       '<button class="qcheck" data-action="'+(done?'noop':'completeweekly')+'" aria-label="Complete weekly quest">'+icon('check')+'</button>'+
       '<div class="qmeta">'+
         '<div class="qtitle">'+esc(q.title)+'</div>'+
@@ -3168,11 +3224,22 @@ function milestoneSummaryHtml(g){
   const completed = ms.filter(m=>m.status==='completed').length;
   const active = currentMilestone(g);
   let sub = completed+'/'+ms.length+' milestones';
+  let daysLine = '';
   if(active && active.deadline){
     const days = daysBetween(todayStr(), active.deadline);
-    if(Number.isFinite(days)) sub += ' &middot; '+(days>=0 ? days+'d left' : Math.abs(days)+'d overdue');
+    if(Number.isFinite(days)) daysLine = days>=0 ? days+'d left' : Math.abs(days)+'d overdue';
   }
-  return '<div class="roadmap-sub">'+sub+'</div>';
+  if(!active) return '<div class="roadmap-sub">'+sub+'</div>';
+  const doneCrit = active.gate.definitionOfDone.filter(d=>d.done).length;
+  const totalCrit = active.gate.definitionOfDone.length;
+  const pct = totalCrit ? Math.round(doneCrit/totalCrit*100) : 0;
+  return '<div class="roadmap-sub">'+sub+'</div>'+
+    '<div class="roadmap-current">'+
+      '<span class="rm-node-short">'+esc(active.shortLabel)+'</span>'+
+      '<span class="roadmap-current-title">'+esc(active.title)+'</span>'+
+      (daysLine ? '<span class="roadmap-current-days">'+daysLine+'</span>' : '')+
+    '</div>'+
+    (totalCrit ? '<div class="roadmap-current-track"><i style="width:'+pct+'%"></i></div>' : '');
 }
 function renderDisciplines(){
   let html = state.goals.map(g=>{
@@ -3569,25 +3636,34 @@ function renderRoadmapBody(container, goalId){
     });
   });
 }
-// A read-only first pass: this goal's dailies/weeklies, so the tab isn't empty. Actually
-// completing/editing them, and filtering to the active milestone, lands with the
-// milestone-suggestion integration in a later step.
-function renderQuestsTabBody(container, goalId){
+// Still read-only — this goal's dailies/weeklies with an optional "only the current
+// milestone" filter. Actually completing/editing them stays on the Tasks tab; that's a
+// bigger, separate interaction model this view doesn't try to duplicate.
+function renderQuestsTabBody(container, goalId, filterToMilestone, onFilterChange){
   const g = goalById(goalId); if(!g) return;
-  const dailies = state.dailies.filter(q=>q.goal===goalId);
-  const weeklies = state.weeklies.filter(q=>q.goal===goalId);
+  const current = currentMilestone(g);
+  let dailies = state.dailies.filter(q=>q.goal===goalId);
+  let weeklies = state.weeklies.filter(q=>q.goal===goalId);
+  if(filterToMilestone && current){
+    dailies = dailies.filter(q=>q.milestoneId===current.id);
+    weeklies = weeklies.filter(q=>q.milestoneId===current.id);
+  }
   const today = todayStr(), wk = isoWeekKey();
   const row = (q, done) => '<div class="rm-quest-row'+(done?' done':'')+'">'+
     (done ? icon('check','style="width:14px;height:14px;color:var(--success)"') : '<span class="rm-quest-dot"></span>')+
     '<span class="rm-quest-title">'+esc(q.title)+'</span>'+
     '<span class="rm-quest-xp">+'+q.xp+' xp</span>'+
   '</div>';
+  const emptySuffix = filterToMilestone ? ' for the current milestone' : ' for this quest line yet';
   container.innerHTML =
-    '<label>Daily</label>'+
-    (dailies.length ? dailies.map(q=>row(q,q.lastDone===today)).join('') : '<div class="empty-row">No daily quests for this quest line yet.</div>')+
+    (current ? '<label class="rm-quest-filter"><input type="checkbox" id="questsMilestoneFilter"'+(filterToMilestone?' checked':'')+'> Only '+esc(current.shortLabel)+' quests</label>' : '')+
+    '<label style="margin-top:10px;">Daily</label>'+
+    (dailies.length ? dailies.map(q=>row(q,q.lastDone===today)).join('') : '<div class="empty-row">No daily quests'+emptySuffix+'.</div>')+
     '<label style="margin-top:14px;">Weekly</label>'+
-    (weeklies.length ? weeklies.map(q=>row(q,q.lastDoneWeek===wk)).join('') : '<div class="empty-row">No weekly quests for this quest line yet.</div>')+
+    (weeklies.length ? weeklies.map(q=>row(q,q.lastDoneWeek===wk)).join('') : '<div class="empty-row">No weekly quests'+emptySuffix+'.</div>')+
     '<p class="hint" style="margin-top:14px;">Head to the Tasks tab to complete or edit these.</p>';
+  const filterCb = document.getElementById('questsMilestoneFilter');
+  if(filterCb) filterCb.addEventListener('change', ()=>onFilterChange(filterCb.checked));
 }
 function renderLogTabBody(container, goalId){
   const g = goalById(goalId); if(!g) return;
@@ -3602,6 +3678,7 @@ const DETAIL_TABS = [['roadmap','Roadmap'],['quests','Quests'],['log','Log']];
 function openQuestLineDetail(goalId, initialTab){
   const g = goalById(goalId); if(!g) return;
   let activeTab = DETAIL_TABS.some(t=>t[0]===initialTab) ? initialTab : 'roadmap';
+  let questsFilterMilestone = false;
   const m = document.getElementById('modalBody');
   m.classList.add('modal-wide');
 
@@ -3620,7 +3697,7 @@ function openQuestLineDetail(goalId, initialTab){
     });
     const body = document.getElementById('detailBody');
     if(activeTab==='roadmap') renderRoadmapBody(body, goalId);
-    else if(activeTab==='quests') renderQuestsTabBody(body, goalId);
+    else if(activeTab==='quests') renderQuestsTabBody(body, goalId, questsFilterMilestone, (checked)=>{ questsFilterMilestone = checked; render(); });
     else renderLogTabBody(body, goalId);
   }
   render();
@@ -4313,6 +4390,14 @@ function activeMilestoneSuggestions(){
   });
   return out;
 }
+// One quest-title suggestion per open gate criterion and per topic of this goal's
+// current milestone — a simple rule (per spec), no AI needed.
+function milestoneQuestSuggestions(g){
+  const active = currentMilestone(g);
+  if(!active) return [];
+  const openCriteria = active.gate.definitionOfDone.filter(d=>!d.done).map(d=>d.text);
+  return [...openCriteria, ...active.topics].filter(Boolean);
+}
 function openPlanTomorrow(){
   const m = document.getElementById('modalBody');
   m.classList.add('modal-wide');
@@ -4638,6 +4723,10 @@ document.getElementById('rewardGrid').addEventListener('click', e=>{
 });
 document.querySelectorAll('[data-open]').forEach(b=>b.addEventListener('click', ()=>document.getElementById(b.dataset.open).classList.toggle('open')));
 document.querySelectorAll('[data-close]').forEach(b=>b.addEventListener('click', ()=>document.getElementById(b.dataset.close).classList.remove('open')));
+document.querySelector('[data-open="dailyForm"]').addEventListener('click', ()=>renderQuestSuggestions('daily'));
+document.querySelector('[data-open="weeklyForm"]').addEventListener('click', ()=>renderQuestSuggestions('weekly'));
+document.getElementById('dailyGoal').addEventListener('change', ()=>renderQuestSuggestions('daily'));
+document.getElementById('weeklyGoal').addEventListener('change', ()=>renderQuestSuggestions('weekly'));
 
 function isVagueTitle(title){
   return title.trim().split(/\s+/).filter(Boolean).length < 4;
@@ -4651,8 +4740,10 @@ document.getElementById('weeklyTitle').addEventListener('input', e=>{
 document.getElementById('dailySubmit').addEventListener('click', ()=>{
   const title = document.getElementById('dailyTitle').value.trim(); if(!title) return;
   const xp = Math.max(1, Math.min(200, parseInt(document.getElementById('dailyXp').value,10)||12));
-  state.dailies.push({id:'d'+Date.now(), goal:document.getElementById('dailyGoal').value, title, xp, gold:Math.round(xp/2), lastDone:null, skipDate:null,
-    steps:[], stepsDay:null, open:false, ...questExtras()});
+  const goalId = document.getElementById('dailyGoal').value;
+  const curMs = currentMilestone(goalById(goalId)||{});
+  state.dailies.push({id:'d'+Date.now(), goal:goalId, title, xp, gold:Math.round(xp/2), lastDone:null, skipDate:null,
+    steps:[], stepsDay:null, open:false, ...questExtras(), milestoneId: curMs ? curMs.id : null});
   document.getElementById('dailyTitle').value='';
   document.getElementById('dailyVagueHint').classList.remove('show');
   document.getElementById('dailyForm').classList.remove('open');
@@ -4663,8 +4754,10 @@ document.getElementById('weeklySubmit').addEventListener('click', ()=>{
   const xp = Math.max(1, Math.min(500, parseInt(document.getElementById('weeklyXp').value,10)||50));
   const raw = document.getElementById('weeklySteps').value.trim();
   const steps = raw ? raw.split(',').map(s=>s.trim()).filter(Boolean).map((t,i)=>({id:'s'+Date.now()+'_'+i, title:t, done:false})) : [];
-  state.weeklies.push({id:'w'+Date.now(), goal:document.getElementById('weeklyGoal').value, title, xp, gold:Math.round(xp/2),
-    steps, stepsWeek:isoWeekKey(), lastDoneWeek:null, skipWeek:null, open:steps.length>0, ...questExtras()});
+  const goalId = document.getElementById('weeklyGoal').value;
+  const curMs = currentMilestone(goalById(goalId)||{});
+  state.weeklies.push({id:'w'+Date.now(), goal:goalId, title, xp, gold:Math.round(xp/2),
+    steps, stepsWeek:isoWeekKey(), lastDoneWeek:null, skipWeek:null, open:steps.length>0, ...questExtras(), milestoneId: curMs ? curMs.id : null});
   document.getElementById('weeklyTitle').value='';
   document.getElementById('weeklySteps').value='';
   document.getElementById('weeklyVagueHint').classList.remove('show');
