@@ -937,6 +937,63 @@
     .course-side{max-height:300px;}
   }
 
+  /* ============ JOURNAL ============ */
+  .jr-capture{display:flex; gap:8px; margin-bottom:14px;}
+  .jr-capture input{flex:1;}
+  .jr-strip{display:flex; gap:3px; align-items:flex-end; margin:0 0 4px;}
+  .jr-day{flex:1; min-width:0; height:26px; border-radius:2px; background:var(--surface-3);
+    border:none; cursor:pointer; padding:0; position:relative;}
+  .jr-day.has{background:var(--daycolor);}
+  .jr-day.today{outline:1px solid var(--gold); outline-offset:1px;}
+  .jr-day:hover{filter:brightness(1.3);}
+  .jr-striplab{display:flex; justify-content:space-between; font-family:var(--font-mono);
+    font-size:9px; color:var(--text-faint); margin-bottom:16px;}
+
+  .jr-tools{display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-bottom:14px;}
+  .jr-chip{font-family:var(--font-display); font-size:10.5px; letter-spacing:0.05em; padding:6px 12px;
+    background:var(--surface); color:var(--text-dim); border:1px solid var(--border);
+    border-radius:var(--radius-m); cursor:pointer;}
+  .jr-chip:hover{color:var(--text);}
+  .jr-chip.on{color:var(--gold); border-color:var(--gold);}
+  .jr-search{flex:1; min-width:150px;}
+
+  .jr-daygroup{margin-bottom:22px;}
+  .jr-dayhead{font-family:var(--font-display); font-size:11px; letter-spacing:0.08em; color:var(--teal);
+    margin-bottom:9px; display:flex; align-items:center; gap:9px;}
+  .jr-dayhead::after{content:""; flex:1; height:1px; background:var(--border-soft);}
+
+  .jr-entry{background:var(--surface); border:1px solid var(--border); border-left-width:3px;
+    border-radius:var(--radius-m); padding:12px 14px; margin-bottom:9px; position:relative;}
+  .jr-entry.idea{border-left-color:var(--teal);}
+  .jr-entry.entry{border-left-color:var(--moodcolor, var(--gold));}
+  .jr-entry.pinned{box-shadow:0 0 0 1px var(--gold-glow);}
+  .jr-ehead{display:flex; align-items:center; gap:9px; margin-bottom:5px;}
+  .jr-etime{font-family:var(--font-mono); font-size:10px; color:var(--text-faint); flex:none;}
+  .jr-etitle{font-family:var(--font-display); font-size:13px; color:var(--text); flex:1; min-width:0;
+    overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .jr-mood{font-size:10px; padding:2px 8px; border-radius:10px; flex:none;
+    background:var(--moodcolor); color:#07080c; font-weight:700;}
+  .jr-goal{font-size:10px; flex:none;}
+  .jr-body{font-size:13px; color:var(--text-dim); line-height:1.6; white-space:pre-wrap; word-break:break-word;}
+  .jr-body.clamp{display:-webkit-box; -webkit-line-clamp:6; -webkit-box-orient:vertical; overflow:hidden;}
+  .jr-more{background:none; border:none; color:var(--teal); font-size:11px; cursor:pointer; padding:4px 0 0;}
+  .jr-imgs{display:flex; gap:7px; flex-wrap:wrap; margin-top:9px;}
+  .jr-imgs img{width:104px; border:1px solid var(--border); border-radius:var(--radius-s); cursor:zoom-in; display:block;}
+  .jr-eacts{display:flex; gap:3px; flex:none;}
+  .jr-eacts button{background:none; border:none; color:var(--text-faint); cursor:pointer; padding:3px; opacity:0;}
+  .jr-entry:hover .jr-eacts button{opacity:0.75;}
+  .jr-eacts button:hover{opacity:1 !important; color:var(--gold);}
+  .jr-eacts button.del:hover{color:var(--danger);}
+  .jr-eacts button svg{width:13px; height:13px;}
+  .jr-words{font-family:var(--font-mono); font-size:9.5px; color:var(--text-faint); margin-top:7px;}
+
+  .mood-pick{display:flex; gap:6px; margin-bottom:6px;}
+  .mood-pick button{flex:1; padding:9px 4px; background:var(--surface-2); border:1px solid var(--border);
+    border-radius:var(--radius-s); cursor:pointer; font-size:10.5px; color:var(--text-dim);
+    font-family:var(--font-display); letter-spacing:0.03em;}
+  .mood-pick button:hover{color:var(--text);}
+  .mood-pick button.on{background:var(--moodcolor); color:#07080c; border-color:var(--moodcolor); font-weight:700;}
+
   /* ============ LIFE TIMELINE ============ */
   .tl-bar{border-top:1px solid var(--border-soft); background:var(--header-bg); padding:8px 0 9px; cursor:pointer;
     display:block; width:100%; text-align:left; border-left:none; border-right:none; border-bottom:none;}
@@ -1228,6 +1285,7 @@
     <button class="tab" data-tab="timetable"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg> Timetable</button>
     <button class="tab" data-tab="learn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="4.5" width="19" height="13" rx="2.5"/><path d="M10 8.5l5 2.5-5 2.5z"/><path d="M8 21h8"/></svg> Learn <span class="tabcount" id="tabLearnCount">0</span></button>
     <button class="tab" data-tab="courses"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19V6a2 2 0 0 1 2-2h5l2 2h5a2 2 0 0 1 2 2v11a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1z"/><path d="M10 11l4 2.5-4 2.5z"/></svg> Courses <span class="tabcount" id="tabCourseCount">0</span></button>
+    <button class="tab" data-tab="journal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4h11a2 2 0 0 1 2 2v14H7a2 2 0 0 1-2-2z"/><path d="M9 8h6M9 12h6M9 16h3"/></svg> Journal <span class="tabcount" id="tabJournalCount">0</span></button>
   </nav>
   <button class="tl-bar" id="tlBar" title="Manage your timeline"></button>
 </header>
@@ -1426,6 +1484,33 @@
           <div class="subpanel" id="sub-transcript"><div class="panel-box" id="transcriptBox"></div></div>
         </div>
       </div>
+    </section>
+  </div>
+
+  <div class="tabpanel" id="panel-journal">
+    <section style="margin-top:0;">
+      <div class="section-head">
+        <h2>Journal</h2>
+        <div class="section-sub"><span id="jrStats"></span></div>
+      </div>
+
+      <div class="jr-capture">
+        <input type="text" class="fld" id="jrQuick" placeholder="A sudden idea — type it and press Enter before it's gone">
+        <button class="btn-primary" id="jrNew">Write entry</button>
+      </div>
+
+      <div class="jr-strip" id="jrStrip"></div>
+      <div class="jr-striplab"><span id="jrStripFrom"></span><span>mood, last 30 days</span><span>today</span></div>
+
+      <div class="jr-tools">
+        <button class="jr-chip on" data-filter="all">All</button>
+        <button class="jr-chip" data-filter="entry">Journal</button>
+        <button class="jr-chip" data-filter="idea">Ideas</button>
+        <button class="jr-chip" data-filter="pinned">Pinned</button>
+        <input type="text" class="fld jr-search" id="jrSearch" placeholder="Search your entries…" style="margin:0">
+      </div>
+
+      <div id="jrList"></div>
     </section>
   </div>
 
@@ -1851,6 +1936,7 @@ function freshState(){
     courses: [],
     trees: {},
     timeline: defaultTimeline(),
+    journal: { entries:[], lastXpDay:null },
     focusSessions: [], questFavorites: [],
     activeTimer: null,
     ai:{ model:'', count:8 },
@@ -1985,6 +2071,8 @@ function migrate(s){
     delete s.untis;
   }
   if(!s.trees || typeof s.trees !== 'object') s.trees = {};
+  if(!s.journal || !Array.isArray(s.journal.entries)) s.journal = { entries:[], lastXpDay:null };
+  s.journal.entries.forEach(e=>{ if(!Array.isArray(e.images)) e.images = []; });
   if(!s.timeline || !Array.isArray(s.timeline.events)) s.timeline = defaultTimeline();
   if(!s.timeline.start) s.timeline.start = todayStr();
   if(!Array.isArray(s.courses)) s.courses = [];
@@ -3629,6 +3717,7 @@ if(isWidget){
 function renderAll(){
   applyAppearance();      // a pull from the other device can bring new theme settings
   renderTimeline();
+  if(typeof renderJournal==='function') renderJournal();
   renderHeader();
   if(typeof renderCourseLibrary==='function' && !activeCourseId) renderCourseLibrary();
   renderRadar();
@@ -5146,7 +5235,353 @@ async function openWidgetSettings(host){
   document.getElementById('wsAutostart').addEventListener('change', e=>{ window.widgetCtl.setPrefs({autostart:e.target.checked}); });
   document.getElementById('wsWidgetOnly').addEventListener('change', e=>{ window.widgetCtl.setPrefs({widgetOnly:e.target.checked}); });
   if(standalone) document.getElementById('modalVeil').classList.add('open');
+}/* ============ JOURNAL ============ */
+/* Two things that look similar but aren't: a sudden idea you need to get down
+ * in three seconds, and a journal entry you sit with. The quick box handles the
+ * first, the composer the second. Text syncs; attached images stay on the
+ * device, same split as everywhere else in the app. */
+
+const MOODS = [
+  { v:1, label:'Rough', color:'#ff3b3b' },
+  { v:2, label:'Low',   color:'#e0724a' },
+  { v:3, label:'Okay',  color:'#e0a458' },
+  { v:4, label:'Good',  color:'#6fa86f' },
+  { v:5, label:'Great', color:'#39ff6a' }
+];
+const moodOf = (v)=> MOODS.find(m=>m.v===v) || null;
+
+let jrFilter = 'all';
+let jrQuery = '';
+let jrExpanded = {};
+let jrImgUrls = [];
+
+function journal(){
+  if(!state.journal || !Array.isArray(state.journal.entries)) state.journal = { entries:[], lastXpDay:null };
+  return state.journal;
 }
+function jrEntries(){
+  return [...journal().entries].sort((a,b)=>b.ts-a.ts);
+}
+function jrWordCount(text){
+  const t = String(text||'').trim();
+  return t ? t.split(/\s+/).length : 0;
+}
+
+/* One payout a day, so journalling is a habit rather than a tap-for-XP button. */
+function jrAwardDaily(){
+  const j = journal();
+  const today = todayStr();
+  if(j.lastXpDay === today) return;
+  j.lastXpDay = today;
+  const xp = 10;
+  grant(xp, null);
+  pushLog('Journalled', '+'+xp+'xp', 'complete');
+  showToast({title:'+'+xp+' XP', sub:'Written down today'});
+  checkAchievements();
+}
+
+function addQuickIdea(text){
+  const t = String(text||'').trim();
+  if(!t) return;
+  journal().entries.push({
+    id:'j'+Date.now(), ts:Date.now(), day:todayStr(), kind:'idea',
+    title:'', body:t, mood:null, goal:null, pinned:false, images:[]
+  });
+  jrAwardDaily();
+  saveState(); renderJournal(); renderAll();
+}
+
+function openJournalEntry(id){
+  const existing = id ? journal().entries.find(e=>e.id===id) : null;
+  const draft = existing || { kind:'entry', mood:null, goal:null, title:'', body:'', images:[] };
+  let mood = draft.mood;
+  let pendingImages = [...(draft.images||[])];
+  const m = document.getElementById('modalBody');
+  m.classList.add('modal-wide');
+
+  const paint = ()=>{
+    m.innerHTML = '<h3>'+(existing?'Edit entry':'New entry')+'</h3>'+
+      '<label>How are you?</label>'+
+      '<div class="mood-pick" id="jrMood">'+MOODS.map(x=>
+        '<button data-m="'+x.v+'" class="'+(mood===x.v?'on':'')+'" style="--moodcolor:'+x.color+'">'+x.label+'</button>').join('')+
+      '</div>'+
+      '<div class="hint">Optional — but a month of these is the only honest record of how a stretch actually went.</div>'+
+      '<label style="margin-top:12px">Title</label>'+
+      '<input type="text" class="fld" id="jrTitle" placeholder="Optional" value="'+esc(draft.title||'')+'">'+
+      '<label>Quest line</label>'+
+      '<select class="fld" id="jrGoal"><option value="">— none —</option>'+
+        state.goals.map(g=>'<option value="'+g.id+'"'+(draft.goal===g.id?' selected':'')+'>'+esc(g.name)+'</option>').join('')+
+      '</select>'+
+      '<label>Entry</label>'+
+      '<textarea class="note-area" id="jrBody" style="min-height:190px" placeholder="What happened, what you noticed, what you want to remember. Paste an image to attach it.">'+esc(draft.body||'')+'</textarea>'+
+      '<div class="jr-words" id="jrWords"></div>'+
+      '<div class="jr-imgs" id="jrDraftImgs"></div>'+
+      '<div class="actions">'+
+        '<button class="btn-text" id="mCancel">Cancel</button>'+
+        '<button class="ghost-btn" id="jrAddImg">Add image</button>'+
+        '<input type="file" id="jrFile" accept="image/*" multiple style="display:none">'+
+        '<button class="btn-primary" id="jrSave">'+(existing?'Save':'Add entry')+'</button>'+
+      '</div>';
+
+    const body = document.getElementById('jrBody');
+    const words = ()=>{ document.getElementById('jrWords').textContent = jrWordCount(body.value)+' words'; };
+    words();
+    body.addEventListener('input', words);
+    body.addEventListener('paste', async e=>{
+      for(const it of (e.clipboardData && e.clipboardData.items) || []){
+        if(it.type && it.type.startsWith('image/')){
+          const blob = it.getAsFile();
+          if(blob){ e.preventDefault(); const id2='ji'+Date.now(); await shotPut(id2, blob); pendingImages.push(id2); drawImgs(); showToast({title:'Image attached'}); }
+          return;
+        }
+      }
+    });
+    document.getElementById('jrMood').addEventListener('click', e=>{
+      const b = e.target.closest('[data-m]'); if(!b) return;
+      const v = parseInt(b.dataset.m,10);
+      mood = (mood===v) ? null : v;
+      draft.title = document.getElementById('jrTitle').value;
+      draft.body = body.value;
+      draft.goal = document.getElementById('jrGoal').value || null;
+      paint();
+    });
+    document.getElementById('mCancel').addEventListener('click', ()=>{ m.classList.remove('modal-wide'); closeModal(); });
+    document.getElementById('jrAddImg').addEventListener('click', ()=>document.getElementById('jrFile').click());
+    document.getElementById('jrFile').addEventListener('change', async e=>{
+      for(const f of Array.from(e.target.files||[])){
+        if(!f.type.startsWith('image/')) continue;
+        const id2 = 'ji'+Date.now()+Math.random().toString(36).slice(2,5);
+        await shotPut(id2, f); pendingImages.push(id2);
+      }
+      e.target.value = ''; drawImgs();
+    });
+    document.getElementById('jrSave').addEventListener('click', ()=>{
+      const title = document.getElementById('jrTitle').value.trim();
+      const text = body.value.trim();
+      if(!text && !title){ showToast({title:'Nothing to save yet'}); return; }
+      const goal = document.getElementById('jrGoal').value || null;
+      if(existing){
+        Object.assign(existing, {title, body:text, mood, goal, images:pendingImages});
+      }else{
+        journal().entries.push({
+          id:'j'+Date.now(), ts:Date.now(), day:todayStr(), kind:'entry',
+          title, body:text, mood, goal, pinned:false, images:pendingImages
+        });
+        jrAwardDaily();
+      }
+      m.classList.remove('modal-wide');
+      closeModal(); saveState(); renderJournal(); renderAll();
+    });
+    drawImgs();
+  };
+
+  async function drawImgs(){
+    const host = document.getElementById('jrDraftImgs');
+    if(!host) return;
+    host.innerHTML = '';
+    for(const iid of pendingImages){
+      const blob = await shotGet(iid); if(!blob) continue;
+      const url = URL.createObjectURL(blob); jrImgUrls.push(url);
+      const wrap = document.createElement('div');
+      wrap.style.position = 'relative';
+      const img = document.createElement('img'); img.src = url; img.style.width = '104px';
+      img.style.border = '1px solid var(--border)'; img.style.borderRadius = '2px'; img.style.display = 'block';
+      const x = document.createElement('button');
+      x.textContent = '×'; x.title = 'Remove';
+      x.style.cssText = 'position:absolute;top:2px;right:2px;background:rgba(0,0,0,.7);color:#fff;border:none;cursor:pointer;border-radius:2px;padding:1px 5px;';
+      x.addEventListener('click', async ()=>{ pendingImages = pendingImages.filter(v=>v!==iid); await shotDelete(iid); drawImgs(); });
+      wrap.appendChild(img); wrap.appendChild(x); host.appendChild(wrap);
+    }
+  }
+
+  paint();
+  document.getElementById('modalVeil').classList.add('open');
+}
+
+/* Mood over the last 30 days, one block per day — the point is to see a bad
+   stretch as a shape rather than to remember it as a feeling. */
+function renderMoodStrip(){
+  const strip = document.getElementById('jrStrip'); if(!strip) return;
+  const byDay = {};
+  journal().entries.forEach(e=>{
+    if(e.mood){ (byDay[e.day] = byDay[e.day] || []).push(e.mood); }
+    else if(!byDay[e.day]) byDay[e.day] = byDay[e.day] || [];
+  });
+  const days = [];
+  const d0 = new Date();
+  for(let i=29;i>=0;i--){
+    const d = new Date(d0); d.setDate(d0.getDate()-i);
+    days.push(d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'));
+  }
+  strip.innerHTML = days.map(day=>{
+    const moods = byDay[day];
+    const has = moods && moods.length;
+    const avg = has ? Math.round(moods.reduce((a,b)=>a+b,0)/moods.length) : null;
+    const col = avg ? (moodOf(avg)||{}).color : 'var(--surface-3)';
+    const wrote = Object.prototype.hasOwnProperty.call(byDay, day);
+    return '<button class="jr-day'+(wrote?' has':'')+(day===todayStr()?' today':'')+'" data-day="'+day+'"'+
+      ' style="--daycolor:'+(avg?col:'var(--border)')+'" title="'+day+(avg?' · '+(moodOf(avg)||{}).label:(wrote?' · written':' · nothing'))+'"></button>';
+  }).join('');
+  const first = days[0];
+  const fs = document.getElementById('jrStripFrom');
+  if(fs) fs.textContent = first.slice(8)+'.'+first.slice(5,7)+'.';
+}
+
+function renderJournal(){
+  const list = document.getElementById('jrList');
+  if(!list) return;
+  const all = jrEntries();
+  const cnt = document.getElementById('tabJournalCount');
+  if(cnt) cnt.textContent = all.length;
+
+  // streak of consecutive days with at least one entry
+  const daysWritten = new Set(all.map(e=>e.day));
+  let streak = 0;
+  for(let i=0; i<3660; i++){          // bounded: a corrupt save shouldn't spin forever
+    const d = new Date(); d.setDate(d.getDate()-i);
+    const key = d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+    if(daysWritten.has(key)) streak++;
+    else if(i>0) break;               // today not yet written is not a broken streak
+    else continue;
+  }
+  const words = all.reduce((a,e)=>a+jrWordCount(e.body),0);
+  const stats = document.getElementById('jrStats');
+  if(stats) stats.textContent = all.length
+    ? all.length+' entries · '+streak+' day streak · '+words.toLocaleString()+' words'
+    : '';
+
+  renderMoodStrip();
+
+  const q = jrQuery.toLowerCase();
+  let shown = all.filter(e=>{
+    if(jrFilter==='idea' && e.kind!=='idea') return false;
+    if(jrFilter==='entry' && e.kind!=='entry') return false;
+    if(jrFilter==='pinned' && !e.pinned) return false;
+    if(q && !((e.title||'')+' '+(e.body||'')).toLowerCase().includes(q)) return false;
+    return true;
+  });
+
+  if(!shown.length){
+    list.innerHTML = '<div class="empty-row" style="padding:34px 20px">'+
+      (all.length ? 'Nothing matches that.' : 'Nothing written yet. Drop an idea in the box above, or write a proper entry.')+'</div>';
+    return;
+  }
+
+  // pinned first, then newest, grouped by day
+  shown = [...shown.filter(e=>e.pinned), ...shown.filter(e=>!e.pinned)];
+  const groups = [];
+  shown.forEach(e=>{
+    const g = groups.find(x=>x.day===e.day);
+    if(g) g.items.push(e); else groups.push({day:e.day, items:[e]});
+  });
+
+  list.innerHTML = groups.map(g=>{
+    return '<div class="jr-daygroup"><div class="jr-dayhead">'+esc(jrDayLabel(g.day))+'</div>'+
+      g.items.map(e=>{
+        const mo = moodOf(e.mood);
+        const goal = e.goal ? goalById(e.goal) : null;
+        const t = new Date(e.ts);
+        const long = jrWordCount(e.body) > 70;
+        const open = !!jrExpanded[e.id];
+        return '<div class="jr-entry '+e.kind+(e.pinned?' pinned':'')+'" data-id="'+esc(e.id)+'"'+
+          (mo?' style="--moodcolor:'+mo.color+'"':'')+'>'+
+          '<div class="jr-ehead">'+
+            '<span class="jr-etime">'+pad2(t.getHours())+':'+pad2(t.getMinutes())+'</span>'+
+            (mo?'<span class="jr-mood">'+esc(mo.label)+'</span>':'')+
+            '<span class="jr-etitle">'+esc(e.title || (e.kind==='idea'?'Idea':'Entry'))+'</span>'+
+            (goal?'<span class="jr-goal" style="color:'+goal.color+'">'+esc(goal.name)+'</span>':'')+
+            '<span class="jr-eacts">'+
+              '<button data-act="pin" title="'+(e.pinned?'Unpin':'Pin')+'">'+icon('star')+'</button>'+
+              '<button data-act="edit" title="Edit">'+icon('edit')+'</button>'+
+              '<button data-act="del" class="del" title="Delete">'+icon('trash')+'</button>'+
+            '</span>'+
+          '</div>'+
+          '<div class="jr-body'+(long && !open ? ' clamp':'')+'">'+esc(e.body)+'</div>'+
+          (long ? '<button class="jr-more" data-act="more">'+(open?'Show less':'Show more')+'</button>' : '')+
+          ((e.images||[]).length ? '<div class="jr-imgs" data-imgs="'+esc(e.id)+'"></div>' : '')+
+        '</div>';
+      }).join('')+
+    '</div>';
+  }).join('');
+
+  hydrateJournalImages();
+}
+function jrDayLabel(day){
+  const today = todayStr();
+  const y = new Date(); y.setDate(y.getDate()-1);
+  const yest = y.getFullYear()+'-'+String(y.getMonth()+1).padStart(2,'0')+'-'+String(y.getDate()).padStart(2,'0');
+  if(day===today) return 'Today';
+  if(day===yest) return 'Yesterday';
+  const d = new Date(day+'T00:00:00');
+  return d.toLocaleDateString(undefined, {weekday:'long', day:'2-digit', month:'short', year:'numeric'});
+}
+async function hydrateJournalImages(){
+  jrImgUrls.forEach(u=>URL.revokeObjectURL(u));
+  jrImgUrls = [];
+  for(const host of document.querySelectorAll('[data-imgs]')){
+    const e = journal().entries.find(x=>x.id===host.dataset.imgs);
+    if(!e) continue;
+    host.innerHTML = '';
+    for(const iid of e.images||[]){
+      const blob = await shotGet(iid); if(!blob) continue;
+      const url = URL.createObjectURL(blob); jrImgUrls.push(url);
+      const img = document.createElement('img');
+      img.src = url; img.alt = '';
+      img.addEventListener('click', ()=>{
+        document.getElementById('shotBig').src = url;
+        document.getElementById('shotVeil').classList.add('open');
+      });
+      host.appendChild(img);
+    }
+  }
+}
+
+/* ---- wiring ---- */
+document.getElementById('jrQuick').addEventListener('keydown', e=>{
+  if(e.key==='Enter'){ addQuickIdea(e.target.value); e.target.value = ''; }
+});
+document.getElementById('jrNew').addEventListener('click', ()=>openJournalEntry(null));
+document.getElementById('jrSearch').addEventListener('input', e=>{ jrQuery = e.target.value; renderJournal(); });
+document.querySelector('#panel-journal .jr-tools').addEventListener('click', e=>{
+  const c = e.target.closest('.jr-chip'); if(!c) return;
+  jrFilter = c.dataset.filter;
+  document.querySelectorAll('#panel-journal .jr-chip').forEach(x=>x.classList.toggle('on', x===c));
+  renderJournal();
+});
+document.getElementById('jrStrip').addEventListener('click', e=>{
+  const b = e.target.closest('[data-day]'); if(!b) return;
+  jrQuery = ''; document.getElementById('jrSearch').value = '';
+  jrFilter = 'all';
+  document.querySelectorAll('#panel-journal .jr-chip').forEach(x=>x.classList.toggle('on', x.dataset.filter==='all'));
+  renderJournal();
+  const g = [...document.querySelectorAll('.jr-dayhead')].find(h=>h.textContent===jrDayLabel(b.dataset.day));
+  if(g) g.scrollIntoView({behavior:'smooth', block:'center'});
+  else showToast({title:'Nothing written that day', sub:b.dataset.day});
+});
+document.getElementById('jrList').addEventListener('click', e=>{
+  const entryEl = e.target.closest('.jr-entry'); if(!entryEl) return;
+  const id = entryEl.dataset.id;
+  const ent = journal().entries.find(x=>x.id===id); if(!ent) return;
+  const act = (e.target.closest('[data-act]')||{}).dataset;
+  if(!act) return;
+  if(act.act==='more'){ jrExpanded[id] = !jrExpanded[id]; renderJournal(); return; }
+  if(act.act==='pin'){ ent.pinned = !ent.pinned; saveState(); renderJournal(); return; }
+  if(act.act==='edit'){ openJournalEntry(id); return; }
+  if(act.act==='del'){
+    openConfirm({
+      title:'Delete this entry?',
+      body:'It goes for good, along with any images attached to it.',
+      confirmLabel:'Delete',
+      onConfirm: async ()=>{
+        for(const iid of ent.images||[]) await shotDelete(iid);
+        state.journal.entries = state.journal.entries.filter(x=>x.id!==id);
+        saveState(); renderJournal(); renderAll();
+      }
+    });
+  }
+});
+
+
 /* ============ LIFE TIMELINE ============ */
 /* A countdown to the milestones that actually bound this person's runway. It
  * reads the real clock every second, so the numbers move while you watch —
