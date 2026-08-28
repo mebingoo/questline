@@ -1020,6 +1020,20 @@
     background:var(--surface-2); border:1px solid var(--border); color:var(--text-dim);}
   .srs-typechip.on{border-color:var(--gold); color:var(--gold);}
 
+  .srs-tutor{max-width:640px; margin:20px auto 0; text-align:left;}
+  .srs-tutor-btns{display:flex; gap:8px; justify-content:center; flex-wrap:wrap; margin-top:20px;}
+  .srs-tutor-out{margin-top:14px; background:var(--surface); border:1px solid var(--border);
+    border-left:2px solid var(--teal); border-radius:var(--radius-s); padding:12px 14px;
+    font-size:13px; line-height:1.65; color:var(--text-dim); white-space:pre-wrap;}
+  .srs-tutor-out b{color:var(--text);}
+  .srs-tutor-out.bad{border-left-color:var(--danger);}
+  .srs-produce{width:min(560px,90vw); min-height:74px; margin:16px auto 0; display:block;
+    background:var(--surface-2); border:1px solid var(--border); border-radius:var(--radius-s);
+    color:var(--text); padding:11px; font-family:var(--font-body); font-size:14px; line-height:1.5; resize:vertical;}
+  .srs-produce:focus{outline:none; border-color:var(--gold);}
+  .ai-badge{font-family:var(--font-mono); font-size:9.5px; color:var(--text-faint);}
+  .ai-badge b{color:var(--success);}
+
   /* ============ JOURNAL ============ */
   .jr-capture{display:flex; gap:8px; margin-bottom:14px;}
   .jr-capture input{flex:1;}
@@ -1941,6 +1955,45 @@ let aiKey = (function(){
 })();
 function saveAiKey(){ try{ localStorage.setItem(AI_KEY_STORE, aiKey); }catch(e){} }
 
+/* Which AI backend to use. Device-local, not synced: an Ollama URL that means
+ * something on this PC means nothing on the phone. Default is local Ollama, so
+ * a fresh install needs no account and sends nothing off the machine. */
+const AI_CFG_STORE = 'questline_aicfg_v1';
+function defaultAiCfg(){
+  return { provider:'ollama', ollamaUrl:'http://127.0.0.1:11434', model:'' };
+}
+let aiCfg = (function(){
+  try{
+    const stored = JSON.parse(localStorage.getItem(AI_CFG_STORE));
+    if(stored) return Object.assign(defaultAiCfg(), stored);
+  }catch(e){}
+  // First run after the upgrade. A fresh install defaults to local Ollama, but
+  // someone who already had a working cloud key keeps it rather than finding
+  // their AI silently broken.
+  const cfg = defaultAiCfg();
+  try{
+    const existingKey = localStorage.getItem(AI_KEY_STORE) || '';
+    if(existingKey){
+      cfg.provider = existingKey.startsWith('sk-ant-') ? 'anthropic' : 'openai';
+      // `state` is not loaded yet at this point, so read the saved model directly.
+      const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+      cfg.model = (saved.ai && saved.ai.model) || '';
+    }
+  }catch(e){}
+  return cfg;
+})();
+function saveAiCfg(){ try{ localStorage.setItem(AI_CFG_STORE, JSON.stringify(aiCfg)); }catch(e){} }
+const aiIsLocal = ()=> aiCfg.provider === 'ollama';
+/* Everything the provider layer needs for one call, in one place. */
+function aiArgs(extra){
+  return Object.assign({
+    provider: aiCfg.provider,
+    baseUrl: aiCfg.ollamaUrl,
+    model: aiCfg.model,
+    apiKey: aiIsLocal() ? '' : aiKey
+  }, extra || {});
+}
+
 function defaultResource(){
   return { type:'none', url:'', title:'', thumbnail:'', durationSeconds:null, startTimestamp:null };
 }
@@ -2423,8 +2476,21 @@ async function pushState(force){
 const api = {
   ready(){ return !!(window.untis || window.learn) || syncOn(); },
   async aiComplete(opts){
-    if(window.learn && window.learn.complete) return window.learn.complete(opts);
+    if(window.ai && window.ai.complete) return window.ai.complete(opts);
+    // Phone build: the Worker can reach the cloud providers but never a model
+    // running on the PC, so say so rather than timing out.
+    if(opts && opts.provider === 'ollama'){
+      return { ok:false, error:'Ollama runs on your PC. The phone can only use a cloud provider.' };
+    }
     return apiCall('/api/ai/complete', opts);
+  },
+  async aiModels(opts){
+    if(window.ai && window.ai.models) return window.ai.models(opts);
+    return { ok:false, error:'Model listing needs the desktop app.' };
+  },
+  async aiHealth(opts){
+    if(window.ai && window.ai.health) return window.ai.health(opts);
+    return { ok:false, error:'Only the desktop app can reach a local model.' };
   },
   async untisSearch(q){
     if(window.untis && window.untis.search) return window.untis.search(q);
@@ -3009,7 +3075,7 @@ function applyUntisLessons(lessons){
     if(byDay[d].length) state.school[d] = byDay[d].sort((a,b)=>a.p-b.p);
   });
 }
-document.getElementById('untisBtn').addEventListener('click', openUntis);
+document.getElementById('untisBtn').addEventListener('click', ()=>openUntis());
 
 /* ============ RENDER: TASKS ============ */
 function renderTodayStrip(){
@@ -3472,20 +3538,66 @@ function genPromptHtml(what){
   if(!learnAvailable()) return '<div class="gen-box">This needs the desktop app, or sync set up on this device.</div>';
   if(!v.cues.length) return '<div class="gen-box">Grab the transcript first &mdash; the '+what+
     ' is built from what\'s actually said in the video.<br><button class="btn-primary" id="goTr">Get transcript</button></div>';
-  if(!aiKey) return '<div class="gen-box">Add an AI API key and Questline will write the summary and quiz for you.'+
+  if(!aiIsLocal() && !aiKey) return '<div class="gen-box">Set up an AI provider and Questline will write the summary and quiz for you.'+
     '<br><button class="btn-primary" id="goAi">Add API key</button></div>';
   return '<div class="gen-box">Ready to generate from '+v.cues.length+' transcript lines.'+
     '<br><button class="btn-primary" id="goGen">Generate summary &amp; quiz</button></div>';
 }
 function wireGenButton(){
   const t = document.getElementById('goTr'); if(t) t.addEventListener('click', ()=>{ setSubTab('transcript'); fetchTranscript(); });
-  const a = document.getElementById('goAi'); if(a) a.addEventListener('click', openAiSettings);
+  const a = document.getElementById('goAi'); if(a) a.addEventListener('click', ()=>openAiSettings());
   const g = document.getElementById('goGen'); if(g) g.addEventListener('click', ()=>generateAll(false));
 }
+/* The quiz prompt and its parsing live here rather than in the main process, so
+   they run through whichever provider is selected — including a local one. */
+async function aiQuizFromTranscript(v, transcript){
+  const count = Math.max(3, Math.min(20, (state.ai && state.ai.count) || 8));
+  const LIMIT = 24000;
+  let text = transcript;
+  if(text.length > LIMIT){
+    text = text.slice(0, Math.floor(LIMIT*0.6)) + '\n...[middle trimmed]...\n' + text.slice(-Math.floor(LIMIT*0.4));
+  }
+  const prompt = 'You are helping a student actively learn from a video tutorial.\n\n'+
+    'VIDEO TITLE: '+(v.title||'Untitled')+'\n\nTRANSCRIPT (each line starts with its timestamp in seconds):\n'+text+'\n\n'+
+    'Produce a JSON object with EXACTLY this shape and nothing else:\n'+
+    '{"summary":"3-5 sentence plain-English summary","keyPoints":["4-7 short takeaways"],'+
+    '"questions":[{"difficulty":"easy","q":"question","options":["A","B","C","D"],"correct":0,"why":"why that is right","t":123}]}\n\n'+
+    '- Exactly '+count+' questions, easiest first, ending with at least two "expert".\n'+
+    '- Every question has exactly 4 options; "correct" is the 0-based index.\n'+
+    '- Wrong options must be plausible. Never "all of the above".\n'+
+    '- "t" is the timestamp in seconds where the answer is covered.\n'+
+    '- Base everything strictly on the transcript.\n'+
+    'Return ONLY the raw JSON object. No markdown fences, no commentary.';
+
+  const res = await api.aiComplete(aiArgs({ prompt, maxTokens: 4000, temperature: 0.4 }));
+  if(!res || !res.ok) return res || { ok:false, error:'No answer' };
+  let parsed;
+  try{ parsed = aiParseJson(res.text); }
+  catch(e){ return { ok:false, error:'The model did not return usable JSON. A larger model usually fixes this.' }; }
+  const questions = (parsed.questions||[]).filter(q=>
+    q && typeof q.q === 'string' && Array.isArray(q.options) && q.options.length === 4 &&
+    Number.isInteger(q.correct) && q.correct >= 0 && q.correct < 4
+  ).map(q=>({
+    difficulty: ['easy','medium','hard','expert'].includes(q.difficulty)?q.difficulty:'medium',
+    q: String(q.q), options: q.options.map(String), correct: q.correct,
+    why: String(q.why||''), t: parseInt(q.t,10)||0
+  }));
+  if(!questions.length) return { ok:false, error:'No usable questions came back. Try again, or a larger model.' };
+  return { ok:true, summary:String(parsed.summary||''), keyPoints:(parsed.keyPoints||[]).map(String).slice(0,10), questions };
+}
+
+/* Small models like to wrap JSON in prose or a fence; dig it out either way. */
+function aiParseJson(text){
+  let t = String(text||'').trim().replace(/^```(?:json)?\s*/i,'').replace(/\s*```$/,'');
+  const a = t.indexOf('{'), b = t.lastIndexOf('}');
+  if(a === -1 || b === -1) throw new Error('no JSON');
+  return JSON.parse(t.slice(a, b+1));
+}
+
 async function generateAll(force){
   const v = currentVideo; if(!v) return;
   if(!v.cues.length){ setSubTab('transcript'); fetchTranscript(); return; }
-  if(!aiKey){ openAiSettings(); return; }
+  if(!aiIsLocal() && !aiKey){ openAiSettings(); return; }
   if(v.questions.length && !force){
     openConfirm({
       title:'Replace summary & quiz?',
@@ -3503,10 +3615,7 @@ async function generateAll(force){
 
   const transcript = v.cues.map(c=>c.t+'s: '+c.text).join('\n');
   try{
-    const r = await api.aiGenerate({
-      apiKey: aiKey, model: state.ai.model, count: state.ai.count,
-      title: v.title, transcript
-    });
+    const r = await aiQuizFromTranscript(v, transcript);
     if(!r || !r.ok) throw new Error((r && r.error) || 'Unknown error');
     v.summary = r.summary; v.keyPoints = r.keyPoints; v.questions = r.questions;
     v.quizBest = null; v.quizAttempts = 0; v.awarded = false;
@@ -3645,39 +3754,126 @@ function renderQuizResult(){
 /* ---------- AI settings ---------- */
 function openAiSettings(host){
   const standalone = !host;
-  const a = state.ai || {};
   const m = host || document.getElementById('modalBody');
-  m.innerHTML = '<h3>AI Settings</h3>'+
-    '<p>Questline uses your own API key to write summaries and quiz questions. Works with Anthropic or OpenAI &mdash; it picks the right one from the key.</p>'+
-    '<label>API key</label>'+
-    '<input type="password" class="fld" id="aiKey" placeholder="sk-ant-… or sk-…" value="'+esc(aiKey)+'">'+
-    '<div class="hint">Anthropic keys start <b>sk-ant-</b> (console.anthropic.com), OpenAI keys start <b>sk-</b> (platform.openai.com). '+
-    'Stored only on this computer and sent only to that provider. A typical tutorial costs well under a cent to process.</div>'+
-    '<div class="row2">'+
-      '<div><label>Model</label><input type="text" class="fld" id="aiModel" placeholder="claude-3-5-haiku-latest" value="'+esc(a.model||'')+'"></div>'+
-      '<div><label>Questions</label><input type="number" class="fld" id="aiCount" min="3" max="20" value="'+(a.count||8)+'"></div>'+
-    '</div>'+
-    '<div class="hint">Leave the model blank for a sensible cheap default. Swap in a stronger model for harder questions.</div>'+
-    '<div class="actions">'+(standalone?'<button class="btn-text" id="mCancel">Cancel</button>':'')+'<button class="btn-primary" id="aiSave">Save</button></div>';
-  if(standalone) document.getElementById('modalVeil').classList.add('open');
-  { const c = document.getElementById('mCancel'); if(c) c.addEventListener('click', closeModal); }
-  document.getElementById('aiSave').addEventListener('click', ()=>{
-    aiKey = document.getElementById('aiKey').value.trim();
-    saveAiKey();
-    state.ai = {
-      model: document.getElementById('aiModel').value.trim(),
+  let models = [];
+
+  const paint = ()=>{
+    const prov = aiCfg.provider;
+    const local = prov === 'ollama';
+    m.innerHTML = '<h3>AI Settings</h3>'+
+      '<p>Questline writes flashcards, examples, explanations and corrections with a language model. '+
+      'By default that model runs <b>on this computer</b> through Ollama — no account, no bill, and nothing leaves the machine.</p>'+
+      '<label>Provider</label>'+
+      '<select class="fld" id="aiProv">'+
+        '<option value="ollama"'+(local?' selected':'')+'>Ollama — local, free</option>'+
+        '<option value="anthropic"'+(prov==='anthropic'?' selected':'')+'>Anthropic — cloud, paid</option>'+
+        '<option value="openai"'+(prov==='openai'?' selected':'')+'>OpenAI — cloud, paid</option>'+
+      '</select>'+
+      (local
+        ? '<label>Ollama address</label>'+
+          '<input type="text" class="fld" id="aiUrl" value="'+esc(aiCfg.ollamaUrl||'')+'" placeholder="http://127.0.0.1:11434">'+
+          '<div class="hint">Install from <b>ollama.com</b>, then pull a model — <code>ollama pull llama3.2</code>. '+
+          'Something in the 3-8B range answers fast enough to use while reviewing.</div>'
+        : '<label>API key</label>'+
+          '<input type="password" class="fld" id="aiKeyIn" placeholder="sk-ant-… or sk-…" value="'+esc(aiKey)+'">'+
+          '<div class="hint">Kept on this computer only and sent to that provider alone. Costs money per request.</div>')+
+      '<label>Model</label>'+
+      '<div style="display:flex;gap:7px">'+
+        '<input type="text" class="fld" id="aiModel" style="margin:0" value="'+esc(aiCfg.model||'')+'" placeholder="'+(local?'llama3.2':'leave blank for the cheap default')+'" list="aiModelList">'+
+        '<datalist id="aiModelList">'+models.map(x=>'<option value="'+esc(x)+'">').join('')+'</datalist>'+
+        (local?'<button class="ghost-btn" id="aiFetch" style="flex:none">Find models</button>':'')+
+      '</div>'+
+      (models.length?'<div class="hint">Installed: '+models.map(esc).join(', ')+'</div>':'')+
+      '<label>Quiz questions per video</label>'+
+      '<input type="number" class="fld" id="aiCount" min="3" max="20" value="'+((state.ai&&state.ai.count)||8)+'">'+
+      '<div id="aiTestMsg"></div>'+
+      '<div class="actions">'+
+        (standalone?'<button class="btn-text" id="mCancel">Cancel</button>':'')+
+        '<button class="ghost-btn" id="aiTest">Test connection</button>'+
+        '<button class="btn-primary" id="aiSave">Save</button>'+
+      '</div>';
+
+    if(standalone) document.getElementById('modalVeil').classList.add('open');
+    const c = document.getElementById('mCancel'); if(c) c.addEventListener('click', closeModal);
+
+    document.getElementById('aiProv').addEventListener('change', e=>{
+      aiCfg.provider = e.target.value;
+      aiCfg.model = '';
+      models = [];
+      saveAiCfg(); paint();
+    });
+    const fetchBtn = document.getElementById('aiFetch');
+    if(fetchBtn) fetchBtn.addEventListener('click', async ()=>{
+      fetchBtn.disabled = true; fetchBtn.textContent = '…';
+      const url = document.getElementById('aiUrl').value.trim();
+      const res = await api.aiModels({ provider:'ollama', baseUrl:url });
+      if(res && res.ok && res.models.length){
+        models = res.models;
+        aiCfg.ollamaUrl = url; saveAiCfg();
+        paint();
+      }else{
+        setMsg((res && res.error) || 'No models found. Pull one first: ollama pull llama3.2', true);
+        fetchBtn.disabled = false; fetchBtn.textContent = 'Find models';
+      }
+    });
+    document.getElementById('aiTest').addEventListener('click', testIt);
+    document.getElementById('aiSave').addEventListener('click', save);
+  };
+
+  const setMsg = (text, bad)=>{
+    const el = document.getElementById('aiTestMsg');
+    if(el) el.innerHTML = '<div class="hint" style="color:var(--'+(bad?'danger':'success')+')">'+esc(text)+'</div>';
+  };
+
+  function readForm(){
+    const urlEl = document.getElementById('aiUrl');
+    const keyEl = document.getElementById('aiKeyIn');
+    if(urlEl) aiCfg.ollamaUrl = urlEl.value.trim() || 'http://127.0.0.1:11434';
+    if(keyEl) aiKey = keyEl.value.trim();
+    aiCfg.model = document.getElementById('aiModel').value.trim();
+  }
+
+  async function testIt(){
+    readForm();
+    const btn = document.getElementById('aiTest');
+    btn.disabled = true; btn.textContent = 'Testing…';
+    const h = await api.aiHealth(aiArgs({}));
+    if(!h || !h.ok){
+      setMsg((h && h.error) || 'No answer.', true);
+    }else{
+      // A real round trip is the only proof that matters.
+      const r = await api.aiComplete(aiArgs({ prompt:'Reply with exactly the word: ready', maxTokens:16 }));
+      if(r && r.ok) setMsg((h.detail||'Connected')+' · model replied: "'+String(r.text).trim().slice(0,40)+'"');
+      else setMsg((r && r.error) || 'Connected, but the model did not answer.', true);
+    }
+    btn.disabled = false; btn.textContent = 'Test connection';
+  }
+
+  function save(){
+    readForm();
+    saveAiCfg(); saveAiKey();
+    state.ai = Object.assign({}, state.ai, {
       count: Math.max(3, Math.min(20, parseInt(document.getElementById('aiCount').value,10)||8))
-    };
-    saveState(); closeModal();
-    if(currentVideo){ renderQuiz(); renderSummary(); }
-    showToast({title:'AI settings saved'});
-  });
+    });
+    saveState();
+    if(standalone) closeModal();
+    if(typeof currentVideo!=='undefined' && currentVideo){ renderQuiz(); renderSummary(); }
+    showToast({title:'AI settings saved', sub: aiIsLocal()?'Running locally through Ollama':'Using '+aiCfg.provider});
+  }
+
+  paint();
+  // Offer the installed models straight away rather than making them press a button.
+  if(aiCfg.provider === 'ollama'){
+    api.aiModels({ provider:'ollama', baseUrl: aiCfg.ollamaUrl }).then(res=>{
+      if(res && res.ok && res.models.length && document.getElementById('aiProv')){ models = res.models; paint(); }
+    });
+  }
 }
 
 /* ---------- Learn events ---------- */
 document.getElementById('vidAdd').addEventListener('click', addVideo);
 document.getElementById('vidUrl').addEventListener('keydown', e=>{ if(e.key==='Enter'){ e.preventDefault(); addVideo(); } });
-document.getElementById('aiSettingsBtn').addEventListener('click', openAiSettings);
+document.getElementById('aiSettingsBtn').addEventListener('click', ()=>openAiSettings());
 document.getElementById('backToLib').addEventListener('click', closeVideo);
 document.getElementById('subtabs').addEventListener('click', e=>{
   const t = e.target.closest('.subtab'); if(t) setSubTab(t.dataset.sub);
@@ -5328,7 +5524,7 @@ function openSyncSettings(host){
     }
   });
 }
-document.getElementById('syncBadge').addEventListener('click', openSyncSettings);
+document.getElementById('syncBadge').addEventListener('click', ()=>openSyncSettings());
 
 async function openWidgetSettings(host){
   const standalone = !host;
@@ -5825,7 +6021,8 @@ function srsRenderCard(){
       '<div class="srs-sub">What did you hear?</div>';
   }else if(card.type==='production'){
     front = '<div class="srs-prompt small">'+esc(note.word)+'</div>'+
-      '<div class="srs-sub">Say or write a sentence of your own using this. Then check yourself against the example.</div>';
+      '<div class="srs-sub">Write a sentence of your own using this word.</div>'+
+      '<textarea class="srs-produce" id="srsProduce" placeholder="Your sentence…"></textarea>';
   }
 
   stage.innerHTML = '<div class="srs-kind">'+esc(typeDef.name.toUpperCase())+'</div>'+front+
@@ -5882,6 +6079,21 @@ function srsReveal(){
   if(note.imageId) shotGet(note.imageId).then(b=>{ const el=document.getElementById('srsImg'); if(el&&b) el.src = URL.createObjectURL(b); });
   if(card.type!=='listening') speak(note.word, lang);
 
+  // Tutor actions. Local by default, so asking is free and private.
+  const wrote = (document.getElementById('srsProduce')||{}).value || '';
+  stage.insertAdjacentHTML('beforeend',
+    '<div class="srs-tutor">'+
+      '<div class="srs-tutor-btns">'+
+        '<button class="btn-ghost-sm" id="srsExplain">Explain this (E)</button>'+
+        (card.type==='production' ? '<button class="btn-ghost-sm" id="srsCheck">Check my sentence</button>' : '')+
+      '</div>'+
+      '<div id="srsTutorOut"></div>'+
+    '</div>');
+  const exBtn = document.getElementById('srsExplain');
+  if(exBtn) exBtn.addEventListener('click', ()=>tutorExplain(note));
+  const ckBtn = document.getElementById('srsCheck');
+  if(ckBtn) ckBtn.addEventListener('click', ()=>tutorCheckSentence(note, wrote));
+
   const prev = fsrsPreview(card, srsCfg(), Date.now());
   const btn = (g, cls, label, key)=>
     '<button class="srs-btn '+cls+'" data-g="'+g+'">'+label+
@@ -5929,7 +6141,7 @@ document.addEventListener('keydown', e=>{
   const veil = document.getElementById('srsVeil');
   if(!veil || !veil.classList.contains('open') || !sess) return;
   if(e.key === 'Escape'){ e.preventDefault(); endReview(); return; }
-  const inTyping = e.target && e.target.id === 'srsTypeIn';
+  const inTyping = e.target && (e.target.id === 'srsTypeIn' || e.target.id === 'srsProduce');
   if(!sess.revealed){
     if((e.key === ' ' || e.key === 'Enter') && !inTyping){ e.preventDefault(); srsReveal(); }
     return;
@@ -5939,8 +6151,66 @@ document.addEventListener('keydown', e=>{
   if(e.key === 'r' || e.key === 'R'){
     const c = sess.queue[sess.i], n = c && noteById(c.noteId);
     if(n) speak(n.word, n.lang || 'de-DE');
+    return;
+  }
+  if(e.key === 'e' || e.key === 'E'){
+    const c = sess.queue[sess.i], n = c && noteById(c.noteId);
+    if(n){ e.preventDefault(); tutorExplain(n); }
   }
 });
+
+/* ---------- the local tutor ----------
+ * Explanations and corrections. Content only — none of this touches FSRS, and
+ * with the default provider none of it leaves the machine. */
+function aiReady(){ return aiIsLocal() || !!aiKey; }
+
+function tutorOut(html, bad){
+  const host = document.getElementById('srsTutorOut');
+  if(host) host.innerHTML = '<div class="srs-tutor-out'+(bad?' bad':'')+'">'+html+'</div>';
+}
+function langName(code){ return (LANGS.find(l=>l.code===code)||{}).name || code || 'German'; }
+
+async function tutorExplain(note){
+  if(!aiReady()){ openAiSettings(); return; }
+  tutorOut('<span class="ai-badge">thinking locally…</span>');
+  const prompt = 'You are a patient '+langName(note.lang)+' teacher. Explain this to an intermediate learner in English, in under 90 words.\n\n'+
+    'WORD: '+note.word+'\nMEANING: '+note.translation+
+    (note.example?'\nEXAMPLE: '+note.example:'')+'\n\n'+
+    'Cover, briefly: what nuance or register it carries, the grammar a learner must get right '+
+    '(gender and plural for a noun, case or preposition it takes, separable prefix, irregular forms), '+
+    'and one word it is easily confused with. Plain prose, no headings, no markdown.';
+  const res = await api.aiComplete(aiArgs({ prompt, maxTokens: 400, temperature: 0.5 }));
+  if(!res || !res.ok) return tutorOut(esc((res && res.error) || 'No answer.'), true);
+  tutorOut(esc(String(res.text).trim()));
+}
+
+async function tutorCheckSentence(note, sentence){
+  if(!aiReady()){ openAiSettings(); return; }
+  if(!sentence.trim()){ tutorOut('Write a sentence first.', true); return; }
+  tutorOut('<span class="ai-badge">checking locally…</span>');
+  const prompt = 'You are marking one sentence written by a learner of '+langName(note.lang)+'.\n\n'+
+    'TARGET WORD: '+note.word+' ('+note.translation+')\n'+
+    'LEARNER WROTE: '+sentence.trim()+'\n\n'+
+    'Return ONLY a raw JSON object, no markdown fence:\n'+
+    '{"verdict":"correct" | "almost" | "wrong",'+
+    '"corrected":"the sentence written properly, or the original if it was already right",'+
+    '"notes":"at most 2 short sentences in English saying what was wrong and why",'+
+    '"usedTarget":true or false}\n'+
+    'Judge grammar, word order and whether the target word was used naturally and in the right sense.';
+  const res = await api.aiComplete(aiArgs({ prompt, maxTokens: 500, temperature: 0.3 }));
+  if(!res || !res.ok) return tutorOut(esc((res && res.error) || 'No answer.'), true);
+  let j;
+  try{ j = aiParseJson(res.text); }
+  catch(e){ return tutorOut(esc(String(res.text).trim().slice(0,600))); }
+  const mark = j.verdict === 'correct' ? '<b style="color:var(--success)">Correct</b>'
+             : j.verdict === 'almost' ? '<b style="color:var(--gold)">Almost</b>'
+             : '<b style="color:var(--danger)">Not quite</b>';
+  tutorOut(mark +
+    (j.usedTarget === false ? ' <span class="ai-badge">— you did not use the target word</span>' : '') +
+    (j.corrected ? '<br><br>' + esc(String(j.corrected)) : '') +
+    (j.notes ? '<br><br><span style="color:var(--text-faint)">' + esc(String(j.notes)) + '</span>' : ''),
+    j.verdict === 'wrong');
+}
 
 /* ---------- add / edit a word ---------- */
 let srsPickedTypes = ['recognition','translation','cloze','typing'];
@@ -6027,7 +6297,7 @@ function openAddWord(noteId){
   async function fillWithAi(){
     const word = document.getElementById('wWord').value.trim();
     if(!word){ showToast({title:'Type the word first'}); return; }
-    if(!aiKey){ openAiSettings(); return; }
+    if(!aiIsLocal() && !aiKey){ openAiSettings(); return; }
     const btn = document.getElementById('wAi');
     btn.disabled = true; btn.textContent = 'Thinking…';
     const langName = (LANGS.find(l=>l.code===document.getElementById('wLang').value)||{}).name || 'German';
@@ -6041,7 +6311,7 @@ function openAddWord(noteId){
       '"tags":["2-4 short tags such as part of speech or register"]}\n'+
       'The example must sound like something a person would actually say.';
     try{
-      const res = await api.aiComplete({ apiKey: aiKey, model: state.ai.model, prompt, maxTokens: 700 });
+      const res = await api.aiComplete(aiArgs({ prompt, maxTokens: 700 }));
       if(!res || !res.ok) throw new Error((res && res.error) || 'AI call failed');
       let t = String(res.text||'').trim().replace(/^```(?:json)?\s*/i,'').replace(/\s*```$/,'');
       const a = t.indexOf('{'), b2 = t.lastIndexOf('}');

@@ -46,6 +46,19 @@ The repo must stay **public** — a private one breaks differential updates.
   fixtures hide real bugs (a 3-second video seeks from memory and never exposes
   broken range requests).
 
+## AI
+
+`main.js` holds a provider layer — `AI_PROVIDERS` with `complete` / `models` /
+`health`. **Ollama is the default and runs locally**, so a fresh install needs
+no account and sends nothing off the machine; Anthropic and OpenAI are there for
+anyone who wants them. Adding a provider means adding one object; nothing that
+calls it needs to change.
+
+Prompts live in the renderer, not in `main.js`, so every AI feature works
+through whichever provider is selected. Provider choice, Ollama URL and model
+are device-local (`questline_aicfg_v1`) — an address that means something on
+this PC means nothing on the phone, which can only reach cloud providers.
+
 ## Where data lives — this matters
 
 `state` is encrypted in the browser and pushed to Cloudflare KV. Three things

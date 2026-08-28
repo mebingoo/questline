@@ -363,6 +363,11 @@ function extractJSON(text) {
    request rule as everything else here. */
 async function aiComplete(request) {
   const opts = await request.json();
+  // Ollama runs on the user's own machine; this Worker sits in Cloudflare and
+  // cannot reach it. Say so plainly instead of failing with a timeout.
+  if (opts.provider === 'ollama') {
+    return json({ ok: false, error: 'Ollama runs on your PC and cannot be reached from the phone. Pick a cloud provider here, or use the desktop app.' });
+  }
   const key = String(opts.apiKey || '').trim();
   const prompt = String(opts.prompt || '');
   if (!key) return json({ ok: false, error: 'No API key set.' });

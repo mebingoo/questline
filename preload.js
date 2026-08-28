@@ -23,6 +23,14 @@ contextBridge.exposeInMainWorld('learn', {
   complete: (opts) => ipcRenderer.invoke('ai-complete', opts)
 });
 
+// The AI provider layer. Ollama is the default and runs on this machine.
+contextBridge.exposeInMainWorld('ai', {
+  complete: (opts) => ipcRenderer.invoke('ai-complete', opts),
+  models: (opts) => ipcRenderer.invoke('ai-models', opts),
+  health: (opts) => ipcRenderer.invoke('ai-health', opts),
+  providers: () => ipcRenderer.invoke('ai-provider-list')
+});
+
 // Read-only: lists/loads the roadmap.json files bundled under data/roadmaps.
 contextBridge.exposeInMainWorld('roadmaps', {
   listSeeds: () => ipcRenderer.invoke('roadmap-list-seeds'),

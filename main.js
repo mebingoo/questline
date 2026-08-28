@@ -2,6 +2,7 @@ const { app, BrowserWindow, Menu, ipcMain, session, globalShortcut, dialog, shel
 const path = require('path');
 const fs = require('fs');
 const https = require('https');
+const http = require('http');
 const { pathToFileURL } = require('url');
 
 /* ------------------------------------------------------------------ *
@@ -695,41 +696,185 @@ ipcMain.handle('yt-transcript', async (event, videoId) => {
   }
 });
 
-/* ---- AI: a generic prompt, used by the flashcard builder. Deliberately
-   separate from the quiz generator below: that one owns its prompt, this one
-   just relays whatever the caller asked for. Scheduling never comes near it. ---- */
-ipcMain.handle('ai-complete', async (event, opts) => {
-  opts = opts || {};
-  const key = String(opts.apiKey || '').trim();
-  const prompt = String(opts.prompt || '');
-  if (!key) return { ok: false, error: 'No API key set.' };
-  if (!prompt) return { ok: false, error: 'Nothing to ask.' };
-  const isAnthropic = key.startsWith('sk-ant-');
-  const model = String(opts.model || '').trim() || (isAnthropic ? 'claude-3-5-haiku-latest' : 'gpt-4o-mini');
-  const maxTokens = Math.max(256, Math.min(4000, parseInt(opts.maxTokens, 10) || 1500));
-  try {
-    let res, text;
-    if (isAnthropic) {
-      res = await postJSON('api.anthropic.com', '/v1/messages',
-        { 'x-api-key': key, 'anthropic-version': '2023-06-01' },
-        { model, max_tokens: maxTokens, messages: [{ role: 'user', content: prompt }] });
-      let j = null; try { j = JSON.parse(res.body); } catch (e) {}
-      if (j && j.error) return { ok: false, error: j.error.message || 'Anthropic error' };
-      if (res.status !== 200) return { ok: false, error: 'Anthropic HTTP ' + res.status };
-      text = (j.content || []).map((c) => c.text || '').join('');
-    } else {
-      res = await postJSON('api.openai.com', '/v1/chat/completions',
-        { 'Authorization': 'Bearer ' + key },
-        { model, max_tokens: maxTokens, messages: [{ role: 'user', content: prompt }] });
-      let j = null; try { j = JSON.parse(res.body); } catch (e) {}
-      if (j && j.error) return { ok: false, error: j.error.message || 'OpenAI error' };
-      if (res.status !== 200) return { ok: false, error: 'OpenAI HTTP ' + res.status };
-      text = ((j.choices || [])[0] || {}).message ? j.choices[0].message.content : '';
+/* ================================================================== *
+ * AI PROVIDERS
+ *
+ * One interface, several backends. Ollama is the default and runs on
+ * this machine, so nothing here needs a paid account or sends text off
+ * the device. The cloud providers stay available for anyone who wants
+ * them, behind the same three calls:
+ *
+ *   complete({prompt, model, ...})  -> { ok, text }
+ *   models(...)                     -> { ok, models: [name] }
+ *   health(...)                     -> { ok, detail }
+ *
+ * Adding a provider means adding one object below; nothing that calls
+ * these has to know which one is in use.
+ * ================================================================== */
+
+function httpJSON(urlStr, { method = 'GET', headers = {}, body = null, timeout = 180000 } = {}) {
+  return new Promise((resolve, reject) => {
+    let u;
+    try { u = new URL(urlStr); } catch (e) { return reject(new Error('Bad URL: ' + urlStr)); }
+    const lib = u.protocol === 'http:' ? http : https;
+    const data = body == null ? null : JSON.stringify(body);
+    const req = lib.request({
+      host: u.hostname,
+      port: u.port || (u.protocol === 'http:' ? 80 : 443),
+      path: u.pathname + u.search,
+      method,
+      headers: Object.assign(
+        data ? { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(data) } : {},
+        headers
+      ),
+      timeout
+    }, (res) => {
+      let out = '';
+      res.setEncoding('utf8');
+      res.on('data', (c) => { out += c; });
+      res.on('end', () => {
+        let parsed = null;
+        try { parsed = JSON.parse(out); } catch (e) {}
+        resolve({ status: res.statusCode, json: parsed, raw: out });
+      });
+    });
+    req.on('timeout', () => req.destroy(new Error('The model took too long to answer.')));
+    req.on('error', (e) => {
+      if (e.code === 'ECONNREFUSED') return reject(new Error('Nothing is listening there. Is Ollama running?'));
+      reject(e);
+    });
+    if (data) req.write(data);
+    req.end();
+  });
+}
+
+const OLLAMA_DEFAULT_URL = 'http://127.0.0.1:11434';
+const cleanBase = (u) => String(u || OLLAMA_DEFAULT_URL).trim().replace(/\/+$/, '');
+
+const AI_PROVIDERS = {
+  ollama: {
+    label: 'Ollama (local)',
+    needsKey: false,
+    local: true,
+    async complete(o) {
+      const base = cleanBase(o.baseUrl);
+      const model = String(o.model || '').trim() || 'llama3.2';
+      const r = await httpJSON(base + '/api/generate', {
+        method: 'POST',
+        body: {
+          model,
+          prompt: o.prompt,
+          stream: false,
+          options: {
+            temperature: o.temperature == null ? 0.7 : o.temperature,
+            num_predict: Math.max(128, Math.min(4096, parseInt(o.maxTokens, 10) || 1200))
+          }
+        }
+      });
+      if (r.status === 404) {
+        return { ok: false, error: 'Model "' + model + '" is not pulled yet. Run:  ollama pull ' + model };
+      }
+      if (r.status !== 200) return { ok: false, error: 'Ollama HTTP ' + r.status + (r.raw ? ' — ' + r.raw.slice(0, 160) : '') };
+      const text = r.json && typeof r.json.response === 'string' ? r.json.response : '';
+      if (!text) return { ok: false, error: 'Ollama returned nothing.' };
+      return { ok: true, text };
+    },
+    async models(o) {
+      const r = await httpJSON(cleanBase(o.baseUrl) + '/api/tags', { timeout: 8000 });
+      if (r.status !== 200 || !r.json) return { ok: false, error: 'Could not list models (HTTP ' + r.status + ').' };
+      return { ok: true, models: (r.json.models || []).map((m) => m.name || m.model).filter(Boolean) };
+    },
+    async health(o) {
+      const r = await httpJSON(cleanBase(o.baseUrl) + '/api/version', { timeout: 6000 });
+      if (r.status !== 200 || !r.json) return { ok: false, error: 'Ollama did not answer on ' + cleanBase(o.baseUrl) };
+      return { ok: true, detail: 'Ollama ' + (r.json.version || '') };
     }
-    return { ok: true, text };
-  } catch (err) {
-    return { ok: false, error: String((err && err.message) || err) };
+  },
+
+  anthropic: {
+    label: 'Anthropic (cloud, paid)',
+    needsKey: true,
+    async complete(o) {
+      const r = await httpJSON('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: { 'x-api-key': o.apiKey, 'anthropic-version': '2023-06-01' },
+        body: {
+          model: String(o.model || '').trim() || 'claude-3-5-haiku-latest',
+          max_tokens: Math.max(128, Math.min(4096, parseInt(o.maxTokens, 10) || 1200)),
+          messages: [{ role: 'user', content: o.prompt }]
+        }
+      });
+      const j = r.json;
+      if (j && j.error) return { ok: false, error: j.error.message || 'Anthropic error' };
+      if (r.status !== 200) return { ok: false, error: 'Anthropic HTTP ' + r.status };
+      return { ok: true, text: (j.content || []).map((c) => c.text || '').join('') };
+    },
+    async models() { return { ok: true, models: ['claude-3-5-haiku-latest', 'claude-sonnet-4-5', 'claude-opus-4-1'] }; },
+    async health(o) { return o.apiKey ? { ok: true, detail: 'Key present' } : { ok: false, error: 'No API key set.' }; }
+  },
+
+  openai: {
+    label: 'OpenAI (cloud, paid)',
+    needsKey: true,
+    async complete(o) {
+      const r = await httpJSON('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: { 'Authorization': 'Bearer ' + o.apiKey },
+        body: {
+          model: String(o.model || '').trim() || 'gpt-4o-mini',
+          max_tokens: Math.max(128, Math.min(4096, parseInt(o.maxTokens, 10) || 1200)),
+          messages: [{ role: 'user', content: o.prompt }]
+        }
+      });
+      const j = r.json;
+      if (j && j.error) return { ok: false, error: j.error.message || 'OpenAI error' };
+      if (r.status !== 200) return { ok: false, error: 'OpenAI HTTP ' + r.status };
+      return { ok: true, text: ((j.choices || [])[0] || {}).message ? j.choices[0].message.content : '' };
+    },
+    async models() { return { ok: true, models: ['gpt-4o-mini', 'gpt-4o'] }; },
+    async health(o) { return o.apiKey ? { ok: true, detail: 'Key present' } : { ok: false, error: 'No API key set.' }; }
   }
+};
+
+function pickProvider(name) {
+  return AI_PROVIDERS[name] || AI_PROVIDERS.ollama;
+}
+function guardKey(prov, o) {
+  if (prov.needsKey && !String(o.apiKey || '').trim()) {
+    return { ok: false, error: 'That provider needs an API key. Ollama runs locally and needs none.' };
+  }
+  return null;
+}
+
+ipcMain.handle('ai-complete', async (event, opts) => {
+  const o = opts || {};
+  const prov = pickProvider(o.provider);
+  if (!String(o.prompt || '')) return { ok: false, error: 'Nothing to ask.' };
+  const bad = guardKey(prov, o);
+  if (bad) return bad;
+  try { return await prov.complete(o); }
+  catch (err) { return { ok: false, error: String((err && err.message) || err) }; }
+});
+
+ipcMain.handle('ai-models', async (event, opts) => {
+  const o = opts || {};
+  try { return await pickProvider(o.provider).models(o); }
+  catch (err) { return { ok: false, error: String((err && err.message) || err) }; }
+});
+
+ipcMain.handle('ai-health', async (event, opts) => {
+  const o = opts || {};
+  try { return await pickProvider(o.provider).health(o); }
+  catch (err) { return { ok: false, error: String((err && err.message) || err) }; }
+});
+
+ipcMain.handle('ai-provider-list', async () => {
+  return {
+    ok: true,
+    providers: Object.keys(AI_PROVIDERS).map((k) => ({
+      id: k, label: AI_PROVIDERS[k].label, needsKey: !!AI_PROVIDERS[k].needsKey, local: !!AI_PROVIDERS[k].local
+    }))
+  };
 });
 
 /* ---- AI: summary + graded multiple-choice questions from a transcript ---- */
