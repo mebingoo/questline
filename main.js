@@ -751,6 +751,20 @@ function httpJSON(urlStr, { method = 'GET', headers = {}, body = null, timeout =
 const OLLAMA_DEFAULT_URL = 'http://127.0.0.1:11434';
 const cleanBase = (u) => String(u || OLLAMA_DEFAULT_URL).trim().replace(/\/+$/, '');
 
+/* How long Ollama should hold the model in VRAM after answering.
+ * Ollama does this itself — a duration string, seconds as a number, 0 to unload
+ * as soon as the reply is done, or a negative number to keep it forever. Every
+ * request carries the value, and Ollama restarts the countdown each time, so
+ * the idle timer resets without anything here having to track it. */
+function normalizeKeepAlive(v) {
+  if (v === 0 || v === '0') return 0;                       // unload immediately
+  if (v === -1 || v === '-1' || v === 'always') return -1;   // keep loaded
+  const str = String(v == null ? '10m' : v).trim();
+  if (/^\d+$/.test(str)) return parseInt(str, 10);           // plain seconds
+  if (/^\d+(\.\d+)?[smh]$/.test(str)) return str;            // 5m, 30m, 2h
+  return '10m';
+}
+
 const AI_PROVIDERS = {
   ollama: {
     label: 'Ollama (local)',
@@ -765,6 +779,7 @@ const AI_PROVIDERS = {
           model,
           prompt: o.prompt,
           stream: false,
+          keep_alive: normalizeKeepAlive(o.keepAlive),
           options: {
             temperature: o.temperature == null ? 0.7 : o.temperature,
             num_predict: Math.max(128, Math.min(4096, parseInt(o.maxTokens, 10) || 1200))
@@ -788,6 +803,52 @@ const AI_PROVIDERS = {
       const r = await httpJSON(cleanBase(o.baseUrl) + '/api/version', { timeout: 6000 });
       if (r.status !== 200 || !r.json) return { ok: false, error: 'Ollama did not answer on ' + cleanBase(o.baseUrl) };
       return { ok: true, detail: 'Ollama ' + (r.json.version || '') };
+    },
+    /* /api/ps lists what is actually resident in memory right now, with the
+       moment each model is due to be dropped. Facts only — the renderer decides
+       how to label them. */
+    async status(o) {
+      const r = await httpJSON(cleanBase(o.baseUrl) + '/api/ps', { timeout: 6000 });
+      if (r.status !== 200 || !r.json) return { ok: false, error: 'Ollama is not reachable.' };
+      const wanted = String(o.model || '').trim();
+      const list = (r.json.models || []).map((m) => ({
+        name: m.name || m.model || '',
+        vram: m.size_vram || 0,
+        expiresAt: m.expires_at || null
+      }));
+      // "llama3.2" should match the resident "llama3.2:latest".
+      const mine = wanted
+        ? list.find((m) => m.name === wanted || m.name.split(':')[0] === wanted.split(':')[0])
+        : list[0];
+      return {
+        ok: true,
+        loaded: !!mine,
+        model: mine ? mine.name : wanted,
+        vram: mine ? mine.vram : 0,
+        expiresAt: mine ? mine.expiresAt : null,
+        others: list.filter((m) => !mine || m.name !== mine.name).map((m) => m.name)
+      };
+    },
+    /* Drop it now: a zero-token generate with keep_alive 0 tells Ollama to
+       release the weights. The daemon itself keeps running. */
+    async unload(o) {
+      const model = String(o.model || '').trim();
+      if (!model) return { ok: false, error: 'No model selected.' };
+      const r = await httpJSON(cleanBase(o.baseUrl) + '/api/generate', {
+        method: 'POST', timeout: 20000,
+        body: { model, prompt: '', keep_alive: 0, stream: false }
+      });
+      if (r.status !== 200) return { ok: false, error: 'Ollama HTTP ' + r.status };
+      // Ollama answers before the weights are actually evicted, so poll /api/ps
+      // briefly — otherwise the UI reports "Loaded" straight after an unload.
+      for (let i = 0; i < 12; i++) {
+        const ps = await httpJSON(cleanBase(o.baseUrl) + '/api/ps', { timeout: 4000 });
+        const still = ((ps.json && ps.json.models) || []).some(
+          (m) => (m.name || m.model || '').split(':')[0] === model.split(':')[0]);
+        if (!still) return { ok: true };
+        await new Promise((res) => setTimeout(res, 250));
+      }
+      return { ok: true, slow: true };
     }
   },
 
@@ -865,6 +926,22 @@ ipcMain.handle('ai-models', async (event, opts) => {
 ipcMain.handle('ai-health', async (event, opts) => {
   const o = opts || {};
   try { return await pickProvider(o.provider).health(o); }
+  catch (err) { return { ok: false, error: String((err && err.message) || err) }; }
+});
+
+ipcMain.handle('ai-status', async (event, opts) => {
+  const o = opts || {};
+  const prov = pickProvider(o.provider);
+  if (!prov.status) return { ok: true, loaded: null, unsupported: true };
+  try { return await prov.status(o); }
+  catch (err) { return { ok: false, error: String((err && err.message) || err) }; }
+});
+
+ipcMain.handle('ai-unload', async (event, opts) => {
+  const o = opts || {};
+  const prov = pickProvider(o.provider);
+  if (!prov.unload) return { ok: false, error: 'That provider has nothing to unload.' };
+  try { return await prov.unload(o); }
   catch (err) { return { ok: false, error: String((err && err.message) || err) }; }
 });
 

@@ -1034,6 +1034,11 @@
   .ai-badge{font-family:var(--font-mono); font-size:9.5px; color:var(--text-faint);}
   .ai-badge b{color:var(--success);}
 
+  .ai-status-row{display:flex; align-items:center; gap:10px; margin:10px 0 4px;}
+  .ai-status{flex:1; display:flex; align-items:center; gap:7px; font-family:var(--font-mono); font-size:11px; color:var(--text-dim);}
+  .ai-dot{width:8px; height:8px; border-radius:50%; flex:none; display:inline-block;}
+  .ai-status-hint{color:var(--text-faint);}
+
   /* ============ JOURNAL ============ */
   .jr-capture{display:flex; gap:8px; margin-bottom:14px;}
   .jr-capture input{flex:1;}
@@ -1960,8 +1965,20 @@ function saveAiKey(){ try{ localStorage.setItem(AI_KEY_STORE, aiKey); }catch(e){
  * a fresh install needs no account and sends nothing off the machine. */
 const AI_CFG_STORE = 'questline_aicfg_v1';
 function defaultAiCfg(){
-  return { provider:'ollama', ollamaUrl:'http://127.0.0.1:11434', model:'' };
+  // keepAlive is handed to Ollama on every request; it holds the model in VRAM
+  // for that long after answering and restarts the countdown each time.
+  return { provider:'ollama', ollamaUrl:'http://127.0.0.1:11434', model:'', keepAlive:'10m' };
 }
+const KEEP_ALIVE_CHOICES = [
+  { v:'0',   label:'Unload immediately' },
+  { v:'5m',  label:'5 minutes' },
+  { v:'10m', label:'10 minutes' },
+  { v:'30m', label:'30 minutes' },
+  { v:'-1',  label:'Always keep loaded' }
+];
+/* When the app last asked the model for something. Only used to tell a model
+   that is working from one that is merely still resident. */
+let aiLastRequestAt = 0;
 let aiCfg = (function(){
   try{
     const stored = JSON.parse(localStorage.getItem(AI_CFG_STORE));
@@ -1986,12 +2003,41 @@ function saveAiCfg(){ try{ localStorage.setItem(AI_CFG_STORE, JSON.stringify(aiC
 const aiIsLocal = ()=> aiCfg.provider === 'ollama';
 /* Everything the provider layer needs for one call, in one place. */
 function aiArgs(extra){
+  aiLastRequestAt = Date.now();
   return Object.assign({
     provider: aiCfg.provider,
     baseUrl: aiCfg.ollamaUrl,
     model: aiCfg.model,
+    keepAlive: aiCfg.keepAlive == null ? '10m' : aiCfg.keepAlive,
     apiKey: aiIsLocal() ? '' : aiKey
   }, extra || {});
+}
+
+/* Loaded / Idle / Not loaded.
+ * Ollama reports what is resident and when it is due to be dropped; whether
+ * that counts as "Loaded" or "Idle" depends on whether we have used it lately,
+ * which only this side knows. */
+async function aiModelStatus(){
+  if(!aiIsLocal() || !(window.ai && window.ai.status)) return null;
+  const r = await api.aiStatus({ provider:'ollama', baseUrl:aiCfg.ollamaUrl, model:aiCfg.model });
+  if(!r || !r.ok) return { state:'unknown', label:'Ollama not reachable', color:'var(--text-faint)' };
+  if(!r.loaded) return { state:'not-loaded', label:'Not loaded', color:'var(--text-faint)',
+                         hint:'The next request loads it — expect a few seconds extra.' };
+  const busy = Date.now() - aiLastRequestAt < 60000;
+  const mb = r.vram ? Math.round(r.vram/1048576) : 0;
+  let left = '';
+  if(r.expiresAt){
+    const ms = new Date(r.expiresAt) - Date.now();
+    // A far-future expiry is how Ollama represents "keep forever".
+    if(ms > 8.5*365*24*3600*1000) left = 'no timeout';
+    else if(ms > 0) left = 'unloads in ' + fmtWait(ms);
+  }
+  return {
+    state: busy ? 'loaded' : 'idle',
+    label: busy ? 'Loaded' : 'Idle',
+    color: busy ? 'var(--success)' : 'var(--gold)',
+    hint: [mb?(mb+' MB VRAM'):'', left].filter(Boolean).join(' · ')
+  };
 }
 
 function defaultResource(){
@@ -2491,6 +2537,14 @@ const api = {
   async aiHealth(opts){
     if(window.ai && window.ai.health) return window.ai.health(opts);
     return { ok:false, error:'Only the desktop app can reach a local model.' };
+  },
+  async aiStatus(opts){
+    if(window.ai && window.ai.status) return window.ai.status(opts);
+    return { ok:false, error:'Desktop only.' };
+  },
+  async aiUnload(opts){
+    if(window.ai && window.ai.unload) return window.ai.unload(opts);
+    return { ok:false, error:'Desktop only.' };
   },
   async untisSearch(q){
     if(window.untis && window.untis.search) return window.untis.search(q);
@@ -3773,7 +3827,13 @@ function openAiSettings(host){
         ? '<label>Ollama address</label>'+
           '<input type="text" class="fld" id="aiUrl" value="'+esc(aiCfg.ollamaUrl||'')+'" placeholder="http://127.0.0.1:11434">'+
           '<div class="hint">Install from <b>ollama.com</b>, then pull a model — <code>ollama pull llama3.2</code>. '+
-          'Something in the 3-8B range answers fast enough to use while reviewing.</div>'
+          'Something in the 3-8B range answers fast enough to use while reviewing.</div>'+
+          '<label>Model keep-alive</label>'+
+          '<select class="fld" id="aiKeep">'+KEEP_ALIVE_CHOICES.map(k=>
+            '<option value="'+k.v+'"'+((aiCfg.keepAlive||'10m')===k.v?' selected':'')+'>'+esc(k.label)+'</option>').join('')+'</select>'+
+          '<div class="hint">How long Ollama holds the model in VRAM after a request. Ollama does the counting, and each new request restarts it. Shorter frees the card sooner; longer avoids waiting for a reload.</div>'+
+          '<div class="ai-status-row"><span class="ai-status" id="aiStatus">checking…</span>'+
+            '<button class="btn-ghost-sm" id="aiUnloadBtn">Unload now</button></div>'
         : '<label>API key</label>'+
           '<input type="password" class="fld" id="aiKeyIn" placeholder="sk-ant-… or sk-…" value="'+esc(aiKey)+'">'+
           '<div class="hint">Kept on this computer only and sent to that provider alone. Costs money per request.</div>')+
@@ -3818,7 +3878,40 @@ function openAiSettings(host){
     });
     document.getElementById('aiTest').addEventListener('click', testIt);
     document.getElementById('aiSave').addEventListener('click', save);
+
+    const keepEl = document.getElementById('aiKeep');
+    if(keepEl) keepEl.addEventListener('change', ()=>{
+      // Saved straight away so the very next request carries the new value.
+      aiCfg.keepAlive = keepEl.value; saveAiCfg();
+      showToast({title:'Keep-alive set', sub:(KEEP_ALIVE_CHOICES.find(k=>k.v===keepEl.value)||{}).label});
+      refreshStatus();
+    });
+    const unloadBtn = document.getElementById('aiUnloadBtn');
+    if(unloadBtn) unloadBtn.addEventListener('click', async ()=>{
+      readForm(); saveAiCfg();
+      unloadBtn.disabled = true; unloadBtn.textContent = 'Unloading…';
+      const r = await api.aiUnload({ provider:'ollama', baseUrl:aiCfg.ollamaUrl, model:aiCfg.model });
+      unloadBtn.disabled = false; unloadBtn.textContent = 'Unload now';
+      if(!r || !r.ok) showToast({title:'Could not unload', sub:(r&&r.error)||''});
+      refreshStatus();
+    });
+    refreshStatus();
   };
+
+  async function refreshStatus(){
+    const el = document.getElementById('aiStatus');
+    if(!el) return;
+    const st = await aiModelStatus();
+    if(!el.isConnected) return;
+    if(!st){ el.textContent = ''; return; }
+    el.innerHTML = '<i class="ai-dot" style="background:'+st.color+'"></i>'+esc(st.label)+
+      (st.hint ? ' <span class="ai-status-hint">'+esc(st.hint)+'</span>' : '');
+  }
+  // Poll only while the panel is open; it stops on its own once it is closed.
+  const statusTimer = setInterval(()=>{
+    if(!document.getElementById('aiStatus')){ clearInterval(statusTimer); return; }
+    refreshStatus();
+  }, 5000);
 
   const setMsg = (text, bad)=>{
     const el = document.getElementById('aiTestMsg');
@@ -3828,8 +3921,10 @@ function openAiSettings(host){
   function readForm(){
     const urlEl = document.getElementById('aiUrl');
     const keyEl = document.getElementById('aiKeyIn');
+    const keepEl = document.getElementById('aiKeep');
     if(urlEl) aiCfg.ollamaUrl = urlEl.value.trim() || 'http://127.0.0.1:11434';
     if(keyEl) aiKey = keyEl.value.trim();
+    if(keepEl) aiCfg.keepAlive = keepEl.value;
     aiCfg.model = document.getElementById('aiModel').value.trim();
   }
 

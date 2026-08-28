@@ -28,6 +28,8 @@ contextBridge.exposeInMainWorld('ai', {
   complete: (opts) => ipcRenderer.invoke('ai-complete', opts),
   models: (opts) => ipcRenderer.invoke('ai-models', opts),
   health: (opts) => ipcRenderer.invoke('ai-health', opts),
+  status: (opts) => ipcRenderer.invoke('ai-status', opts),
+  unload: (opts) => ipcRenderer.invoke('ai-unload', opts),
   providers: () => ipcRenderer.invoke('ai-provider-list')
 });
 
