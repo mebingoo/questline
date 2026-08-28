@@ -937,6 +937,61 @@
     .course-side{max-height:300px;}
   }
 
+  /* ============ LIFE TIMELINE ============ */
+  .tl-bar{border-top:1px solid var(--border-soft); background:var(--header-bg); padding:8px 0 9px; cursor:pointer;
+    display:block; width:100%; text-align:left; border-left:none; border-right:none; border-bottom:none;}
+  .tl-bar:hover{background:var(--hover-tint);}
+  body.widget-mode .tl-bar{display:none;}
+  .tl-inner{max-width:1240px; margin:0 auto; padding:0 20px; display:flex; align-items:center; gap:18px;}
+
+  .tl-next{flex:none; min-width:212px;}
+  .tl-next .tl-lab{font-family:var(--font-display); font-size:8.5px; letter-spacing:0.16em; color:var(--text-faint);}
+  .tl-next .tl-name{font-family:var(--font-display); font-size:11.5px; color:var(--text); margin:1px 0 2px;
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .tl-clock{font-family:var(--font-mono); font-size:17px; letter-spacing:0.01em; color:var(--gold); line-height:1;}
+  .tl-clock .u{font-size:9.5px; color:var(--text-faint); margin:0 5px 0 1px;}
+  .tl-clock .sec{color:var(--teal);}
+  .tl-bar.urgent .tl-clock{color:var(--danger);}
+
+  .tl-track-wrap{flex:1; min-width:0;}
+  .tl-track{position:relative; height:46px;}
+  .tl-rail{position:absolute; left:0; right:0; top:9px; height:3px; background:var(--surface-3); border-radius:2px; overflow:hidden;}
+  .tl-rail i{display:block; height:100%; width:0; background:linear-gradient(90deg, var(--gold), var(--teal));}
+  .tl-mark{position:absolute; top:4px; width:11px; height:11px; margin-left:-5.5px; border-radius:50%;
+    background:var(--surface); border:2px solid var(--markcolor); box-sizing:border-box;}
+  .tl-mark.past{background:var(--markcolor);}
+  .tl-mark.next{box-shadow:0 0 0 3px var(--gold-glow);}
+  .tl-now{position:absolute; top:0; width:2px; height:22px; margin-left:-1px; background:var(--danger);
+    box-shadow:0 0 8px var(--danger); animation:tlpulse 2.4s ease-in-out infinite;}
+  @keyframes tlpulse{0%,100%{opacity:1}50%{opacity:.45}}
+  .tl-mlabel{position:absolute; top:23px; transform:translateX(-50%); font-family:var(--font-mono);
+    font-size:8.5px; white-space:nowrap; opacity:.85;}
+  .tl-scale{display:flex; justify-content:space-between; font-family:var(--font-mono); font-size:9px;
+    color:var(--text-dim); margin-top:3px;}
+
+  .tl-end{flex:none; text-align:right; min-width:150px;}
+  .tl-end .tl-lab{font-family:var(--font-display); font-size:8.5px; letter-spacing:0.16em; color:var(--text-faint);}
+  .tl-end .tl-big{font-family:var(--font-mono); font-size:13px; color:var(--text); margin-top:2px;}
+  .tl-end .tl-pct{font-size:10px; color:var(--text-dim); margin-top:1px;}
+
+  /* manage view */
+  .tl-row{display:flex; align-items:center; gap:10px; padding:9px 0; border-bottom:1px solid var(--border-soft);}
+  .tl-row .tl-dot{width:9px; height:9px; border-radius:50%; flex:none; background:var(--markcolor);}
+  .tl-row .tl-rname{flex:1; min-width:0; font-size:12.5px; color:var(--text); overflow:hidden; text-overflow:ellipsis;}
+  .tl-row .tl-rdate{font-family:var(--font-mono); font-size:10.5px; color:var(--text-faint); white-space:nowrap;}
+  .tl-row .tl-rleft{font-family:var(--font-mono); font-size:10.5px; color:var(--gold); white-space:nowrap; min-width:96px; text-align:right;}
+  .tl-row.done .tl-rname, .tl-row.done .tl-rleft{color:var(--text-faint); text-decoration:line-through;}
+  .tl-row button{background:none; border:none; color:var(--text-faint); cursor:pointer; padding:3px;}
+  .tl-row button:hover{color:var(--danger);}
+  .tl-row button svg{width:13px; height:13px;}
+
+  @media(max-width:900px){
+    .tl-inner{flex-wrap:wrap; gap:9px;}
+    .tl-next{min-width:0; flex:1;}
+    .tl-end{min-width:0;}
+    .tl-track-wrap{order:3; flex-basis:100%;}
+  }
+
   /* ============ SKILL TREE ============ */
   .tree-veil{position:fixed; inset:0; background:var(--bg); display:none; z-index:280; flex-direction:column;}
   .tree-veil.open{display:flex;}
@@ -1174,6 +1229,7 @@
     <button class="tab" data-tab="learn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="4.5" width="19" height="13" rx="2.5"/><path d="M10 8.5l5 2.5-5 2.5z"/><path d="M8 21h8"/></svg> Learn <span class="tabcount" id="tabLearnCount">0</span></button>
     <button class="tab" data-tab="courses"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19V6a2 2 0 0 1 2-2h5l2 2h5a2 2 0 0 1 2 2v11a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1z"/><path d="M10 11l4 2.5-4 2.5z"/></svg> Courses <span class="tabcount" id="tabCourseCount">0</span></button>
   </nav>
+  <button class="tl-bar" id="tlBar" title="Manage your timeline"></button>
 </header>
 
 <div class="wrap">
@@ -1794,6 +1850,7 @@ function freshState(){
     videos: [],
     courses: [],
     trees: {},
+    timeline: defaultTimeline(),
     focusSessions: [], questFavorites: [],
     activeTimer: null,
     ai:{ model:'', count:8 },
@@ -1928,6 +1985,8 @@ function migrate(s){
     delete s.untis;
   }
   if(!s.trees || typeof s.trees !== 'object') s.trees = {};
+  if(!s.timeline || !Array.isArray(s.timeline.events)) s.timeline = defaultTimeline();
+  if(!s.timeline.start) s.timeline.start = todayStr();
   if(!Array.isArray(s.courses)) s.courses = [];
   s.courses.forEach(c=>{ if(!c.items) c.items = {}; });
   if(!Array.isArray(s.videos)) s.videos = [];
@@ -3569,6 +3628,7 @@ if(isWidget){
 }
 function renderAll(){
   applyAppearance();      // a pull from the other device can bring new theme settings
+  renderTimeline();
   renderHeader();
   if(typeof renderCourseLibrary==='function' && !activeCourseId) renderCourseLibrary();
   renderRadar();
@@ -5087,6 +5147,217 @@ async function openWidgetSettings(host){
   document.getElementById('wsWidgetOnly').addEventListener('change', e=>{ window.widgetCtl.setPrefs({widgetOnly:e.target.checked}); });
   if(standalone) document.getElementById('modalVeil').classList.add('open');
 }
+/* ============ LIFE TIMELINE ============ */
+/* A countdown to the milestones that actually bound this person's runway. It
+ * reads the real clock every second, so the numbers move while you watch —
+ * that ticking is the whole point of the feature. */
+
+function defaultTimeline(){
+  const abitur = '2027-07-01';
+  // 7 Wintersemester ≈ 3.5 years after the Abitur, which is when the job market starts.
+  const jobMarket = shiftMonths(abitur, 42);
+  return {
+    start: todayStr(),
+    events: [
+      { id:'tl_abi',  title:'Abitur',              date:abitur,               color:'#c9a227', note:'The exam that ends school.' },
+      { id:'tl_uni',  title:'University starts',   date:shiftMonths(abitur,3),color:'#5b87c7', note:'First Wintersemester after the Abitur.' },
+      { id:'tl_job',  title:'Job market',          date:jobMarket,            color:'#ff2ea6', note:'7 Wintersemester later. From here the clock is someone else\u2019s.' }
+    ]
+  };
+}
+function shiftMonths(dateStr, months){
+  const d = new Date(dateStr+'T00:00:00');
+  d.setMonth(d.getMonth()+months);
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+function tlDate(ev){ return new Date(ev.date+'T00:00:00'); }
+function tlEvents(){
+  const t = state.timeline || defaultTimeline();
+  return [...(t.events||[])].sort((a,b)=>a.date.localeCompare(b.date));
+}
+
+/* Calendar-accurate remainder. Date methods are local, so this follows the
+   machine's own clock and timezone, DST included. */
+function timeParts(from, to){
+  if(to <= from) return null;
+  let y = to.getFullYear()-from.getFullYear();
+  let mo = to.getMonth()-from.getMonth();
+  let d = to.getDate()-from.getDate();
+  let h = to.getHours()-from.getHours();
+  let mi = to.getMinutes()-from.getMinutes();
+  let se = to.getSeconds()-from.getSeconds();
+  if(se<0){ se+=60; mi--; }
+  if(mi<0){ mi+=60; h--; }
+  if(h<0){ h+=24; d--; }
+  if(d<0){ d += new Date(to.getFullYear(), to.getMonth(), 0).getDate(); mo--; }
+  if(mo<0){ mo+=12; y--; }
+  return {y:y, mo:mo, d:d, h:h, mi:mi, s:se};
+}
+const pad2 = (n)=>String(n).padStart(2,'0');
+function clockHtml(p){
+  if(!p) return '<span class="sec">reached</span>';
+  let out = '';
+  if(p.y)  out += p.y +'<span class="u">y</span>';
+  if(p.y || p.mo) out += p.mo+'<span class="u">mo</span>';
+  out += p.d+'<span class="u">d</span>';
+  out += pad2(p.h)+':'+pad2(p.mi)+':<span class="sec">'+pad2(p.s)+'</span>';
+  return out;
+}
+function coarse(p){
+  if(!p) return 'reached';
+  if(p.y) return p.y+'y '+p.mo+'mo';
+  if(p.mo) return p.mo+'mo '+p.d+'d';
+  return p.d+'d '+pad2(p.h)+'h';
+}
+
+function renderTimeline(){
+  const bar = document.getElementById('tlBar');
+  if(!bar || isWidget) return;
+  const t = state.timeline;
+  const evs = tlEvents();
+  const now = new Date();
+  if(!evs.length){
+    bar.innerHTML = '<div class="tl-inner"><div class="tl-next"><div class="tl-lab">TIMELINE</div>'+
+      '<div class="tl-name">No milestones yet — click to add one.</div></div></div>';
+    return;
+  }
+
+  const upcoming = evs.filter(e=>tlDate(e) > now);
+  const next = upcoming[0] || null;
+  const horizon = evs[evs.length-1];
+  const origin = new Date((t && t.start ? t.start : todayStr())+'T00:00:00');
+  const hDate = tlDate(horizon);
+  const span = Math.max(1, hDate - origin);
+  const spent = Math.min(100, Math.max(0, (now - origin)/span*100));
+
+  const marks = evs.map(e=>{
+    const x = Math.min(100, Math.max(0, (tlDate(e)-origin)/span*100));
+    const cls = tlDate(e) <= now ? 'past' : (next && e.id===next.id ? 'next' : '');
+    return '<span class="tl-mark '+cls+'" style="left:'+x+'%; --markcolor:'+(e.color||'#8b93b0')+'" title="'+esc(e.title)+' · '+esc(e.date)+'"></span>';
+  }).join('');
+  // Names under the dots while they still fit; past that the dots keep their
+  // tooltips and the manager lists everything.
+  const labels = evs.length <= 6 ? evs.map(e=>{
+    const x = Math.min(100, Math.max(0, (tlDate(e)-origin)/span*100));
+    return '<span class="tl-mlabel" style="left:'+x+'%; color:'+(e.color||'#8b93b0')+'">'+esc(e.title)+'</span>';
+  }).join('') : '';
+
+  const hp = timeParts(now, hDate);
+  bar.innerHTML = '<div class="tl-inner">'+
+    '<div class="tl-next">'+
+      '<div class="tl-lab">'+(next?'NEXT MILESTONE':'ALL MILESTONES PASSED')+'</div>'+
+      '<div class="tl-name">'+esc(next ? next.title : horizon.title)+'</div>'+
+      '<div class="tl-clock" id="tlClock">'+clockHtml(next ? timeParts(now, tlDate(next)) : null)+'</div>'+
+    '</div>'+
+    '<div class="tl-track-wrap">'+
+      '<div class="tl-track">'+
+        '<div class="tl-rail"><i style="width:'+spent+'%"></i></div>'+
+        marks+labels+
+        '<span class="tl-now" style="left:'+spent+'%"></span>'+
+      '</div>'+
+      '<div class="tl-scale"><span>'+esc(fmtDay(origin))+'</span><span>'+esc(fmtDay(hDate))+'</span></div>'+
+    '</div>'+
+    '<div class="tl-end">'+
+      '<div class="tl-lab">'+esc(horizon.title.toUpperCase())+'</div>'+
+      '<div class="tl-big" id="tlHorizon">'+coarse(hp)+'</div>'+
+      '<div class="tl-pct">'+Math.round(spent)+'% of the runway spent</div>'+
+    '</div>'+
+  '</div>';
+
+  layoutTimelineLabels();
+
+  // Under a month left is worth shouting about.
+  const np = next ? timeParts(now, tlDate(next)) : null;
+  bar.classList.toggle('urgent', !!(np && !np.y && !np.mo));
+}
+/* Milestones that sit close together would print on top of each other, and the
+   label width isn't knowable until it's in the DOM — so measure, then drop each
+   label to the first row it fits in. Anything that still collides loses its
+   label and keeps its tooltip. */
+function layoutTimelineLabels(){
+  const track = document.querySelector('.tl-track'); if(!track) return;
+  const labels = Array.from(track.querySelectorAll('.tl-mlabel'));
+  const rows = [[], []];
+  labels.forEach(el=>{ el.style.top='23px'; el.style.display=''; });
+  labels.forEach(el=>{
+    const r = el.getBoundingClientRect();
+    let placed = false;
+    for(let i=0; i<rows.length && !placed; i++){
+      const clash = rows[i].some(o=> !(r.right < o.left-6 || r.left > o.right+6));
+      if(!clash){ rows[i].push(r); el.style.top = (23 + i*12)+'px'; placed = true; }
+    }
+    if(!placed) el.style.display = 'none';
+  });
+}
+function fmtDay(d){
+  return String(d.getDate()).padStart(2,'0')+'.'+String(d.getMonth()+1).padStart(2,'0')+'.'+d.getFullYear();
+}
+
+/* Only the digits are rewritten each second; the whole bar re-renders on the
+   minute, which is often enough for the marker positions to stay honest. */
+function tickTimeline(){
+  const clock = document.getElementById('tlClock');
+  if(!clock || isWidget) return;
+  const now = new Date();
+  const next = tlEvents().filter(e=>tlDate(e) > now)[0];
+  if(!next){ renderTimeline(); return; }
+  clock.innerHTML = clockHtml(timeParts(now, tlDate(next)));
+  if(now.getSeconds() === 0) renderTimeline();
+}
+
+/* ---- manage ---- */
+function openTimelineManager(){
+  const m = document.getElementById('modalBody');
+  const now = new Date();
+  const evs = tlEvents();
+  m.innerHTML = '<h3>Your Timeline</h3>'+
+    '<p>Every milestone between here and the job market. The bar counts down to whichever comes next.</p>'+
+    '<label>Runway starts</label>'+
+    '<input type="date" class="fld" id="tlStart" value="'+esc((state.timeline&&state.timeline.start)||todayStr())+'">'+
+    '<div class="hint">Where the bar begins measuring from — it is what &ldquo;% spent&rdquo; is a share of.</div>'+
+    '<label style="margin-top:14px">Milestones</label>'+
+    '<div id="tlList">'+(evs.length ? evs.map(e=>{
+      const p = timeParts(now, tlDate(e));
+      return '<div class="tl-row'+(p?'':' done')+'" style="--markcolor:'+(e.color||'#8b93b0')+'">'+
+        '<span class="tl-dot"></span>'+
+        '<span class="tl-rname">'+esc(e.title)+'</span>'+
+        '<span class="tl-rdate">'+esc(e.date)+'</span>'+
+        '<span class="tl-rleft">'+coarse(p)+'</span>'+
+        '<button data-del="'+esc(e.id)+'" title="Remove">'+icon('trash')+'</button>'+
+      '</div>';
+    }).join('') : '<div class="empty-row">Nothing yet.</div>')+'</div>'+
+    '<label style="margin-top:16px">Add a milestone</label>'+
+    '<div class="row2">'+
+      '<div><input type="text" class="fld" id="tlNewName" placeholder="e.g. Driving licence"></div>'+
+      '<div><input type="date" class="fld" id="tlNewDate"></div>'+
+    '</div>'+
+    '<div class="actions"><button class="btn-text" id="mCancel">Close</button><button class="btn-primary" id="tlAdd">Add milestone</button></div>';
+  document.getElementById('modalVeil').classList.add('open');
+  document.getElementById('mCancel').addEventListener('click', closeModal);
+
+  document.getElementById('tlStart').addEventListener('change', e=>{
+    if(!state.timeline) state.timeline = defaultTimeline();
+    state.timeline.start = e.target.value || todayStr();
+    saveState(); renderTimeline();
+  });
+  document.getElementById('tlAdd').addEventListener('click', ()=>{
+    const name = document.getElementById('tlNewName').value.trim();
+    const date = document.getElementById('tlNewDate').value;
+    if(!name || !date){ showToast({title:'Name and date are both needed'}); return; }
+    if(!state.timeline) state.timeline = defaultTimeline();
+    state.timeline.events.push({ id:'tl'+Date.now(), title:name, date:date, color:'#14e6ff' });
+    saveState(); renderTimeline(); openTimelineManager();
+    showToast({title:'Milestone added', sub:name});
+  });
+  document.getElementById('tlList').addEventListener('click', e=>{
+    const b = e.target.closest('[data-del]'); if(!b) return;
+    state.timeline.events = state.timeline.events.filter(x=>x.id!==b.dataset.del);
+    saveState(); renderTimeline(); openTimelineManager();
+  });
+}
+document.getElementById('tlBar').addEventListener('click', openTimelineManager);
+setInterval(tickTimeline, 1000);
+
 
 /* ============ SKILL TREE ============ */
 /* A roadmap seed (schemaVersion 2) is a graph, not a list: every node names the

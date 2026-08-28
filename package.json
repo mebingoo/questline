@@ -1,6 +1,6 @@
 {
   "name": "questline",
-  "version": "1.2.0",
+  "version": "1.3.0",
   "description": "Questline - a personal RPG-style quest tracker for grand goals, daily and weekly quests, XP, streaks, achievements and a reward shop.",
   "main": "main.js",
   "author": "Phuc",
