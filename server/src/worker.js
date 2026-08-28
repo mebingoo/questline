@@ -106,6 +106,7 @@ export default {
       if (path === '/api/yt/meta' && request.method === 'POST') return await ytMeta(request);
       if (path === '/api/yt/transcript' && request.method === 'POST') return await ytTranscript(request);
       if (path === '/api/ai/generate' && request.method === 'POST') return await aiGenerate(request);
+      if (path === '/api/ai/complete' && request.method === 'POST') return await aiComplete(request);
       return json({ ok: false, error: 'Unknown endpoint ' + path }, 404);
     } catch (err) {
       return json({ ok: false, error: String((err && err.message) || err) }, 500);
@@ -356,6 +357,40 @@ function extractJSON(text) {
   const a = t.indexOf('{'), b = t.lastIndexOf('}');
   if (a === -1 || b === -1) throw new Error('The AI did not return JSON.');
   return JSON.parse(t.slice(a, b + 1));
+}
+
+/* Generic prompt relay for the flashcard builder — same key-travels-with-the-
+   request rule as everything else here. */
+async function aiComplete(request) {
+  const opts = await request.json();
+  const key = String(opts.apiKey || '').trim();
+  const prompt = String(opts.prompt || '');
+  if (!key) return json({ ok: false, error: 'No API key set.' });
+  if (!prompt) return json({ ok: false, error: 'Nothing to ask.' });
+  const isAnthropic = key.startsWith('sk-ant-');
+  const model = String(opts.model || '').trim() || (isAnthropic ? 'claude-3-5-haiku-latest' : 'gpt-4o-mini');
+  const maxTokens = Math.max(256, Math.min(4000, parseInt(opts.maxTokens, 10) || 1500));
+  let text = '';
+  if (isAnthropic) {
+    const r = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-api-key': key, 'anthropic-version': '2023-06-01' },
+      body: JSON.stringify({ model, max_tokens: maxTokens, messages: [{ role: 'user', content: prompt }] })
+    });
+    const j = await r.json();
+    if (j.error) return json({ ok: false, error: j.error.message || 'Anthropic error' });
+    text = (j.content || []).map(c => c.text || '').join('');
+  } else {
+    const r = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key },
+      body: JSON.stringify({ model, max_tokens: maxTokens, messages: [{ role: 'user', content: prompt }] })
+    });
+    const j = await r.json();
+    if (j.error) return json({ ok: false, error: j.error.message || 'OpenAI error' });
+    text = ((j.choices || [])[0] || {}).message ? j.choices[0].message.content : '';
+  }
+  return json({ ok: true, text });
 }
 
 async function aiGenerate(request) {

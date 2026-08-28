@@ -695,6 +695,43 @@ ipcMain.handle('yt-transcript', async (event, videoId) => {
   }
 });
 
+/* ---- AI: a generic prompt, used by the flashcard builder. Deliberately
+   separate from the quiz generator below: that one owns its prompt, this one
+   just relays whatever the caller asked for. Scheduling never comes near it. ---- */
+ipcMain.handle('ai-complete', async (event, opts) => {
+  opts = opts || {};
+  const key = String(opts.apiKey || '').trim();
+  const prompt = String(opts.prompt || '');
+  if (!key) return { ok: false, error: 'No API key set.' };
+  if (!prompt) return { ok: false, error: 'Nothing to ask.' };
+  const isAnthropic = key.startsWith('sk-ant-');
+  const model = String(opts.model || '').trim() || (isAnthropic ? 'claude-3-5-haiku-latest' : 'gpt-4o-mini');
+  const maxTokens = Math.max(256, Math.min(4000, parseInt(opts.maxTokens, 10) || 1500));
+  try {
+    let res, text;
+    if (isAnthropic) {
+      res = await postJSON('api.anthropic.com', '/v1/messages',
+        { 'x-api-key': key, 'anthropic-version': '2023-06-01' },
+        { model, max_tokens: maxTokens, messages: [{ role: 'user', content: prompt }] });
+      let j = null; try { j = JSON.parse(res.body); } catch (e) {}
+      if (j && j.error) return { ok: false, error: j.error.message || 'Anthropic error' };
+      if (res.status !== 200) return { ok: false, error: 'Anthropic HTTP ' + res.status };
+      text = (j.content || []).map((c) => c.text || '').join('');
+    } else {
+      res = await postJSON('api.openai.com', '/v1/chat/completions',
+        { 'Authorization': 'Bearer ' + key },
+        { model, max_tokens: maxTokens, messages: [{ role: 'user', content: prompt }] });
+      let j = null; try { j = JSON.parse(res.body); } catch (e) {}
+      if (j && j.error) return { ok: false, error: j.error.message || 'OpenAI error' };
+      if (res.status !== 200) return { ok: false, error: 'OpenAI HTTP ' + res.status };
+      text = ((j.choices || [])[0] || {}).message ? j.choices[0].message.content : '';
+    }
+    return { ok: true, text };
+  } catch (err) {
+    return { ok: false, error: String((err && err.message) || err) };
+  }
+});
+
 /* ---- AI: summary + graded multiple-choice questions from a transcript ---- */
 function postJSON(host, path, headers, payload) {
   return new Promise((resolve, reject) => {

@@ -937,6 +937,89 @@
     .course-side{max-height:300px;}
   }
 
+  /* ============ FLASHCARDS ============ */
+  .srs-stats{display:grid; grid-template-columns:repeat(auto-fit,minmax(118px,1fr)); gap:10px; margin-bottom:18px;}
+  .srs-stat{background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-m); padding:11px 13px;}
+  .srs-stat .k{font-family:var(--font-display); font-size:8.5px; letter-spacing:0.13em; color:var(--text-faint);}
+  .srs-stat .v{font-family:var(--font-mono); font-size:19px; color:var(--text); margin-top:3px;}
+  .srs-stat .s{font-size:10px; color:var(--text-faint); margin-top:1px;}
+  .srs-stat.go .v{color:var(--gold);}
+
+  .srs-decks{display:grid; grid-template-columns:repeat(auto-fill,minmax(240px,1fr)); gap:12px;}
+  .srs-deck{background:var(--surface); border:1px solid var(--border); border-left-width:3px; border-left-color:var(--deckcolor);
+    border-radius:var(--radius-m); padding:14px; cursor:pointer; position:relative; transition:transform .1s, border-color .15s;}
+  .srs-deck:hover{transform:translateY(-1px); border-color:var(--deckcolor);}
+  .srs-deck .dk-name{font-family:var(--font-display); font-size:13.5px; color:var(--text);}
+  .srs-deck .dk-lang{font-size:10px; color:var(--text-faint); margin-top:2px; letter-spacing:0.05em; text-transform:uppercase;}
+  .srs-deck .dk-counts{display:flex; gap:12px; margin-top:11px; font-family:var(--font-mono); font-size:11px;}
+  .srs-deck .dk-counts b{font-weight:400;}
+  .dk-new{color:var(--teal);} .dk-due{color:var(--gold);} .dk-done{color:var(--text-faint);}
+  .srs-deck .dk-del{position:absolute; top:9px; right:9px; background:none; border:none; color:var(--text-faint); cursor:pointer; opacity:0; padding:3px;}
+  .srs-deck:hover .dk-del{opacity:1;} .srs-deck .dk-del:hover{color:var(--danger);}
+  .srs-deck .dk-del svg{width:13px;height:13px;}
+
+  /* review session */
+  .srs-veil{position:fixed; inset:0; background:var(--bg); display:none; z-index:290; flex-direction:column;}
+  .srs-veil.open{display:flex;}
+  .srs-top{flex:none; padding:11px 20px; border-bottom:1px solid var(--border-soft); display:flex; align-items:center; gap:16px;}
+  .srs-prog{flex:1; min-width:0;}
+  .srs-progbar{height:3px; background:var(--surface-3); border-radius:2px; overflow:hidden; margin-top:5px;}
+  .srs-progbar i{display:block; height:100%; background:var(--gold); transition:width .25s;}
+  .srs-count{font-family:var(--font-mono); font-size:12px; color:var(--text);}
+  .srs-meta{font-family:var(--font-mono); font-size:10.5px; color:var(--text-faint); flex:none; text-align:right;}
+  .srs-x{background:none; border:none; color:var(--text-dim); cursor:pointer; padding:5px; flex:none;}
+  .srs-x:hover{color:var(--danger);} .srs-x svg{width:17px;height:17px;}
+
+  .srs-stage{flex:1; overflow-y:auto; display:flex; flex-direction:column; align-items:center;
+    justify-content:center; padding:28px 20px; text-align:center;}
+  .srs-kind{font-family:var(--font-display); font-size:9.5px; letter-spacing:0.16em; color:var(--teal); margin-bottom:20px;}
+  .srs-prompt{font-family:var(--font-display); font-size:34px; color:var(--text); line-height:1.25; max-width:820px; word-break:break-word;}
+  .srs-prompt.small{font-size:22px;}
+  .srs-sub{font-size:13.5px; color:var(--text-dim); margin-top:12px; max-width:700px; line-height:1.6;}
+  .srs-hr{width:80px; height:1px; background:var(--border); margin:26px 0;}
+  .srs-answer{font-family:var(--font-display); font-size:27px; color:var(--gold); line-height:1.3; max-width:820px;}
+  .srs-ex{font-size:14px; color:var(--text-dim); margin-top:16px; max-width:700px; line-height:1.65;}
+  .srs-ex b{color:var(--text); font-weight:600;}
+  .srs-ex .tr{display:block; color:var(--text-faint); font-size:12.5px; margin-top:4px;}
+  .srs-img{max-width:280px; max-height:190px; border-radius:var(--radius-s); border:1px solid var(--border); margin-top:18px;}
+  .srs-tags{margin-top:16px; display:flex; gap:6px; justify-content:center; flex-wrap:wrap;}
+  .srs-tag{font-size:9.5px; padding:2px 8px; border-radius:9px; background:var(--surface-2); color:var(--text-faint); border:1px solid var(--border);}
+  .srs-speak{background:var(--surface-2); border:1px solid var(--border); color:var(--teal); cursor:pointer;
+    border-radius:50%; width:74px; height:74px; display:flex; align-items:center; justify-content:center;}
+  .srs-speak:hover{border-color:var(--teal);} .srs-speak svg{width:30px;height:30px;}
+  .srs-type{width:min(440px,90vw); text-align:center; font-size:19px; font-family:var(--font-display);
+    background:var(--surface-2); border:1px solid var(--border); border-radius:var(--radius-s); color:var(--text); padding:12px;}
+  .srs-type:focus{outline:none; border-color:var(--gold);}
+  .srs-type.right{border-color:var(--success); color:var(--success);}
+  .srs-type.wrong{border-color:var(--danger); color:var(--danger); text-decoration:line-through;}
+
+  .srs-bottom{flex:none; padding:14px 20px 20px; border-top:1px solid var(--border-soft);}
+  .srs-btns{display:flex; gap:9px; max-width:720px; margin:0 auto;}
+  .srs-btn{flex:1; padding:12px 6px; border-radius:var(--radius-m); border:1px solid var(--border);
+    background:var(--surface); cursor:pointer; font-family:var(--font-display); font-size:12px; color:var(--text);}
+  .srs-btn .ivl{display:block; font-family:var(--font-mono); font-size:10px; color:var(--text-faint); margin-top:3px;}
+  .srs-btn .key{display:block; font-family:var(--font-mono); font-size:9px; color:var(--text-faint); margin-top:4px; opacity:.7;}
+  .srs-btn:hover{border-color:var(--bcolor); color:var(--bcolor);}
+  .srs-btn.again{--bcolor:var(--danger);} .srs-btn.hard{--bcolor:#e0a458;}
+  .srs-btn.good{--bcolor:var(--success);} .srs-btn.easy{--bcolor:var(--teal);}
+  .srs-show{display:block; margin:0 auto; padding:13px 40px; border-radius:var(--radius-m);
+    background:var(--gold); color:var(--bg-2); border:none; cursor:pointer;
+    font-family:var(--font-display); font-size:13px; letter-spacing:0.04em;}
+  .srs-hint{text-align:center; font-family:var(--font-mono); font-size:10px; color:var(--text-faint); margin-top:10px;}
+  .srs-done{text-align:center; padding:50px 20px;}
+  .srs-done h3{font-family:var(--font-display); font-size:20px; color:var(--gold); margin:0 0 10px;}
+
+  .srs-browse-row{display:flex; align-items:center; gap:10px; padding:8px 0; border-bottom:1px solid var(--border-soft);}
+  .srs-browse-row .bw{flex:1; min-width:0; font-size:12.5px; color:var(--text); overflow:hidden; text-overflow:ellipsis;}
+  .srs-browse-row .bt{flex:1; min-width:0; font-size:12px; color:var(--text-dim); overflow:hidden; text-overflow:ellipsis;}
+  .srs-browse-row .bc{font-family:var(--font-mono); font-size:10px; color:var(--text-faint); flex:none;}
+  .srs-browse-row button{background:none;border:none;color:var(--text-faint);cursor:pointer;padding:3px;}
+  .srs-browse-row button:hover{color:var(--danger);} .srs-browse-row button svg{width:13px;height:13px;}
+  .srs-typechips{display:flex; flex-wrap:wrap; gap:6px; margin-bottom:4px;}
+  .srs-typechip{font-size:10.5px; padding:6px 10px; border-radius:var(--radius-s); cursor:pointer;
+    background:var(--surface-2); border:1px solid var(--border); color:var(--text-dim);}
+  .srs-typechip.on{border-color:var(--gold); color:var(--gold);}
+
   /* ============ JOURNAL ============ */
   .jr-capture{display:flex; gap:8px; margin-bottom:14px;}
   .jr-capture input{flex:1;}
@@ -1286,6 +1369,7 @@
     <button class="tab" data-tab="learn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="4.5" width="19" height="13" rx="2.5"/><path d="M10 8.5l5 2.5-5 2.5z"/><path d="M8 21h8"/></svg> Learn <span class="tabcount" id="tabLearnCount">0</span></button>
     <button class="tab" data-tab="courses"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19V6a2 2 0 0 1 2-2h5l2 2h5a2 2 0 0 1 2 2v11a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1z"/><path d="M10 11l4 2.5-4 2.5z"/></svg> Courses <span class="tabcount" id="tabCourseCount">0</span></button>
     <button class="tab" data-tab="journal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4h11a2 2 0 0 1 2 2v14H7a2 2 0 0 1-2-2z"/><path d="M9 8h6M9 12h6M9 16h3"/></svg> Journal <span class="tabcount" id="tabJournalCount">0</span></button>
+    <button class="tab" data-tab="cards"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="6" width="14" height="13" rx="2"/><path d="M7 3h12a2 2 0 0 1 2 2v11"/></svg> Cards <span class="tabcount" id="tabCardsCount">0</span></button>
   </nav>
   <button class="tl-bar" id="tlBar" title="Manage your timeline"></button>
 </header>
@@ -1487,6 +1571,22 @@
     </section>
   </div>
 
+  <div class="tabpanel" id="panel-cards">
+    <section style="margin-top:0;">
+      <div class="section-head">
+        <h2>Flashcards</h2>
+        <div class="section-sub">
+          <button class="ghost-btn" id="srsBrowseBtn">Browse</button>
+          <button class="ghost-btn" id="srsCfgBtn">Settings</button>
+          <button class="ghost-btn" id="srsDeckBtn">New deck</button>
+          <button class="btn-primary" id="srsAddBtn">Add word</button>
+        </div>
+      </div>
+      <div class="srs-stats" id="srsStats"></div>
+      <div class="srs-decks" id="srsDecks"></div>
+    </section>
+  </div>
+
   <div class="tabpanel" id="panel-journal">
     <section style="margin-top:0;">
       <div class="section-head">
@@ -1601,6 +1701,20 @@
     <div class="tree-scroll"><div class="tree-canvas" id="treeCanvas"></div></div>
     <aside class="tree-side" id="treeSide"></aside>
   </div>
+</div>
+<div class="srs-veil" id="srsVeil">
+  <div class="srs-top">
+    <div class="srs-prog">
+      <div class="srs-count" id="srsCount">0 / 0</div>
+      <div class="srs-progbar"><i id="srsProgBar" style="width:0%"></i></div>
+    </div>
+    <div class="srs-meta" id="srsMeta"></div>
+    <button class="srs-x" id="srsClose" aria-label="End session">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+    </button>
+  </div>
+  <div class="srs-stage" id="srsStage"></div>
+  <div class="srs-bottom" id="srsBottom"></div>
 </div>
 <div class="shot-veil" id="shotVeil"><img id="shotBig" alt=""></div>
 <div class="toast-stack" id="toastStack"></div>
@@ -1937,6 +2051,7 @@ function freshState(){
     trees: {},
     timeline: defaultTimeline(),
     journal: { entries:[], lastXpDay:null },
+    srs: defaultSrs(),
     focusSessions: [], questFavorites: [],
     activeTimer: null,
     ai:{ model:'', count:8 },
@@ -2071,6 +2186,10 @@ function migrate(s){
     delete s.untis;
   }
   if(!s.trees || typeof s.trees !== 'object') s.trees = {};
+  if(!s.srs || !Array.isArray(s.srs.decks)) s.srs = defaultSrs();
+  ['notes','cards','reviews','decks'].forEach(k=>{ if(!Array.isArray(s.srs[k])) s.srs[k] = []; });
+  if(!s.srs.daily || typeof s.srs.daily !== 'object') s.srs.daily = {};
+  if(!s.srs.config) s.srs.config = defaultSrs().config;
   if(!s.journal || !Array.isArray(s.journal.entries)) s.journal = { entries:[], lastXpDay:null };
   s.journal.entries.forEach(e=>{ if(!Array.isArray(e.images)) e.images = []; });
   if(!s.timeline || !Array.isArray(s.timeline.events)) s.timeline = defaultTimeline();
@@ -2303,6 +2422,10 @@ async function pushState(force){
    go through the Worker. Same call signatures either way. ---- */
 const api = {
   ready(){ return !!(window.untis || window.learn) || syncOn(); },
+  async aiComplete(opts){
+    if(window.learn && window.learn.complete) return window.learn.complete(opts);
+    return apiCall('/api/ai/complete', opts);
+  },
   async untisSearch(q){
     if(window.untis && window.untis.search) return window.untis.search(q);
     return apiCall('/api/untis/search', {query:q});
@@ -3718,6 +3841,7 @@ function renderAll(){
   applyAppearance();      // a pull from the other device can bring new theme settings
   renderTimeline();
   if(typeof renderJournal==='function') renderJournal();
+  if(typeof renderSrs==='function') renderSrs();
   renderHeader();
   if(typeof renderCourseLibrary==='function' && !activeCourseId) renderCourseLibrary();
   renderRadar();
@@ -5235,7 +5359,891 @@ async function openWidgetSettings(host){
   document.getElementById('wsAutostart').addEventListener('change', e=>{ window.widgetCtl.setPrefs({autostart:e.target.checked}); });
   document.getElementById('wsWidgetOnly').addEventListener('change', e=>{ window.widgetCtl.setPrefs({widgetOnly:e.target.checked}); });
   if(standalone) document.getElementById('modalVeil').classList.add('open');
-}/* ============ JOURNAL ============ */
+}
+
+/* ============ FSRS ============ */
+/* A port of FSRS-6 (open-spaced-repetition/py-fsrs). Scheduling only — it knows
+ * nothing about words, decks or the AI. Give it a card's memory state and a
+ * grade, get back the new state and when to show it next.
+ *
+ *   S  stability      the interval, in days, at which recall drops to 90%
+ *   D  difficulty     1..10, how stubborn this item is for this person
+ *   R  retrievability probability of recall right now
+ */
+const FSRS_DEFAULT_W = [
+  0.212, 1.2931, 2.3065, 8.2956, 6.4133, 0.8334, 3.0194, 0.001, 1.8722, 0.1666,
+  0.796, 1.4835, 0.0614, 0.2629, 1.6483, 0.6014, 1.8729, 0.5425, 0.0912, 0.0658, 0.1542
+];
+const S_MIN = 0.001, D_MIN = 1, D_MAX = 10;
+const RATING = { AGAIN:1, HARD:2, GOOD:3, EASY:4 };
+
+function fsrs(cfg){
+  const w = (cfg && cfg.params) || FSRS_DEFAULT_W;
+  const decay = -w[20];
+  const factor = Math.pow(0.9, 1/decay) - 1;
+  const retention = (cfg && cfg.retention) || 0.9;
+  const maxIvl = (cfg && cfg.maxInterval) || 36500;
+
+  const clampS = (x)=> Math.max(x, S_MIN);
+  const clampD = (x)=> Math.min(Math.max(x, D_MIN), D_MAX);
+
+  const initialStability = (g)=> clampS(w[g-1]);
+  const initialDifficulty = (g, clamp)=>{
+    const d = w[4] - Math.exp(w[5]*(g-1)) + 1;
+    return clamp === false ? d : clampD(d);
+  };
+  // R(t,S) = (1 + factor·t/S)^decay — power law, so it flattens rather than
+  // falling off a cliff the way an exponential would.
+  const retrievability = (stability, elapsedDays)=>{
+    if(!stability) return 0;
+    const t = Math.max(0, elapsedDays);
+    return Math.pow(1 + factor * t / stability, decay);
+  };
+  const nextInterval = (stability)=>{
+    let ivl = (stability / factor) * (Math.pow(retention, 1/decay) - 1);
+    ivl = Math.round(ivl);
+    return Math.min(Math.max(ivl, 1), maxIvl);
+  };
+  // Two reviews on the same day barely move S; this is the term that stops
+  // cramming from inflating an interval.
+  const shortTermStability = (stability, g)=>{
+    let inc = Math.exp(w[17] * (g - 3 + w[18])) * Math.pow(stability, -w[19]);
+    if(g >= RATING.HARD) inc = Math.max(inc, 1.0);
+    return clampS(stability * inc);
+  };
+  const nextDifficulty = (d, g)=>{
+    const linearDamping = (delta, dd)=> (10 - dd) * delta / 9;
+    const meanReversion = (a1, a2)=> w[7]*a1 + (1 - w[7])*a2;
+    const a1 = initialDifficulty(RATING.EASY, false);
+    const delta = -(w[6] * (g - 3));
+    const a2 = d + linearDamping(delta, d);
+    return clampD(meanReversion(a1, a2));
+  };
+  const forgetStability = (d, stab, r)=>{
+    const longTerm = w[11] * Math.pow(d, -w[12]) * (Math.pow(stab + 1, w[13]) - 1) * Math.exp((1 - r) * w[14]);
+    const shortTerm = stab / Math.exp(w[17] * w[18]);
+    return Math.min(longTerm, shortTerm);
+  };
+  const recallStability = (d, stab, r, g)=>{
+    const hard = g === RATING.HARD ? w[15] : 1;
+    const easy = g === RATING.EASY ? w[16] : 1;
+    return stab * (1 + Math.exp(w[8]) * (11 - d) * Math.pow(stab, -w[9]) *
+      (Math.exp((1 - r) * w[10]) - 1) * hard * easy);
+  };
+  const nextStability = (d, stab, r, g)=> clampS(
+    g === RATING.AGAIN ? forgetStability(d, stab, r) : recallStability(d, stab, r, g)
+  );
+
+  return { w, decay, factor, retention, maxIvl,
+           initialStability, initialDifficulty, retrievability, nextInterval,
+           shortTermStability, nextDifficulty, nextStability };
+}
+
+/* Spreads due dates a little so a big day doesn't rebuild itself every cycle. */
+function fsrsFuzz(days){
+  if(days < 2.5) return days;
+  const ranges = [{s:2.5,e:7,f:0.15},{s:7,e:20,f:0.10},{s:20,e:Infinity,f:0.05}];
+  let delta = 1.0;
+  for(const r of ranges) delta += r.f * Math.max(Math.min(days, r.e) - r.s, 0.0);
+  let min = Math.round(days - delta), max = Math.round(days + delta);
+  min = Math.max(2, min); max = Math.min(max, 36500); if(max < min) max = min;
+  return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
+const MIN_MS = 60000, DAY_MS = 86400000;
+
+/* The state machine. Mirrors py-fsrs: learning steps in minutes, graduation to
+ * Review, a lapse dropping into Relearning. */
+function fsrsReview(card, rating, cfg, nowMs){
+  const f = fsrs(cfg);
+  const now = nowMs || Date.now();
+  const learn = (cfg.learnSteps || [1, 10]).map(m=>m*MIN_MS);
+  const relearn = (cfg.relearnSteps || [10]).map(m=>m*MIN_MS);
+  const c = Object.assign({}, card);
+  const elapsedDays = c.lastReview ? (now - c.lastReview) / DAY_MS : null;
+  const sameDay = elapsedDays !== null && elapsedDays < 1;
+
+  const updateMemory = ()=>{
+    if(c.stability == null || c.difficulty == null){
+      c.stability = f.initialStability(rating);
+      c.difficulty = f.initialDifficulty(rating, true);
+    }else if(sameDay){
+      c.stability = f.shortTermStability(c.stability, rating);
+      c.difficulty = f.nextDifficulty(c.difficulty, rating);
+    }else{
+      const r = f.retrievability(c.stability, Math.max(0, Math.floor(elapsedDays)));
+      c.stability = f.nextStability(c.difficulty, c.stability, r, rating);
+      c.difficulty = f.nextDifficulty(c.difficulty, rating);
+    }
+  };
+
+  const graduate = ()=>{
+    c.state = 'review'; c.step = null;
+    let days = f.nextInterval(c.stability);
+    if(cfg.fuzz !== false) days = fsrsFuzz(days);
+    return days * DAY_MS;
+  };
+
+  let waitMs;
+  if(c.state === 'new' || c.state === 'learning'){
+    if(c.state === 'new'){ c.state = 'learning'; c.step = 0; }
+    updateMemory();
+    if(!learn.length || (c.step >= learn.length && rating >= RATING.HARD)){
+      waitMs = graduate();
+    }else if(rating === RATING.AGAIN){
+      c.step = 0; waitMs = learn[0];
+    }else if(rating === RATING.HARD){
+      if(c.step === 0 && learn.length === 1) waitMs = learn[0] * 1.5;
+      else if(c.step === 0 && learn.length >= 2) waitMs = (learn[0] + learn[1]) / 2;
+      else waitMs = learn[c.step];
+    }else if(rating === RATING.GOOD){
+      if(c.step + 1 === learn.length) waitMs = graduate();
+      else { c.step += 1; waitMs = learn[c.step]; }
+    }else{ waitMs = graduate(); }
+  }else if(c.state === 'review'){
+    if(sameDay) c.stability = f.shortTermStability(c.stability, rating);
+    else {
+      const r = f.retrievability(c.stability, Math.max(0, Math.floor(elapsedDays)));
+      c.stability = f.nextStability(c.difficulty, c.stability, r, rating);
+    }
+    c.difficulty = f.nextDifficulty(c.difficulty, rating);
+    if(rating === RATING.AGAIN){
+      c.lapses = (c.lapses || 0) + 1;
+      if(!relearn.length){ waitMs = graduate(); }
+      else { c.state = 'relearning'; c.step = 0; waitMs = relearn[0]; }
+    }else{ waitMs = graduate(); }
+  }else{ // relearning
+    updateMemory();
+    if(!relearn.length || (c.step >= relearn.length && rating >= RATING.HARD)){
+      waitMs = graduate();
+    }else if(rating === RATING.AGAIN){
+      c.step = 0; waitMs = relearn[0];
+    }else if(rating === RATING.HARD){
+      waitMs = relearn.length === 1 ? relearn[0] * 1.5 : (relearn[0] + relearn[1]) / 2;
+    }else if(rating === RATING.GOOD){
+      if(c.step + 1 === relearn.length) waitMs = graduate();
+      else { c.step += 1; waitMs = relearn[c.step]; }
+    }else{ waitMs = graduate(); }
+  }
+
+  c.reps = (c.reps || 0) + 1;
+  c.lastReview = now;
+  c.due = now + waitMs;
+  return c;
+}
+
+/* What each button would do, shown on the buttons themselves. */
+function fsrsPreview(card, cfg, nowMs){
+  const out = {};
+  [1,2,3,4].forEach(g=>{
+    const next = fsrsReview(card, g, Object.assign({}, cfg, {fuzz:false}), nowMs);
+    out[g] = Math.max(0, next.due - (nowMs || Date.now()));
+  });
+  return out;
+}
+function fmtWait(ms){
+  if(ms < MIN_MS) return '<1m';
+  if(ms < 60*MIN_MS) return Math.round(ms/MIN_MS)+'m';
+  if(ms < DAY_MS) return Math.round(ms/(60*MIN_MS))+'h';
+  const d = ms/DAY_MS;
+  if(d < 30) return Math.round(d)+'d';
+  if(d < 365) return (d/30.44).toFixed(1).replace(/\.0$/,'')+'mo';
+  return (d/365.25).toFixed(1).replace(/\.0$/,'')+'y';
+}
+
+/* ============ FLASHCARD SYSTEM ============ */
+/* Layered on purpose:
+ *   note   - the vocabulary item itself (word, meaning, example, audio, image)
+ *   card   - one way of testing that note; a note usually has several
+ *   FSRS   - decides only WHEN a card comes back (above, knows nothing of words)
+ *   AI     - writes content; never touches scheduling
+ * Progress and content sync; images stay on the device like everywhere else. */
+
+const CARD_TYPES = [
+  { id:'recognition', name:'Recognition', hint:'see the word, recall the meaning' },
+  { id:'translation', name:'Translation', hint:'see the meaning, recall the word' },
+  { id:'cloze',       name:'Fill the gap', hint:'the word missing from its sentence', needsExample:true },
+  { id:'typing',      name:'Typing',      hint:'spell it from the meaning' },
+  { id:'listening',   name:'Listening',   hint:'hear it, name it' },
+  { id:'production',  name:'Sentence',    hint:'use it in a sentence of your own', needsExample:true }
+];
+const CEFR = ['A1','A2','B1','B2','C1','C2'];
+const LANGS = [
+  { code:'de-DE', name:'German' },   { code:'en-US', name:'English' },
+  { code:'fr-FR', name:'French' },   { code:'es-ES', name:'Spanish' },
+  { code:'it-IT', name:'Italian' },  { code:'nl-NL', name:'Dutch' },
+  { code:'pt-PT', name:'Portuguese'},{ code:'ja-JP', name:'Japanese' },
+  { code:'ko-KR', name:'Korean' },   { code:'zh-CN', name:'Chinese' },
+  { code:'vi-VN', name:'Vietnamese'},{ code:'ru-RU', name:'Russian' }
+];
+const DECK_COLORS = ['#d97d4a','#4fb8b0','#c77fa8','#6fa86f','#5b87c7','#e0a458','#8b7fc9'];
+
+function srs(){
+  if(!state.srs) state.srs = defaultSrs();
+  return state.srs;
+}
+function defaultSrs(){
+  const mk = (name, color)=>({ id:'dk'+Math.random().toString(36).slice(2,8), name, lang:'de-DE', color, newPerDay:15, maxReviews:200 });
+  return {
+    decks: [ mk('Vocabulary','#d97d4a'), mk('Grammar','#4fb8b0'), mk('Expressions','#c77fa8'), mk('Listening','#5b87c7') ],
+    notes: [], cards: [], reviews: [], daily: {},
+    config: { params:null, retention:0.9, maxInterval:36500, learnSteps:[1,10], relearnSteps:[10], fuzz:true }
+  };
+}
+function srsCfg(){
+  const c = srs().config || {};
+  return { params: c.params || FSRS_DEFAULT_W, retention: c.retention || 0.9,
+           maxInterval: c.maxInterval || 36500, learnSteps: c.learnSteps || [1,10],
+           relearnSteps: c.relearnSteps || [10], fuzz: c.fuzz !== false };
+}
+const deckById = (id)=> srs().decks.find(d=>d.id===id) || null;
+const noteById = (id)=> srs().notes.find(n=>n.id===id) || null;
+
+/* ---------- building cards from a note ---------- */
+function makeCards(noteId, types){
+  const now = Date.now();
+  return types.map(t=>({
+    id:'cd'+Math.random().toString(36).slice(2,9), noteId, type:t,
+    state:'new', due:now, stability:null, difficulty:null,
+    reps:0, lapses:0, step:null, lastReview:null
+  }));
+}
+function addNote(data, types){
+  const note = Object.assign({
+    id:'nt'+Date.now()+Math.random().toString(36).slice(2,5),
+    created: Date.now(), tags: [], source:'', cefr:'', imageId:null
+  }, data);
+  srs().notes.push(note);
+  const usable = types.filter(t=>{
+    const def = CARD_TYPES.find(x=>x.id===t);
+    return !(def && def.needsExample) || (note.example||'').trim();
+  });
+  srs().cards.push(...makeCards(note.id, usable.length ? usable : ['recognition']));
+  saveState();
+  return note;
+}
+
+/* ---------- speech ---------- */
+function speak(text, lang){
+  if(!text) return;
+  try{
+    window.speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(String(text));
+    u.lang = lang || 'de-DE';
+    u.rate = 0.92;
+    window.speechSynthesis.speak(u);
+  }catch(e){ /* no voices available */ }
+}
+
+/* ---------- the queue ---------- */
+// Namespaced: the app already has a srsDayKey() that returns a weekday.
+function srsDayKey(){ return todayStr(); }
+function dailyRec(){
+  const d = srs().daily;
+  if(!d[srsDayKey()]) d[srsDayKey()] = { rev:0, correct:0, ms:0, newCards:0 };
+  return d[srsDayKey()];
+}
+function deckCounts(deckId){
+  const now = Date.now();
+  const noteIds = new Set(srs().notes.filter(n=>n.deckId===deckId).map(n=>n.id));
+  const cards = srs().cards.filter(c=>noteIds.has(c.noteId));
+  const deck = deckById(deckId) || {};
+  const introducedToday = dailyRec().newCards || 0;
+  const newLeft = Math.max(0, (deck.newPerDay==null?15:deck.newPerDay) - introducedToday);
+  return {
+    total: cards.length,
+    due: cards.filter(c=>c.state!=='new' && c.due <= now).length,
+    fresh: Math.min(cards.filter(c=>c.state==='new').length, newLeft),
+    freshTotal: cards.filter(c=>c.state==='new').length
+  };
+}
+function buildQueue(deckId){
+  const now = Date.now();
+  const noteIds = new Set(srs().notes.filter(n=>!deckId || n.deckId===deckId).map(n=>n.id));
+  const cards = srs().cards.filter(c=>noteIds.has(c.noteId));
+  const deck = deckId ? deckById(deckId) : null;
+  const perDay = deck ? (deck.newPerDay==null?15:deck.newPerDay) : 15;
+  const newLeft = Math.max(0, perDay - (dailyRec().newCards||0));
+
+  const due = cards.filter(c=>c.state!=='new' && c.due <= now).sort((a,b)=>a.due-b.due);
+  const fresh = cards.filter(c=>c.state==='new').slice(0, newLeft);
+  // Interleave rather than front-loading every new card: a review block after a
+  // few introductions is what actually consolidates them.
+  const out = [];
+  let di = 0, ni = 0;
+  while(di < due.length || ni < fresh.length){
+    for(let k=0; k<3 && di<due.length; k++) out.push(due[di++]);
+    if(ni < fresh.length) out.push(fresh[ni++]);
+  }
+  return out;
+}
+
+/* ---------- stats ---------- */
+function srsStats(){
+  const now = Date.now();
+  const cards = srs().cards;
+  const mature = cards.filter(c=>c.state==='review' && (c.stability||0) >= 21).length;
+  const young = cards.filter(c=>c.state==='review' && (c.stability||0) < 21).length;
+  const learning = cards.filter(c=>c.state==='learning' || c.state==='relearning').length;
+  const fresh = cards.filter(c=>c.state==='new').length;
+  const due = cards.filter(c=>c.state!=='new' && c.due <= now).length;
+
+  const revs = srs().reviews || [];
+  // True retention: of the cards that were already in Review, how many survived.
+  const mature30 = revs.filter(r=>r.ts > now - 30*DAY_MS && r.state === 'review');
+  const retention = mature30.length ? Math.round(mature30.filter(r=>r.rating>1).length / mature30.length * 100) : null;
+
+  const daily = srs().daily || {};
+  let streak = 0;
+  for(let i=0; i<3660; i++){
+    const d = new Date(); d.setDate(d.getDate()-i);
+    const k = d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+    if(daily[k] && daily[k].rev > 0) streak++;
+    else if(i>0) break;
+  }
+  const todayRec = daily[srsDayKey()] || {rev:0, ms:0};
+  const totalMs = Object.values(daily).reduce((a,d)=>a+(d.ms||0),0);
+  const totalRev = Object.values(daily).reduce((a,d)=>a+(d.rev||0),0);
+  const avgMs = totalRev ? totalMs/totalRev : 8000;
+
+  const upcoming = [];
+  for(let i=0;i<7;i++){
+    const from = now + i*DAY_MS, to = from + DAY_MS;
+    upcoming.push(cards.filter(c=>c.state!=='new' && c.due >= (i===0?0:from) && c.due < to).length);
+  }
+  return { mature, young, learning, fresh, due, retention, streak,
+           todayRev: todayRec.rev, todayMs: todayRec.ms, avgMs, upcoming,
+           totalCards: cards.length, totalNotes: srs().notes.length };
+}
+function fmtDur(ms){
+  const s2 = Math.round(ms/1000);
+  if(s2 < 60) return s2+'s';
+  const m = Math.floor(s2/60);
+  if(m < 60) return m+'m';
+  return Math.floor(m/60)+'h '+(m%60)+'m';
+}
+
+/* ---------- dashboard ---------- */
+function renderSrs(){
+  const decksEl = document.getElementById('srsDecks');
+  if(!decksEl) return;
+  const st = srsStats();
+  const cnt = document.getElementById('tabCardsCount');
+  if(cnt) cnt.textContent = st.due + st.fresh > 0 ? (st.due + Math.min(st.fresh, 99)) : st.totalCards;
+
+  const statsEl = document.getElementById('srsStats');
+  const estMin = Math.round((st.due + Math.min(st.fresh,50)) * st.avgMs / 60000);
+  statsEl.innerHTML =
+    '<div class="srs-stat go"><div class="k">DUE NOW</div><div class="v">'+st.due+'</div><div class="s">'+(estMin?('~'+estMin+' min'):'nothing waiting')+'</div></div>'+
+    '<div class="srs-stat"><div class="k">NEW</div><div class="v">'+st.fresh+'</div><div class="s">not yet started</div></div>'+
+    '<div class="srs-stat"><div class="k">RETENTION</div><div class="v">'+(st.retention==null?'—':st.retention+'%')+'</div><div class="s">last 30 days</div></div>'+
+    '<div class="srs-stat"><div class="k">MATURE</div><div class="v">'+st.mature+'</div><div class="s">21d+ interval</div></div>'+
+    '<div class="srs-stat"><div class="k">STREAK</div><div class="v">'+st.streak+'d</div><div class="s">'+st.todayRev+' today</div></div>'+
+    '<div class="srs-stat"><div class="k">TIME</div><div class="v">'+fmtDur(st.todayMs)+'</div><div class="s">studied today</div></div>';
+
+  if(!srs().decks.length){
+    decksEl.innerHTML = '<div class="empty-row" style="grid-column:1/-1;padding:30px">No decks yet.</div>';
+    return;
+  }
+  decksEl.innerHTML = srs().decks.map(d=>{
+    const c = deckCounts(d.id);
+    const lang = (LANGS.find(l=>l.code===d.lang)||{}).name || d.lang;
+    return '<div class="srs-deck" data-deck="'+esc(d.id)+'" style="--deckcolor:'+d.color+'">'+
+      '<button class="dk-del" data-del="'+esc(d.id)+'" title="Delete deck">'+icon('trash')+'</button>'+
+      '<div class="dk-name">'+esc(d.name)+'</div>'+
+      '<div class="dk-lang">'+esc(lang)+' · '+c.total+' cards</div>'+
+      '<div class="dk-counts">'+
+        '<span class="dk-due"><b>'+c.due+'</b> due</span>'+
+        '<span class="dk-new"><b>'+c.fresh+'</b> new</span>'+
+        '<span class="dk-done">'+c.freshTotal+' unseen</span>'+
+      '</div>'+
+    '</div>';
+  }).join('');
+}
+
+/* ---------- review session ---------- */
+let sess = null;
+
+function startReview(deckId){
+  const queue = buildQueue(deckId);
+  if(!queue.length){ showToast({title:'Nothing due', sub:'This deck is clear for now.'}); return; }
+  sess = { deckId, queue, i:0, done:0, revealed:false, startedAt:Date.now(), cardShownAt:Date.now(),
+           again:0, typed:'', typedChecked:false, total:queue.length };
+  document.getElementById('srsVeil').classList.add('open');
+  srsRenderCard();
+}
+function endReview(){
+  document.getElementById('srsVeil').classList.remove('open');
+  try{ window.speechSynthesis.cancel(); }catch(e){}
+  sess = null;
+  saveState(); renderSrs(); renderAll();
+}
+
+function srsRenderCard(){
+  if(!sess) return;
+  const stage = document.getElementById('srsStage');
+  const bottom = document.getElementById('srsBottom');
+  if(sess.i >= sess.queue.length){
+    const mins = Math.round((Date.now()-sess.startedAt)/60000);
+    stage.innerHTML = '<div class="srs-done"><h3>Session complete</h3>'+
+      '<p class="hint">'+sess.done+' cards in '+(mins||'<1')+' min'+
+      (sess.again?(' · '+sess.again+' went back to Again'):'')+'</p></div>';
+    bottom.innerHTML = '<button class="srs-show" id="srsFinish">Done</button>';
+    document.getElementById('srsFinish').addEventListener('click', endReview);
+    return;
+  }
+  const card = sess.queue[sess.i];
+  const note = noteById(card.noteId);
+  if(!note){ sess.i++; return srsRenderCard(); }
+  const deck = deckById(note.deckId) || {};
+  const lang = note.lang || deck.lang || 'de-DE';
+  const typeDef = CARD_TYPES.find(t=>t.id===card.type) || CARD_TYPES[0];
+
+  sess.revealed = false; sess.typed = ''; sess.typedChecked = false;
+  sess.cardShownAt = Date.now();
+
+  document.getElementById('srsCount').textContent = (sess.i+1)+' / '+sess.total;
+  document.getElementById('srsProgBar').style.width = (sess.i/sess.total*100)+'%';
+  const left = sess.total - sess.i;
+  const st = srsStats();
+  document.getElementById('srsMeta').innerHTML =
+    esc(deck.name||'')+' · '+left+' left · ~'+Math.max(1,Math.round(left*st.avgMs/60000))+' min · '+st.streak+'d streak';
+
+  let front = '';
+  if(card.type==='recognition'){
+    front = '<div class="srs-prompt">'+esc(note.word)+'</div>';
+  }else if(card.type==='translation' || card.type==='typing'){
+    front = '<div class="srs-prompt small">'+esc(note.translation)+'</div>'+
+      (card.type==='typing' ? '<div class="srs-sub">Type it in '+esc((LANGS.find(l=>l.code===lang)||{}).name||lang)+'</div>' : '');
+  }else if(card.type==='cloze'){
+    const gap = (note.example||'').replace(new RegExp(escapeRe(note.word),'ig'), '_____');
+    front = '<div class="srs-prompt small">'+esc(gap)+'</div>'+
+      (note.exampleTr?'<div class="srs-sub">'+esc(note.exampleTr)+'</div>':'');
+  }else if(card.type==='listening'){
+    front = '<button class="srs-speak" id="srsSpeak" title="Play (R)">'+
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5L6 9H2v6h4l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M18.5 5.5a9 9 0 0 1 0 13"/></svg></button>'+
+      '<div class="srs-sub">What did you hear?</div>';
+  }else if(card.type==='production'){
+    front = '<div class="srs-prompt small">'+esc(note.word)+'</div>'+
+      '<div class="srs-sub">Say or write a sentence of your own using this. Then check yourself against the example.</div>';
+  }
+
+  stage.innerHTML = '<div class="srs-kind">'+esc(typeDef.name.toUpperCase())+'</div>'+front+
+    (card.type==='typing' ? '<input class="srs-type" id="srsTypeIn" autocomplete="off" spellcheck="false" style="margin-top:22px">' : '');
+
+  bottom.innerHTML = '<button class="srs-show" id="srsShow">Show answer</button>'+
+    '<div class="srs-hint">Space or Enter to reveal · 1-4 to rate · Esc to stop</div>';
+  document.getElementById('srsShow').addEventListener('click', srsReveal);
+
+  if(card.type==='listening') { speak(note.word, lang); const b=document.getElementById('srsSpeak'); if(b) b.addEventListener('click',()=>speak(note.word, lang)); }
+  const ti = document.getElementById('srsTypeIn');
+  if(ti){ ti.focus(); ti.addEventListener('keydown', e=>{ if(e.key==='Enter'){ e.preventDefault(); e.stopPropagation(); srsReveal(); } }); }
+}
+function escapeRe(x){ return String(x||'').replace(/[.*+?^${}()|[\]\\]/g,'\\$&'); }
+
+function srsReveal(){
+  if(!sess || sess.revealed) return;
+  const card = sess.queue[sess.i];
+  const note = noteById(card.noteId);
+  const deck = deckById(note.deckId) || {};
+  const lang = note.lang || deck.lang || 'de-DE';
+  sess.revealed = true;
+
+  const ti = document.getElementById('srsTypeIn');
+  let typedRight = null;
+  if(ti){
+    const norm = (x)=>String(x||'').trim().toLowerCase().replace(/[.,!?;:]/g,'');
+    typedRight = norm(ti.value) === norm(note.word);
+    ti.classList.add(typedRight ? 'right' : 'wrong');
+    ti.disabled = true;
+    sess.typedChecked = true;
+  }
+
+  const stage = document.getElementById('srsStage');
+  const ex = note.example
+    ? '<div class="srs-ex">'+esc(note.example).replace(new RegExp(escapeRe(esc(note.word)),'ig'), m=>'<b>'+m+'</b>')+
+      (note.exampleTr?'<span class="tr">'+esc(note.exampleTr)+'</span>':'')+'</div>'
+    : '';
+  const tags = [];
+  if(note.cefr) tags.push(note.cefr);
+  (note.tags||[]).forEach(t=>tags.push(t));
+  if(note.source) tags.push(note.source);
+
+  stage.insertAdjacentHTML('beforeend',
+    '<div class="srs-hr"></div>'+
+    (typedRight===false ? '<div class="srs-sub" style="color:var(--danger)">You wrote something else</div>' : '')+
+    '<div class="srs-answer">'+esc(card.type==='translation'||card.type==='typing'||card.type==='listening' ? note.word : note.translation)+'</div>'+
+    (card.type==='recognition'||card.type==='cloze'||card.type==='production' ? '' :
+      '<div class="srs-sub">'+esc(note.translation)+'</div>')+
+    ex +
+    (note.imageId ? '<img class="srs-img" id="srsImg" alt="">' : '')+
+    (tags.length ? '<div class="srs-tags">'+tags.map(t=>'<span class="srs-tag">'+esc(t)+'</span>').join('')+'</div>' : ''));
+
+  if(note.imageId) shotGet(note.imageId).then(b=>{ const el=document.getElementById('srsImg'); if(el&&b) el.src = URL.createObjectURL(b); });
+  if(card.type!=='listening') speak(note.word, lang);
+
+  const prev = fsrsPreview(card, srsCfg(), Date.now());
+  const btn = (g, cls, label, key)=>
+    '<button class="srs-btn '+cls+'" data-g="'+g+'">'+label+
+      '<span class="ivl">'+fmtWait(prev[g])+'</span><span class="key">'+key+'</span></button>';
+  document.getElementById('srsBottom').innerHTML =
+    '<div class="srs-btns">'+
+      btn(1,'again','Again','1')+btn(2,'hard','Hard','2')+
+      btn(3,'good','Good','3')+btn(4,'easy','Easy','4')+
+    '</div>'+
+    '<div class="srs-hint">'+(typedRight===false?'Suggested: Again':'')+'</div>';
+  document.querySelectorAll('#srsBottom .srs-btn').forEach(b=>
+    b.addEventListener('click', ()=>srsRate(parseInt(b.dataset.g,10))));
+}
+
+function srsRate(g){
+  if(!sess || !sess.revealed) return;
+  const card = sess.queue[sess.i];
+  const before = card.state;
+  const spent = Math.min(120000, Date.now() - sess.cardShownAt);
+  const wasNew = card.state === 'new';
+
+  const updated = fsrsReview(card, g, srsCfg(), Date.now());
+  Object.assign(card, updated);
+  const idx = srs().cards.findIndex(c=>c.id===card.id);
+  if(idx >= 0) srs().cards[idx] = Object.assign(srs().cards[idx], updated);
+
+  // History: full records are capped, daily totals are kept forever so the
+  // stats survive the trim.
+  srs().reviews.push({ cardId:card.id, ts:Date.now(), rating:g, state:before, ms:spent });
+  if(srs().reviews.length > 4000) srs().reviews = srs().reviews.slice(-3000);
+  const d = dailyRec();
+  d.rev++; d.ms += spent;
+  if(g > 1) d.correct++;
+  if(wasNew) d.newCards++;
+
+  if(g === 1){ sess.again++; sess.queue.push(card); sess.total = sess.queue.length; }
+  sess.done++;
+  sess.i++;
+  saveState();
+  srsRenderCard();
+}
+
+/* Keyboard is the whole point of a fast reviewer. */
+document.addEventListener('keydown', e=>{
+  const veil = document.getElementById('srsVeil');
+  if(!veil || !veil.classList.contains('open') || !sess) return;
+  if(e.key === 'Escape'){ e.preventDefault(); endReview(); return; }
+  const inTyping = e.target && e.target.id === 'srsTypeIn';
+  if(!sess.revealed){
+    if((e.key === ' ' || e.key === 'Enter') && !inTyping){ e.preventDefault(); srsReveal(); }
+    return;
+  }
+  if(e.key >= '1' && e.key <= '4'){ e.preventDefault(); srsRate(parseInt(e.key,10)); return; }
+  if(e.key === ' ' || e.key === 'Enter'){ e.preventDefault(); srsRate(3); return; }
+  if(e.key === 'r' || e.key === 'R'){
+    const c = sess.queue[sess.i], n = c && noteById(c.noteId);
+    if(n) speak(n.word, n.lang || 'de-DE');
+  }
+});
+
+/* ---------- add / edit a word ---------- */
+let srsPickedTypes = ['recognition','translation','cloze','typing'];
+
+function openAddWord(noteId){
+  const editing = noteId ? noteById(noteId) : null;
+  const decks = srs().decks;
+  if(!decks.length){ showToast({title:'Make a deck first'}); return; }
+  const n = editing || { deckId: decks[0].id, word:'', translation:'', example:'', exampleTr:'',
+                         lang: decks[0].lang, cefr:'', tags:[], source:'' };
+  let types = editing
+    ? Array.from(new Set(srs().cards.filter(c=>c.noteId===editing.id).map(c=>c.type)))
+    : [...srsPickedTypes];
+  let pendingImage = editing ? editing.imageId : null;
+
+  const m = document.getElementById('modalBody');
+  m.classList.add('modal-wide');
+  const paint = ()=>{
+    m.innerHTML = '<h3>'+(editing?'Edit word':'Add word')+'</h3>'+
+      '<div class="row2">'+
+        '<div><label>Deck</label><select class="fld" id="wDeck">'+decks.map(d=>
+          '<option value="'+d.id+'"'+(n.deckId===d.id?' selected':'')+'>'+esc(d.name)+'</option>').join('')+'</select></div>'+
+        '<div><label>Language</label><select class="fld" id="wLang">'+LANGS.map(l=>
+          '<option value="'+l.code+'"'+((n.lang||'de-DE')===l.code?' selected':'')+'>'+esc(l.name)+'</option>').join('')+'</select></div>'+
+      '</div>'+
+      '<label>Word or phrase</label>'+
+      '<input type="text" class="fld" id="wWord" value="'+esc(n.word)+'" placeholder="überzeugend">'+
+      '<label>Translation / definition</label>'+
+      '<input type="text" class="fld" id="wTr" value="'+esc(n.translation)+'" placeholder="convincing, persuasive">'+
+      '<label>Example sentence</label>'+
+      '<input type="text" class="fld" id="wEx" value="'+esc(n.example||'')+'" placeholder="Sein Argument war überzeugend.">'+
+      '<label>Example translation</label>'+
+      '<input type="text" class="fld" id="wExTr" value="'+esc(n.exampleTr||'')+'" placeholder="His argument was convincing.">'+
+      '<div class="row2">'+
+        '<div><label>CEFR level</label><select class="fld" id="wCefr"><option value="">—</option>'+
+          CEFR.map(c=>'<option value="'+c+'"'+(n.cefr===c?' selected':'')+'>'+c+'</option>').join('')+'</select></div>'+
+        '<div><label>Source</label><input type="text" class="fld" id="wSrc" value="'+esc(n.source||'')+'" placeholder="book, film, class…"></div>'+
+      '</div>'+
+      '<label>Tags</label>'+
+      '<input type="text" class="fld" id="wTags" value="'+esc((n.tags||[]).join(', '))+'" placeholder="adjective, formal">'+
+      '<label>Exercise types</label>'+
+      '<div class="srs-typechips" id="wTypes">'+CARD_TYPES.map(t=>
+        '<button type="button" class="srs-typechip'+(types.includes(t.id)?' on':'')+'" data-t="'+t.id+'" title="'+esc(t.hint)+'">'+esc(t.name)+'</button>').join('')+'</div>'+
+      '<div class="hint">One word, several ways of being tested — each becomes its own card with its own schedule. Gap-fill and Sentence need an example sentence.</div>'+
+      '<div class="jr-imgs" id="wImgWrap" style="margin-top:12px"></div>'+
+      '<div class="actions">'+
+        '<button class="btn-text" id="mCancel">Cancel</button>'+
+        '<button class="ghost-btn" id="wImg">Image</button>'+
+        '<input type="file" id="wImgFile" accept="image/*" style="display:none">'+
+        '<button class="ghost-btn" id="wAi">Fill with AI</button>'+
+        '<button class="btn-primary" id="wSave">'+(editing?'Save':'Add')+'</button>'+
+      '</div>';
+
+    document.getElementById('mCancel').addEventListener('click', ()=>{ m.classList.remove('modal-wide'); closeModal(); });
+    document.getElementById('wTypes').addEventListener('click', e=>{
+      const b = e.target.closest('[data-t]'); if(!b) return;
+      const t = b.dataset.t;
+      types = types.includes(t) ? types.filter(x=>x!==t) : types.concat(t);
+      b.classList.toggle('on');
+    });
+    document.getElementById('wImg').addEventListener('click', ()=>document.getElementById('wImgFile').click());
+    document.getElementById('wImgFile').addEventListener('change', async e=>{
+      const f = e.target.files && e.target.files[0]; e.target.value = '';
+      if(!f || !f.type.startsWith('image/')) return;
+      const id = 'wi'+Date.now(); await shotPut(id, f); pendingImage = id; drawImg();
+    });
+    document.getElementById('wAi').addEventListener('click', fillWithAi);
+    document.getElementById('wSave').addEventListener('click', save);
+    drawImg();
+  };
+
+  async function drawImg(){
+    const host = document.getElementById('wImgWrap'); if(!host) return;
+    host.innerHTML = '';
+    if(!pendingImage) return;
+    const b = await shotGet(pendingImage); if(!b) return;
+    const img = document.createElement('img');
+    img.src = URL.createObjectURL(b); img.style.width='120px';
+    img.style.border='1px solid var(--border)'; img.style.borderRadius='2px';
+    host.appendChild(img);
+  }
+
+  /* AI writes the content; it never sees or touches the schedule. */
+  async function fillWithAi(){
+    const word = document.getElementById('wWord').value.trim();
+    if(!word){ showToast({title:'Type the word first'}); return; }
+    if(!aiKey){ openAiSettings(); return; }
+    const btn = document.getElementById('wAi');
+    btn.disabled = true; btn.textContent = 'Thinking…';
+    const langName = (LANGS.find(l=>l.code===document.getElementById('wLang').value)||{}).name || 'German';
+    const prompt = 'You are helping build a language flashcard for a learner of '+langName+'.\n'+
+      'WORD OR PHRASE: '+word+'\n\n'+
+      'Return ONLY a raw JSON object, no markdown fence, with exactly these keys:\n'+
+      '{"translation":"short English translation or definition",'+
+      '"example":"one natural sentence in '+langName+' using the word, max 12 words",'+
+      '"exampleTr":"English translation of that sentence",'+
+      '"cefr":"one of A1 A2 B1 B2 C1 C2",'+
+      '"tags":["2-4 short tags such as part of speech or register"]}\n'+
+      'The example must sound like something a person would actually say.';
+    try{
+      const res = await api.aiComplete({ apiKey: aiKey, model: state.ai.model, prompt, maxTokens: 700 });
+      if(!res || !res.ok) throw new Error((res && res.error) || 'AI call failed');
+      let t = String(res.text||'').trim().replace(/^```(?:json)?\s*/i,'').replace(/\s*```$/,'');
+      const a = t.indexOf('{'), b2 = t.lastIndexOf('}');
+      const j = JSON.parse(t.slice(a, b2+1));
+      if(j.translation) document.getElementById('wTr').value = j.translation;
+      if(j.example) document.getElementById('wEx').value = j.example;
+      if(j.exampleTr) document.getElementById('wExTr').value = j.exampleTr;
+      if(j.cefr && CEFR.includes(j.cefr)) document.getElementById('wCefr').value = j.cefr;
+      if(Array.isArray(j.tags)) document.getElementById('wTags').value = j.tags.join(', ');
+      showToast({title:'Filled in', sub:'Check it before saving.'});
+    }catch(err){
+      showToast({title:'AI could not fill that', sub:String(err && err.message || err)});
+    }
+    btn.disabled = false; btn.textContent = 'Fill with AI';
+  }
+
+  function save(){
+    const word = document.getElementById('wWord').value.trim();
+    const tr = document.getElementById('wTr').value.trim();
+    if(!word || !tr){ showToast({title:'Word and translation are both needed'}); return; }
+    if(!types.length){ showToast({title:'Pick at least one exercise type'}); return; }
+    const data = {
+      deckId: document.getElementById('wDeck').value,
+      lang: document.getElementById('wLang').value,
+      word, translation: tr,
+      example: document.getElementById('wEx').value.trim(),
+      exampleTr: document.getElementById('wExTr').value.trim(),
+      cefr: document.getElementById('wCefr').value,
+      source: document.getElementById('wSrc').value.trim(),
+      tags: document.getElementById('wTags').value.split(',').map(x=>x.trim()).filter(Boolean),
+      imageId: pendingImage
+    };
+    if(editing){
+      Object.assign(editing, data);
+      // keep the schedule of card types that survive; add any newly ticked ones
+      const have = srs().cards.filter(c=>c.noteId===editing.id);
+      have.filter(c=>!types.includes(c.type)).forEach(c=>{
+        srs().cards = srs().cards.filter(x=>x.id!==c.id);
+      });
+      const missing = types.filter(t=>!have.some(c=>c.type===t));
+      if(missing.length) srs().cards.push(...makeCards(editing.id, missing));
+    }else{
+      srsPickedTypes = [...types];
+      addNote(data, types);
+    }
+    m.classList.remove('modal-wide');
+    closeModal(); saveState(); renderSrs(); renderAll();
+    showToast({title: editing?'Saved':'Added', sub: word});
+  }
+
+  paint();
+  document.getElementById('modalVeil').classList.add('open');
+}
+
+/* ---------- decks ---------- */
+function openDeckEditor(deckId){
+  const d = deckId ? deckById(deckId) : null;
+  const m = document.getElementById('modalBody');
+  m.innerHTML = '<h3>'+(d?'Edit deck':'New deck')+'</h3>'+
+    '<label>Name</label><input type="text" class="fld" id="dkName" value="'+esc(d?d.name:'')+'" placeholder="Vocabulary">'+
+    '<label>Language</label><select class="fld" id="dkLang">'+LANGS.map(l=>
+      '<option value="'+l.code+'"'+((d?d.lang:'de-DE')===l.code?' selected':'')+'>'+esc(l.name)+'</option>').join('')+'</select>'+
+    '<div class="row2">'+
+      '<div><label>New cards / day</label><input type="number" class="fld" id="dkNew" min="0" max="200" value="'+(d?d.newPerDay:15)+'"></div>'+
+      '<div><label>Max reviews / day</label><input type="number" class="fld" id="dkMax" min="0" max="9999" value="'+(d?d.maxReviews:200)+'"></div>'+
+    '</div>'+
+    '<div class="actions"><button class="btn-text" id="mCancel">Cancel</button><button class="btn-primary" id="dkSave">Save</button></div>';
+  document.getElementById('modalVeil').classList.add('open');
+  document.getElementById('mCancel').addEventListener('click', closeModal);
+  document.getElementById('dkSave').addEventListener('click', ()=>{
+    const name = document.getElementById('dkName').value.trim();
+    if(!name){ showToast({title:'Name it first'}); return; }
+    const patch = { name, lang: document.getElementById('dkLang').value,
+      newPerDay: parseInt(document.getElementById('dkNew').value,10)||0,
+      maxReviews: parseInt(document.getElementById('dkMax').value,10)||0 };
+    if(d) Object.assign(d, patch);
+    else srs().decks.push(Object.assign({ id:'dk'+Date.now(), color: DECK_COLORS[srs().decks.length % DECK_COLORS.length] }, patch));
+    closeModal(); saveState(); renderSrs();
+  });
+}
+
+/* ---------- browse ---------- */
+function openSrsBrowse(){
+  const m = document.getElementById('modalBody');
+  m.classList.add('modal-wide');
+  let q = '';
+  const paint = ()=>{
+    const notes = srs().notes.filter(n=>{
+      if(!q) return true;
+      const hay = (n.word+' '+n.translation+' '+(n.example||'')+' '+(n.tags||[]).join(' ')).toLowerCase();
+      return hay.includes(q.toLowerCase());
+    }).slice().reverse();
+    m.innerHTML = '<h3>Browse</h3>'+
+      '<input type="text" class="fld" id="bwQ" placeholder="Search words, meanings, examples…" value="'+esc(q)+'">'+
+      '<div class="hint">'+srs().notes.length+' words · '+srs().cards.length+' cards</div>'+
+      '<div id="bwList" style="max-height:52vh; overflow-y:auto; margin-top:10px">'+
+      (notes.length ? notes.map(n=>{
+        const cards = srs().cards.filter(c=>c.noteId===n.id);
+        const dk = deckById(n.deckId) || {};
+        return '<div class="srs-browse-row" data-n="'+esc(n.id)+'">'+
+          '<span class="bw">'+esc(n.word)+(n.cefr?' <span class="srs-tag">'+esc(n.cefr)+'</span>':'')+'</span>'+
+          '<span class="bt">'+esc(n.translation)+'</span>'+
+          '<span class="bc">'+esc(dk.name||'')+' · '+cards.length+'</span>'+
+          '<button data-edit="'+esc(n.id)+'" title="Edit">'+icon('edit')+'</button>'+
+          '<button data-del="'+esc(n.id)+'" title="Delete">'+icon('trash')+'</button>'+
+        '</div>';
+      }).join('') : '<div class="empty-row">Nothing yet.</div>')+'</div>'+
+      '<div class="actions"><button class="btn-text" id="mCancel">Close</button></div>';
+    document.getElementById('mCancel').addEventListener('click', ()=>{ m.classList.remove('modal-wide'); closeModal(); });
+    const qi = document.getElementById('bwQ');
+    qi.addEventListener('input', e=>{ q = e.target.value; const pos=e.target.selectionStart; paint(); const el=document.getElementById('bwQ'); el.focus(); el.setSelectionRange(pos,pos); });
+    document.getElementById('bwList').addEventListener('click', e=>{
+      const ed = e.target.closest('[data-edit]'); if(ed){ m.classList.remove('modal-wide'); openAddWord(ed.dataset.edit); return; }
+      const del = e.target.closest('[data-del]'); if(!del) return;
+      const n = noteById(del.dataset.del); if(!n) return;
+      openConfirm({ title:'Delete "'+esc(n.word)+'"?', body:'Removes the word and all of its cards, with their review history.',
+        confirmLabel:'Delete', onConfirm: async ()=>{
+          if(n.imageId) await shotDelete(n.imageId);
+          const ids = new Set(srs().cards.filter(c=>c.noteId===n.id).map(c=>c.id));
+          srs().cards = srs().cards.filter(c=>c.noteId!==n.id);
+          srs().reviews = srs().reviews.filter(r=>!ids.has(r.cardId));
+          srs().notes = srs().notes.filter(x=>x.id!==n.id);
+          saveState(); renderSrs(); paint();
+        }});
+    });
+  };
+  paint();
+  document.getElementById('modalVeil').classList.add('open');
+}
+
+/* ---------- scheduler settings ---------- */
+function openSrsConfig(){
+  const c = srs().config;
+  const st = srsStats();
+  const m = document.getElementById('modalBody');
+  m.innerHTML = '<h3>Scheduling</h3>'+
+    '<p>Cards are scheduled with <b>FSRS-6</b> — it models memory stability and difficulty per card rather than multiplying a fixed factor.</p>'+
+    '<label>Desired retention</label>'+
+    '<input type="range" class="set-range" id="cfRet" min="0.75" max="0.97" step="0.01" value="'+(c.retention||0.9)+'" style="width:100%">'+
+    '<div class="hint" id="cfRetLab"></div>'+
+    '<div class="row2">'+
+      '<div><label>Learning steps (min)</label><input type="text" class="fld" id="cfLearn" value="'+esc((c.learnSteps||[1,10]).join(', '))+'"></div>'+
+      '<div><label>Relearning steps (min)</label><input type="text" class="fld" id="cfRelearn" value="'+esc((c.relearnSteps||[10]).join(', '))+'"></div>'+
+    '</div>'+
+    '<label>Maximum interval (days)</label>'+
+    '<input type="number" class="fld" id="cfMax" min="1" max="36500" value="'+(c.maxInterval||36500)+'">'+
+    '<label style="display:flex;align-items:center;gap:7px;text-transform:none;letter-spacing:0;font-size:12px;color:var(--text-dim);margin:10px 0;">'+
+      '<input type="checkbox" id="cfFuzz"'+(c.fuzz!==false?' checked':'')+'> Fuzz due dates slightly, so big days do not repeat forever</label>'+
+    '<div class="hint">Upcoming week: '+st.upcoming.join(' · ')+'</div>'+
+    '<div class="actions"><button class="btn-text" id="mCancel">Cancel</button><button class="btn-primary" id="cfSave">Save</button></div>';
+  document.getElementById('modalVeil').classList.add('open');
+  const lab = ()=>{
+    const v = parseFloat(document.getElementById('cfRet').value);
+    document.getElementById('cfRetLab').textContent =
+      Math.round(v*100)+'% — higher means shorter intervals and more reviews; lower means fewer reviews and more forgetting.';
+  };
+  lab();
+  document.getElementById('cfRet').addEventListener('input', lab);
+  document.getElementById('mCancel').addEventListener('click', closeModal);
+  document.getElementById('cfSave').addEventListener('click', ()=>{
+    const nums = (x)=>String(x).split(',').map(v=>parseFloat(v.trim())).filter(v=>Number.isFinite(v) && v>0);
+    c.retention = parseFloat(document.getElementById('cfRet').value) || 0.9;
+    c.learnSteps = nums(document.getElementById('cfLearn').value);
+    c.relearnSteps = nums(document.getElementById('cfRelearn').value);
+    c.maxInterval = Math.max(1, parseInt(document.getElementById('cfMax').value,10) || 36500);
+    c.fuzz = document.getElementById('cfFuzz').checked;
+    if(!c.learnSteps.length) c.learnSteps = [1,10];
+    closeModal(); saveState(); renderSrs();
+    showToast({title:'Scheduling updated'});
+  });
+}
+
+/* ---------- wiring ---------- */
+document.getElementById('srsAddBtn').addEventListener('click', ()=>openAddWord(null));
+document.getElementById('srsDeckBtn').addEventListener('click', ()=>openDeckEditor(null));
+document.getElementById('srsBrowseBtn').addEventListener('click', openSrsBrowse);
+document.getElementById('srsCfgBtn').addEventListener('click', openSrsConfig);
+document.getElementById('srsClose').addEventListener('click', endReview);
+document.getElementById('srsDecks').addEventListener('click', e=>{
+  const del = e.target.closest('[data-del]');
+  if(del){
+    e.stopPropagation();
+    const d = deckById(del.dataset.del); if(!d) return;
+    openConfirm({ title:'Delete "'+esc(d.name)+'"?', body:'Its words and their review history go too.',
+      confirmLabel:'Delete deck', onConfirm: async ()=>{
+        const notes = srs().notes.filter(n=>n.deckId===d.id);
+        for(const n of notes) if(n.imageId) await shotDelete(n.imageId);
+        const noteIds = new Set(notes.map(n=>n.id));
+        const cardIds = new Set(srs().cards.filter(c=>noteIds.has(c.noteId)).map(c=>c.id));
+        srs().cards = srs().cards.filter(c=>!noteIds.has(c.noteId));
+        srs().reviews = srs().reviews.filter(r=>!cardIds.has(r.cardId));
+        srs().notes = srs().notes.filter(n=>!noteIds.has(n.id));
+        srs().decks = srs().decks.filter(x=>x.id!==d.id);
+        saveState(); renderSrs();
+      }});
+    return;
+  }
+  const deck = e.target.closest('[data-deck]');
+  if(deck) startReview(deck.dataset.deck);
+});
+
+/* ============ JOURNAL ============ */
 /* Two things that look similar but aren't: a sudden idea you need to get down
  * in three seconds, and a journal entry you sit with. The quick box handles the
  * first, the composer the second. Text syncs; attached images stay on the

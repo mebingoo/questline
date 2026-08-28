@@ -19,7 +19,8 @@ contextBridge.exposeInMainWorld('courses', {
 contextBridge.exposeInMainWorld('learn', {
   meta: (videoId) => ipcRenderer.invoke('yt-meta', videoId),
   transcript: (videoId) => ipcRenderer.invoke('yt-transcript', videoId),
-  generate: (opts) => ipcRenderer.invoke('ai-generate', opts)
+  generate: (opts) => ipcRenderer.invoke('ai-generate', opts),
+  complete: (opts) => ipcRenderer.invoke('ai-complete', opts)
 });
 
 // Read-only: lists/loads the roadmap.json files bundled under data/roadmaps.
