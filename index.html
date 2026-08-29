@@ -3557,11 +3557,20 @@ async function downloadVideo(id){
       v.transcriptLang = r.subLang || 'downloaded';
       v.transcriptAuto = !!r.subAuto;
       v.transcriptError = null;
+    }else if(r.subError){
+      // The video is fine — only the captions failed, usually a rate limit.
+      // Say so plainly rather than letting it look like the whole thing broke.
+      v.transcriptError = /429|Too Many|rate/i.test(r.subError)
+        ? 'YouTube rate-limited the subtitles for this video. The video downloaded fine — press "Get transcript" to try the captions again.'
+        : r.subError;
     }
     dlSetJob(v.id, null);
     saveState();
     showToast({
-      title:'Downloaded', sub: v.title.slice(0,48) + (r.cues && r.cues.length ? ' · '+r.cues.length+' transcript lines' : ' · no subtitles found')
+      title:'Downloaded',
+      sub: v.title.slice(0,44) + (r.cues && r.cues.length
+        ? ' · '+r.cues.length+' transcript lines'
+        : ' · no transcript yet — retry it in the Transcript tab')
     });
     if(currentVideo && currentVideo.id === v.id){
       renderTranscript(); renderQuiz(); renderSummary(); renderChat();
@@ -3951,7 +3960,15 @@ async function fetchTranscript(){
   if(v.folder && dlAvailable()){
     box.innerHTML = '<div class="gen-box"><div class="spinner"></div>Reading the saved subtitles…</div>';
     try{
-      const r = await window.vidlib.subs({ folder:v.folder, langs:vidLib.langs });
+      let r = await window.vidlib.subs({ folder:v.folder, langs:vidLib.langs });
+      if(!(r && r.ok && r.cues.length)){
+        // Nothing on disk — most often because YouTube rate-limited the
+        // captions while the video itself downloaded fine. Fetch just those.
+        box.innerHTML = '<div class="gen-box"><div class="spinner"></div>Fetching subtitles from YouTube…</div>';
+        r = await window.vidlib.fetchSubs({
+          folder:v.folder, url:'https://www.youtube.com/watch?v='+v.videoId, langs:vidLib.langs
+        });
+      }
       if(r && r.ok && r.cues.length){
         v.cues = r.cues; v.transcriptLang = r.lang; v.transcriptError = null;
         saveState();
@@ -4582,7 +4599,7 @@ if(dlAvailable()){
     }else if(d.stage === 'merging'){
       dlSetJob(videoId, { pct:99, label:'Merging video and audio…', right:'' });
     }else if(d.stage === 'subtitles'){
-      dlSetJob(videoId, { label:'Fetching subtitles…' });
+      dlSetJob(videoId, { pct:100, label:'Fetching subtitles'+(d.lang?' ('+d.lang+')':'')+'…', right:'' });
     }
   });
 }

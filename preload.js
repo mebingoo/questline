@@ -27,6 +27,9 @@ contextBridge.exposeInMainWorld('vidlib', {
   cancel: (jobId) => ipcRenderer.invoke('dl-cancel', jobId),
   remove: (folder) => ipcRenderer.invoke('dl-remove', folder),
   subs: (opts) => ipcRenderer.invoke('dl-subs', opts),
+  // Retry only the subtitles when the video downloaded but captions were
+  // rate-limited — no need to fetch the whole video again.
+  fetchSubs: (opts) => ipcRenderer.invoke('dl-fetch-subs', opts),
   // Progress arrives as events rather than a return value, so the renderer
   // can draw a live bar instead of waiting for the whole download.
   onProgress: (cb) => {

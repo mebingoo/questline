@@ -102,6 +102,12 @@ So a Learn video is **downloaded** with `yt-dlp` and owned locally:
 - **Subtitles are the transcript.** They arrive with the download in `json3`,
   which parses to the same `{t, text}` cues the old scraper produced, so
   summary/quiz/chat needed no changes.
+- **Subtitles are fetched in a second yt-dlp run, never with the video.**
+  yt-dlp pulls captions *before* the media and treats a failed caption fetch as
+  fatal, so one HTTP 429 on the second language throws the whole video download
+  away. Pass 1 gets the video; pass 2 asks one language at a time and stops at
+  the first hit, so a rate limit costs at most the transcript. `dl-fetch-subs`
+  retries just the captions afterwards.
 - Ask for few subtitle languages. `--sub-langs "en.*"` pulls dozens of machine
   translations at once and YouTube answers **HTTP 429**.
 - yt-dlp goes stale fast. A version a few months old fails with 403 on the

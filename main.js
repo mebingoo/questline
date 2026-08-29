@@ -296,6 +296,76 @@ function findByExt(dir, exts) {
 
 const dlJobs = new Map();      // job id -> child process, so a download can be cancelled
 
+/* One yt-dlp run. Resolves rather than rejecting — the caller decides which
+   failures matter, because for subtitles most of them don't. */
+function runYtdlp(exe, args, jobId, onLine) {
+  return new Promise((resolve) => {
+    let child;
+    try { child = spawn(exe, args, { windowsHide: true }); }
+    catch (e) { return resolve({ code: -1, stderr: String(e.message || e) }); }
+    dlJobs.set(jobId, child);
+
+    let stderr = '', tail = '', settled = false;
+    const feed = (line) => { if (line.trim() && onLine) onLine(line.trim()); };
+
+    child.stdout.on('data', (d) => {
+      tail += d.toString();
+      const lines = tail.split(/\r?\n/);
+      tail = lines.pop();
+      lines.forEach(feed);
+    });
+    child.stderr.on('data', (d) => { stderr += d.toString(); });
+    child.on('error', (e) => {
+      if (settled) return; settled = true;
+      dlJobs.delete(jobId);
+      resolve({ code: -1, stderr: String(e.message || e) });
+    });
+    child.on('close', (code, signal) => {
+      if (settled) return; settled = true;
+      dlJobs.delete(jobId);
+      if (tail) feed(tail);
+      resolve({ code, signal, stderr });
+    });
+  });
+}
+
+const lastError = (stderr) =>
+  (String(stderr).split(/\r?\n/).filter(l => /ERROR/i.test(l)).pop() || '').replace(/^ERROR:\s*/i, '').trim();
+
+/* Subtitles, one language at a time, first hit wins.
+ *
+ * They are fetched in a separate run from the video on purpose. yt-dlp pulls
+ * subtitles BEFORE the media and treats a failed subtitle fetch as fatal, so
+ * a single HTTP 429 on the second language throws away the whole video
+ * download — which is exactly what kept happening. Asking for one language
+ * per run, after the video is already safely on disk, means a rate-limited
+ * caption server costs at most the transcript. */
+async function fetchSubs(exe, url, folder, langs, jobId, onStage) {
+  const out = { lang: null, error: null };
+  for (const lang of langs) {
+    const have = pickSubs(folder, [lang]);
+    if (have && have.lang === lang) { out.lang = lang; return out; }
+
+    if (onStage) onStage(lang);
+    const r = await runYtdlp(exe, [
+      '--no-update', '--no-playlist', '--newline', '--no-warnings',
+      '--skip-download', '--write-subs', '--write-auto-subs',
+      '--sub-langs', lang,
+      '--sub-format', 'json3',
+      // A breath between requests; the caption server rate-limits eagerly.
+      '--sleep-subtitles', '1',
+      '-o', path.join(folder, 'video.%(ext)s'),
+      url
+    ], jobId, null);
+
+    if (r.signal) { out.error = 'cancelled'; return out; }
+    const got = pickSubs(folder, [lang]);
+    if (got && got.lang === lang) { out.lang = lang; return out; }
+    out.error = lastError(r.stderr) || out.error;
+  }
+  return out;
+}
+
 ipcMain.handle('dl-start', async (event, opts) => {
   const o = opts || {};
   const url = String(o.url || '').trim();
@@ -314,106 +384,106 @@ ipcMain.handle('dl-start', async (event, opts) => {
   if (!t.ytdlp) return { ok: false, error: 'yt-dlp is not installed. Install it with:  winget install yt-dlp.yt-dlp' };
   courseRoots.add(path.resolve(dir));
 
-  const args = [
+  const send = (payload) => {
+    if (!event.sender.isDestroyed()) event.sender.send('dl-progress', Object.assign({ jobId }, payload));
+  };
+
+  // ---- Pass 1: the video itself. Subtitles are deliberately not asked for
+  // here; see fetchSubs above for why they cannot share a run.
+  let finalPath = null;
+  const p1 = await runYtdlp(t.ytdlp, [
     '--no-update', '--no-playlist', '--newline', '--progress', '--no-simulate',
     // Highest resolution first, then framerate; h264/AAC only breaks ties, so a
     // 4K VP9 still wins over a 1080p h264 while 1080p stays hardware-decodable.
     '-f', 'bv*+ba/b',
     '-S', 'res,fps,vcodec:h264,acodec:m4a',
     '--merge-output-format', 'mp4',
+    '--no-write-subs', '--no-write-auto-subs',
     '--write-thumbnail', '--convert-thumbnails', 'jpg',
-    '--write-subs', '--write-auto-subs',
-    // A narrow language list on purpose: asking for "en.*" pulls dozens of
-    // machine translations at once and YouTube answers with HTTP 429.
-    '--sub-langs', langs.join(','),
-    '--sub-format', 'json3',
     '--write-info-json',
+    '--retries', '5', '--fragment-retries', '5',
     '-o', path.join(dir, '%(title).80B [%(id)s]', 'video.%(ext)s'),
     '--print', 'after_move:QLFINAL %(filepath)s',
     '--progress-template', 'download:QLPROG %(progress._percent_str)s|%(progress._speed_str)s|%(progress._eta_str)s',
     url
-  ];
-
-  return await new Promise((resolve) => {
-    let child;
-    try { child = spawn(t.ytdlp, args, { windowsHide: true }); }
-    catch (e) { return resolve({ ok: false, error: 'Could not start yt-dlp: ' + (e.message || e) }); }
-    dlJobs.set(jobId, child);
-
-    let finalPath = null, stderr = '', tail = '', settled = false;
-    const send = (payload) => {
-      if (!event.sender.isDestroyed()) event.sender.send('dl-progress', Object.assign({ jobId }, payload));
-    };
-
-    const handleLine = (line) => {
-      const s = line.trim();
-      if (!s) return;
-      if (s.startsWith('QLFINAL ')) { finalPath = s.slice(8).trim(); return; }
-      if (s.startsWith('QLPROG ')) {
-        const [pct, speed, eta] = s.slice(7).split('|');
-        send({ stage: 'download', pct: parseFloat(String(pct).replace('%', '')) || 0, speed: (speed || '').trim(), eta: (eta || '').trim() });
-        return;
-      }
-      if (/\[Merger\]|\[VideoConvertor\]/.test(s)) send({ stage: 'merging' });
-      else if (/Downloading subtitles|Writing video subtitles/.test(s)) send({ stage: 'subtitles' });
-    };
-
-    child.stdout.on('data', (d) => {
-      tail += d.toString();
-      const lines = tail.split(/\r?\n/);
-      tail = lines.pop();
-      lines.forEach(handleLine);
-    });
-    child.stderr.on('data', (d) => { stderr += d.toString(); });
-
-    child.on('error', (e) => {
-      if (settled) return; settled = true;
-      dlJobs.delete(jobId);
-      resolve({ ok: false, error: 'Could not run yt-dlp: ' + (e.message || e) });
-    });
-
-    child.on('close', (code, signal) => {
-      if (settled) return; settled = true;
-      dlJobs.delete(jobId);
-      if (tail) handleLine(tail);
-
-      if (signal || code === null) return resolve({ ok: false, canceled: true, error: 'Download cancelled.' });
-      if (code !== 0 || !finalPath) {
-        // yt-dlp's own ERROR lines say far more than an exit code does.
-        const errLine = (stderr.split(/\r?\n/).filter(l => /ERROR/i.test(l)).pop() || '').replace(/^ERROR:\s*/i, '').trim();
-        return resolve({ ok: false, error: errLine || ('yt-dlp failed (exit ' + code + ').') });
-      }
-
-      const folder = path.dirname(finalPath);
-      let info = {};
-      const infoFile = path.join(folder, 'video.info.json');
-      try { info = JSON.parse(fs.readFileSync(infoFile, 'utf8')); } catch (e) {}
-
-      let cues = [], subLang = null;
-      const picked = pickSubs(folder, langs);
-      if (picked) {
-        try { cues = parseJson3(picked.file); subLang = picked.lang; }
-        catch (e) { cues = []; }
-      }
-
-      resolve({
-        ok: true,
-        folder,
-        path: finalPath,
-        thumb: findByExt(folder, ['.jpg', '.jpeg', '.png', '.webp']),
-        title: info.title || null,
-        duration: Math.round(info.duration || 0) || null,
-        uploader: info.uploader || info.channel || null,
-        videoId: info.id || null,
-        cues,
-        subLang,
-        // Auto-generated captions are worth flagging: they carry the
-        // transcription errors that later confuse a summary or a quiz.
-        subAuto: !!(picked && info.automatic_captions && info.automatic_captions[subLang] &&
-                    !(info.subtitles && info.subtitles[subLang]))
-      });
-    });
+  ], jobId, (s) => {
+    if (s.startsWith('QLFINAL ')) { finalPath = s.slice(8).trim(); return; }
+    if (s.startsWith('QLPROG ')) {
+      const [pct, speed, eta] = s.slice(7).split('|');
+      send({ stage: 'download', pct: parseFloat(String(pct).replace('%', '')) || 0, speed: (speed || '').trim(), eta: (eta || '').trim() });
+      return;
+    }
+    if (/\[Merger\]|\[VideoConvertor\]/.test(s)) send({ stage: 'merging' });
   });
+
+  if (p1.signal || p1.code === null) return { ok: false, canceled: true, error: 'Download cancelled.' };
+  if (p1.code !== 0 || !finalPath) {
+    return { ok: false, error: lastError(p1.stderr) || ('yt-dlp failed (exit ' + p1.code + ').') };
+  }
+
+  const folder = path.dirname(finalPath);
+  let info = {};
+  try { info = JSON.parse(fs.readFileSync(path.join(folder, 'video.info.json'), 'utf8')); } catch (e) {}
+
+  // ---- Pass 2: subtitles. The video is already safe by this point, so
+  // anything that goes wrong here is reported but never fails the download.
+  const subs = await fetchSubs(t.ytdlp, url, folder, langs, jobId, (lang) => send({ stage: 'subtitles', lang }));
+
+  let cues = [], subLang = null;
+  const picked = subs.lang ? pickSubs(folder, [subs.lang]) : pickSubs(folder, langs);
+  if (picked) {
+    try { cues = parseJson3(picked.file); subLang = picked.lang; } catch (e) { cues = []; }
+  }
+
+  return {
+    ok: true,
+    folder,
+    path: finalPath,
+    thumb: findByExt(folder, ['.jpg', '.jpeg', '.png', '.webp']),
+    title: info.title || null,
+    duration: Math.round(info.duration || 0) || null,
+    uploader: info.uploader || info.channel || null,
+    videoId: info.id || null,
+    cues,
+    subLang,
+    // Worth surfacing: the video is fine, only the transcript is missing, and
+    // it can be retried on its own from the Transcript tab.
+    subError: cues.length ? null : (subs.error || 'No subtitles were available for this video.'),
+    // Auto-generated captions carry transcription errors that later confuse a
+    // summary or a quiz, so they are flagged rather than passed off as clean.
+    subAuto: !!(picked && info.automatic_captions && info.automatic_captions[subLang] &&
+                !(info.subtitles && info.subtitles[subLang]))
+  };
+});
+
+/* Retry just the subtitles for a video already on disk — the 429 case, where
+   the video downloaded fine and only the transcript is missing. */
+ipcMain.handle('dl-fetch-subs', async (event, opts) => {
+  const o = opts || {};
+  const folder = String(o.folder || '');
+  const url = String(o.url || '').trim();
+  const langs = Array.isArray(o.langs) && o.langs.length ? o.langs : ['en', 'de', 'vi'];
+  const jobId = String(o.jobId || ('subs' + Date.now()));
+
+  if (!folder || !isInsideRoot(folder)) return { ok: false, error: 'That folder is outside the library.' };
+  if (!/^https?:\/\//i.test(url)) return { ok: false, error: 'That is not a valid link.' };
+  const t = findTools();
+  if (!t.ytdlp) return { ok: false, error: 'yt-dlp is not installed.' };
+
+  const subs = await fetchSubs(t.ytdlp, url, folder, langs, jobId, null);
+  if (subs.error === 'cancelled') return { ok: false, canceled: true, error: 'Cancelled.' };
+
+  const picked = subs.lang ? pickSubs(folder, [subs.lang]) : pickSubs(folder, langs);
+  if (!picked) {
+    return { ok: false, error: /429|Too Many/i.test(subs.error || '')
+      ? 'YouTube is rate-limiting caption downloads right now. Wait a minute and try again.'
+      : (subs.error || 'No subtitles were available for this video.') };
+  }
+  try {
+    return { ok: true, cues: parseJson3(picked.file), lang: picked.lang };
+  } catch (e) {
+    return { ok: false, error: 'The subtitle file could not be read.' };
+  }
 });
 
 ipcMain.handle('dl-cancel', async (event, jobId) => {
