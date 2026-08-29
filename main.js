@@ -38,6 +38,13 @@ const VIDEO_MIME = {
   '.mkv': 'video/x-matroska', '.mov': 'video/quicktime', '.avi': 'video/x-msvideo'
 };
 
+// Downloaded videos keep their poster next to the file, served over the same
+// scheme so the library grid can show it without a round trip to YouTube.
+const IMAGE_MIME = {
+  '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.png': 'image/png',
+  '.webp': 'image/webp', '.gif': 'image/gif'
+};
+
 /* Serves a file with real byte-range support.
  *
  * Chromium decides a video is seekable from Accept-Ranges plus a 206 answer to
@@ -49,7 +56,8 @@ function serveMedia(target, rangeHeader) {
   try { size = fs.statSync(target).size; }
   catch (e) { return new Response('Not found', { status: 404 }); }
 
-  const type = VIDEO_MIME[path.extname(target).toLowerCase()] || 'application/octet-stream';
+  const ext = path.extname(target).toLowerCase();
+  const type = VIDEO_MIME[ext] || IMAGE_MIME[ext] || 'application/octet-stream';
   const base = {
     'Content-Type': type,
     'Accept-Ranges': 'bytes',
@@ -153,6 +161,297 @@ ipcMain.handle('courses-allow', async (event, dir) => {
 ipcMain.handle('courses-reveal', async (event, target) => {
   if (typeof target === 'string' && isInsideRoot(target)) shell.showItemInFolder(target);
   return true;
+});
+
+/* ------------------------------------------------------------------ *
+ * YouTube downloads (yt-dlp)
+ *
+ * Embedded playback kept breaking — uploaders disable it, and YouTube
+ * now refuses the caption endpoints to anything that isn't a real
+ * browser session. yt-dlp sidesteps both: it speaks the same player
+ * APIs the mobile/TV clients use, and it is maintained against
+ * YouTube's changes far more aggressively than any scraper here could
+ * be. So a video is downloaded once and then owned locally — the file,
+ * its poster and its subtitles all land in one folder and are served
+ * over the same qlmedia:// scheme as course videos.
+ *
+ * yt-dlp and ffmpeg are not bundled; they are looked up on PATH and
+ * their absence is reported to the renderer rather than guessed at.
+ * ------------------------------------------------------------------ */
+const { spawn } = require('child_process');
+
+/* Node does no PATHEXT resolution on Windows, so spawn('yt-dlp') would
+   ENOENT even with yt-dlp.exe plainly on PATH. Resolve it properly. */
+function whichTool(name) {
+  const exts = process.platform === 'win32' ? ['.exe', '.cmd', '.bat', ''] : [''];
+  const dirs = String(process.env.PATH || '').split(path.delimiter).filter(Boolean);
+  for (const dir of dirs) {
+    for (const ext of exts) {
+      const full = path.join(dir, name + ext);
+      try { if (fs.statSync(full).isFile()) return full; } catch (e) {}
+    }
+  }
+  return null;
+}
+
+let toolCache = null;
+function findTools(refresh) {
+  if (toolCache && !refresh) return toolCache;
+  toolCache = { ytdlp: whichTool('yt-dlp'), ffmpeg: whichTool('ffmpeg') };
+  return toolCache;
+}
+
+function runTool(exe, args, timeout) {
+  return new Promise((resolve) => {
+    let out = '', err = '';
+    let child;
+    try { child = spawn(exe, args, { windowsHide: true }); }
+    catch (e) { return resolve({ code: -1, out: '', err: String(e.message || e) }); }
+    const timer = setTimeout(() => { try { child.kill(); } catch (e) {} }, timeout || 30000);
+    child.stdout.on('data', d => { out += d.toString(); });
+    child.stderr.on('data', d => { err += d.toString(); });
+    child.on('error', e => { clearTimeout(timer); resolve({ code: -1, out, err: String(e.message || e) }); });
+    child.on('close', code => { clearTimeout(timer); resolve({ code, out, err }); });
+  });
+}
+
+ipcMain.handle('dl-check', async (event, refresh) => {
+  const t = findTools(!!refresh);
+  if (!t.ytdlp) {
+    return {
+      ok: false,
+      ytdlp: null,
+      ffmpeg: !!t.ffmpeg,
+      error: 'yt-dlp was not found on this PC. Install it with:  winget install yt-dlp.yt-dlp'
+    };
+  }
+  const v = await runTool(t.ytdlp, ['--version'], 20000);
+  return {
+    ok: true,
+    ytdlp: (v.out || '').trim() || 'unknown',
+    ffmpeg: !!t.ffmpeg,
+    // Merging the best video with the best audio is an ffmpeg job; without it
+    // yt-dlp silently drops to a lower-quality pre-muxed stream.
+    warn: t.ffmpeg ? null : 'ffmpeg was not found — quality will be capped until you install it (winget install yt-dlp.FFmpeg).'
+  };
+});
+
+ipcMain.handle('dl-pick-folder', async () => {
+  const r = await dialog.showOpenDialog({
+    title: 'Where should downloaded videos be kept?',
+    properties: ['openDirectory', 'createDirectory']
+  });
+  if (r.canceled || !r.filePaths.length) return { ok: false, canceled: true };
+  courseRoots.add(path.resolve(r.filePaths[0]));
+  return { ok: true, path: r.filePaths[0] };
+});
+
+// Re-authorise the saved library folder on launch, the same way courses do.
+ipcMain.handle('dl-allow', async (event, dir) => {
+  if (typeof dir === 'string' && dir) {
+    try {
+      if (fs.statSync(dir).isDirectory()) { courseRoots.add(path.resolve(dir)); return { ok: true }; }
+    } catch (e) { return { ok: false, error: 'That folder is no longer there.' }; }
+  }
+  return { ok: false, error: 'No folder given.' };
+});
+
+/* Subtitles come down as json3 — the same shape the old caption scraper
+   produced, so everything downstream (summary, quiz, chat) is unchanged. */
+function parseJson3(file) {
+  const j = JSON.parse(fs.readFileSync(file, 'utf8'));
+  const cues = [];
+  for (const e of (j.events || [])) {
+    if (!e.segs) continue;
+    const text = e.segs.map(s => s.utf8 || '').join('').replace(/\s+/g, ' ').trim();
+    if (!text) continue;
+    cues.push({ t: Math.round((e.tStartMs || 0) / 1000), text });
+  }
+  return cues;
+}
+
+/* Picks the subtitle file to actually use, in the caller's language order
+   so a German learner gets the German track when the video has both. */
+function pickSubs(dir, langs) {
+  let names = [];
+  try { names = fs.readdirSync(dir); } catch (e) { return null; }
+  const subs = names.filter(n => n.endsWith('.json3'));
+  if (!subs.length) return null;
+  for (const want of langs) {
+    const exact = subs.find(n => n === 'video.' + want + '.json3');
+    if (exact) return { file: path.join(dir, exact), lang: want };
+    const loose = subs.find(n => n.startsWith('video.' + want));
+    if (loose) return { file: path.join(dir, loose), lang: want };
+  }
+  const m = /^video\.(.+)\.json3$/.exec(subs[0]);
+  return { file: path.join(dir, subs[0]), lang: m ? m[1] : 'unknown' };
+}
+
+function findByExt(dir, exts) {
+  let names = [];
+  try { names = fs.readdirSync(dir); } catch (e) { return null; }
+  const hit = names.find(n => exts.includes(path.extname(n).toLowerCase()));
+  return hit ? path.join(dir, hit) : null;
+}
+
+const dlJobs = new Map();      // job id -> child process, so a download can be cancelled
+
+ipcMain.handle('dl-start', async (event, opts) => {
+  const o = opts || {};
+  const url = String(o.url || '').trim();
+  const dir = String(o.dir || '').trim();
+  const jobId = String(o.jobId || ('job' + Date.now()));
+  const langs = Array.isArray(o.langs) && o.langs.length ? o.langs : ['en', 'de', 'vi'];
+
+  if (!/^https?:\/\//i.test(url)) return { ok: false, error: 'That is not a valid link.' };
+  if (!dir) return { ok: false, error: 'No download folder is set.' };
+  try {
+    if (!fs.statSync(dir).isDirectory()) return { ok: false, error: 'The download folder is not a folder.' };
+  } catch (e) {
+    return { ok: false, error: 'The download folder is no longer there — pick it again in Settings.' };
+  }
+  const t = findTools();
+  if (!t.ytdlp) return { ok: false, error: 'yt-dlp is not installed. Install it with:  winget install yt-dlp.yt-dlp' };
+  courseRoots.add(path.resolve(dir));
+
+  const args = [
+    '--no-update', '--no-playlist', '--newline', '--progress', '--no-simulate',
+    // Highest resolution first, then framerate; h264/AAC only breaks ties, so a
+    // 4K VP9 still wins over a 1080p h264 while 1080p stays hardware-decodable.
+    '-f', 'bv*+ba/b',
+    '-S', 'res,fps,vcodec:h264,acodec:m4a',
+    '--merge-output-format', 'mp4',
+    '--write-thumbnail', '--convert-thumbnails', 'jpg',
+    '--write-subs', '--write-auto-subs',
+    // A narrow language list on purpose: asking for "en.*" pulls dozens of
+    // machine translations at once and YouTube answers with HTTP 429.
+    '--sub-langs', langs.join(','),
+    '--sub-format', 'json3',
+    '--write-info-json',
+    '-o', path.join(dir, '%(title).80B [%(id)s]', 'video.%(ext)s'),
+    '--print', 'after_move:QLFINAL %(filepath)s',
+    '--progress-template', 'download:QLPROG %(progress._percent_str)s|%(progress._speed_str)s|%(progress._eta_str)s',
+    url
+  ];
+
+  return await new Promise((resolve) => {
+    let child;
+    try { child = spawn(t.ytdlp, args, { windowsHide: true }); }
+    catch (e) { return resolve({ ok: false, error: 'Could not start yt-dlp: ' + (e.message || e) }); }
+    dlJobs.set(jobId, child);
+
+    let finalPath = null, stderr = '', tail = '', settled = false;
+    const send = (payload) => {
+      if (!event.sender.isDestroyed()) event.sender.send('dl-progress', Object.assign({ jobId }, payload));
+    };
+
+    const handleLine = (line) => {
+      const s = line.trim();
+      if (!s) return;
+      if (s.startsWith('QLFINAL ')) { finalPath = s.slice(8).trim(); return; }
+      if (s.startsWith('QLPROG ')) {
+        const [pct, speed, eta] = s.slice(7).split('|');
+        send({ stage: 'download', pct: parseFloat(String(pct).replace('%', '')) || 0, speed: (speed || '').trim(), eta: (eta || '').trim() });
+        return;
+      }
+      if (/\[Merger\]|\[VideoConvertor\]/.test(s)) send({ stage: 'merging' });
+      else if (/Downloading subtitles|Writing video subtitles/.test(s)) send({ stage: 'subtitles' });
+    };
+
+    child.stdout.on('data', (d) => {
+      tail += d.toString();
+      const lines = tail.split(/\r?\n/);
+      tail = lines.pop();
+      lines.forEach(handleLine);
+    });
+    child.stderr.on('data', (d) => { stderr += d.toString(); });
+
+    child.on('error', (e) => {
+      if (settled) return; settled = true;
+      dlJobs.delete(jobId);
+      resolve({ ok: false, error: 'Could not run yt-dlp: ' + (e.message || e) });
+    });
+
+    child.on('close', (code, signal) => {
+      if (settled) return; settled = true;
+      dlJobs.delete(jobId);
+      if (tail) handleLine(tail);
+
+      if (signal || code === null) return resolve({ ok: false, canceled: true, error: 'Download cancelled.' });
+      if (code !== 0 || !finalPath) {
+        // yt-dlp's own ERROR lines say far more than an exit code does.
+        const errLine = (stderr.split(/\r?\n/).filter(l => /ERROR/i.test(l)).pop() || '').replace(/^ERROR:\s*/i, '').trim();
+        return resolve({ ok: false, error: errLine || ('yt-dlp failed (exit ' + code + ').') });
+      }
+
+      const folder = path.dirname(finalPath);
+      let info = {};
+      const infoFile = path.join(folder, 'video.info.json');
+      try { info = JSON.parse(fs.readFileSync(infoFile, 'utf8')); } catch (e) {}
+
+      let cues = [], subLang = null;
+      const picked = pickSubs(folder, langs);
+      if (picked) {
+        try { cues = parseJson3(picked.file); subLang = picked.lang; }
+        catch (e) { cues = []; }
+      }
+
+      resolve({
+        ok: true,
+        folder,
+        path: finalPath,
+        thumb: findByExt(folder, ['.jpg', '.jpeg', '.png', '.webp']),
+        title: info.title || null,
+        duration: Math.round(info.duration || 0) || null,
+        uploader: info.uploader || info.channel || null,
+        videoId: info.id || null,
+        cues,
+        subLang,
+        // Auto-generated captions are worth flagging: they carry the
+        // transcription errors that later confuse a summary or a quiz.
+        subAuto: !!(picked && info.automatic_captions && info.automatic_captions[subLang] &&
+                    !(info.subtitles && info.subtitles[subLang]))
+      });
+    });
+  });
+});
+
+ipcMain.handle('dl-cancel', async (event, jobId) => {
+  const child = dlJobs.get(String(jobId));
+  if (!child) return { ok: false };
+  try { child.kill(); } catch (e) {}
+  dlJobs.delete(String(jobId));
+  return { ok: true };
+});
+
+// Deletes one downloaded video's folder. Refuses anything outside a folder the
+// user actually chose, so a corrupted path can never take out a wider tree.
+ipcMain.handle('dl-remove', async (event, folder) => {
+  const target = String(folder || '');
+  if (!target || !isInsideRoot(target)) return { ok: false, error: 'Refusing to delete outside the library folder.' };
+  try {
+    if (!fs.statSync(target).isDirectory()) return { ok: false, error: 'Not a folder.' };
+    fs.rmSync(target, { recursive: true, force: true });
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, error: String(e.message || e) };
+  }
+});
+
+// Re-reads subtitles for an already-downloaded video, so a transcript can be
+// recovered without downloading the video a second time.
+ipcMain.handle('dl-subs', async (event, opts) => {
+  const o = opts || {};
+  const folder = String(o.folder || '');
+  const langs = Array.isArray(o.langs) && o.langs.length ? o.langs : ['en', 'de', 'vi'];
+  if (!folder || !isInsideRoot(folder)) return { ok: false, error: 'That folder is outside the library.' };
+  const picked = pickSubs(folder, langs);
+  if (!picked) return { ok: false, error: 'No subtitle file was saved with this video.' };
+  try {
+    return { ok: true, cues: parseJson3(picked.file), lang: picked.lang };
+  } catch (e) {
+    return { ok: false, error: 'The subtitle file could not be read.' };
+  }
 });
 
 /* ------------------------------------------------------------------ *

@@ -423,6 +423,52 @@
   .subpanel{display:none;}
   .subpanel.active{display:block;}
 
+  /* ---- Theater mode ----
+     The stage is pinned over the viewport with a class rather than being moved
+     in the DOM: a <video> that gets re-parented drops its buffer and restarts,
+     and every listener on it would have to be rebound. Nothing moves, so
+     playback, notes and shortcuts all carry straight on. */
+  .stage-wrap{position:relative;}
+  .theater-btn{
+    position:absolute; right:10px; bottom:10px; z-index:3;
+    background:rgba(0,0,0,0.62); border:1px solid rgba(255,255,255,0.22); color:#fff;
+    font-family:var(--font-display); font-size:10.5px; letter-spacing:0.05em;
+    padding:5px 11px; border-radius:var(--radius-s); cursor:pointer; opacity:0; transition:opacity .18s;
+  }
+  .stage-wrap:hover .theater-btn, .course-stage:hover .theater-btn,
+  .theater-btn:focus-visible{opacity:1;}
+  .theater-btn:hover{background:rgba(0,0,0,0.85); border-color:var(--gold);}
+  body.theater-on{overflow:hidden;}
+  .theater-veil{position:fixed; inset:0; background:#000; z-index:70; display:none;}
+  body.theater-on .theater-veil{display:block;}
+  .in-theater{
+    position:fixed !important; inset:0 !important; z-index:71 !important;
+    margin:0 !important; border-radius:0 !important; border:0 !important;
+    background:#000 !important; display:flex !important;
+    align-items:center !important; justify-content:center !important;
+  }
+  .in-theater video, .in-theater .player-wrap{
+    width:100% !important; height:100% !important; max-height:100vh !important;
+    aspect-ratio:auto !important; border-radius:0 !important; border:0 !important; margin:0 !important;
+  }
+  .in-theater .theater-btn{opacity:1; right:18px; bottom:18px;}
+  .theater-hint{
+    position:fixed; top:16px; left:50%; transform:translateX(-50%); z-index:72;
+    background:rgba(0,0,0,0.7); color:#fff; font-family:var(--font-mono); font-size:11px;
+    padding:6px 13px; border-radius:var(--radius-s); pointer-events:none;
+    opacity:0; transition:opacity .3s; display:none;
+  }
+  body.theater-on .theater-hint{display:block;}
+  body.theater-on .theater-hint.show{opacity:1;}
+
+  /* ---- Download progress on a library card ---- */
+  .vid-dl{margin-top:8px;}
+  .vid-dl-bar{height:5px; border-radius:3px; background:var(--surface-3); overflow:hidden;}
+  .vid-dl-bar i{display:block; height:100%; width:0%; background:linear-gradient(90deg,var(--teal),var(--gold)); transition:width .3s;}
+  .vid-dl-txt{font-family:var(--font-mono); font-size:10px; color:var(--text-faint); margin-top:4px; display:flex; justify-content:space-between; gap:8px;}
+  .vid-badge-local{background:var(--teal); color:#04201c; font-family:var(--font-display);
+    font-size:9px; letter-spacing:0.05em; padding:2px 6px; border-radius:3px;}
+
   .panel-box{background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-l); padding:20px;}
   .summary-text{font-size:14px; line-height:1.65; color:var(--text-dim); margin:0 0 16px;}
   .keypoints{list-style:none; padding:0; margin:0; display:flex; flex-direction:column; gap:9px;}
@@ -1578,9 +1624,12 @@
         <span class="vid-goal" id="pvGoal"></span>
       </div>
 
-      <div class="learn-split">
+      <div class="learn-split" id="learnSplit">
         <div class="learn-left">
-          <div class="player-wrap" id="playerWrap"><div id="ytplayer"></div></div>
+          <div class="stage-wrap" id="learnStage">
+            <div class="player-wrap" id="playerWrap"><div id="ytplayer"></div></div>
+            <button class="theater-btn" id="learnTheater" title="Theater mode (T)">Theater</button>
+          </div>
           <div class="watch-row">
             <span class="watch-text" id="pvPos">0:00</span>
             <div class="watch-track"><i id="pvFill" style="width:0%"></i></div>
@@ -1592,11 +1641,28 @@
         <div class="learn-right">
           <div class="subtabs" id="subtabs">
             <button class="subtab active" data-sub="quiz">Quiz</button>
+            <button class="subtab" data-sub="notes">Notes</button>
             <button class="subtab" data-sub="summary">Summary</button>
             <button class="subtab" data-sub="transcript">Transcript</button>
             <button class="subtab" data-sub="chat">Chat</button>
           </div>
           <div class="subpanel active" id="sub-quiz"><div class="panel-box" id="quizBox"></div></div>
+          <div class="subpanel" id="sub-notes">
+            <div class="panel-box">
+              <div class="course-notes-head">
+                <span>Notes</span>
+                <span class="course-notes-tools">
+                  <button class="btn-ghost-sm" id="lnNoteStamp" title="Insert the current timestamp">+ Timestamp</button>
+                  <button class="btn-ghost-sm" id="lnNoteShot" title="Capture the current frame">Capture frame</button>
+                  <button class="btn-ghost-sm" id="lnNoteUpload">Add image</button>
+                  <input type="file" id="lnNoteFile" accept="image/*" multiple style="display:none">
+                  <span class="note-saved" id="lnNoteSaved"></span>
+                </span>
+              </div>
+              <textarea id="lnNoteText" class="note-area" placeholder="Type as you watch — saved automatically. Paste an image here to attach it."></textarea>
+              <div class="note-shots" id="lnNoteShots"></div>
+            </div>
+          </div>
           <div class="subpanel" id="sub-summary"><div class="panel-box" id="summaryBox"></div></div>
           <div class="subpanel" id="sub-transcript"><div class="panel-box" id="transcriptBox"></div></div>
           <div class="subpanel" id="sub-chat"><div class="panel-box" id="chatBox"></div></div>
@@ -1676,10 +1742,11 @@
       <div class="course-layout">
         <aside class="course-side" id="courseTree"></aside>
         <div class="course-main">
-          <div class="course-stage">
+          <div class="course-stage" id="courseStage">
             <video id="courseVideo" controls preload="metadata" crossorigin="anonymous"></video>
             <div class="course-empty" id="courseStageEmpty">Pick a video on the left to start watching.</div>
             <div class="seek-badge" id="seekBadge"></div>
+            <button class="theater-btn" id="courseTheater" title="Theater mode (T)">Theater</button>
           </div>
           <div class="course-now" id="courseNow"></div>
           <div class="course-keys">&larr; &rarr; jump 5s &middot; Shift+&larr;/&rarr; or J/L jump 10s &middot; Space or K play/pause &middot; keys pause while you type in Notes</div>
@@ -1751,6 +1818,9 @@
   <div class="srs-bottom" id="srsBottom"></div>
 </div>
 <div class="shot-veil" id="shotVeil"><img id="shotBig" alt=""></div>
+<div class="theater-veil" id="theaterVeil"></div>
+<div class="theater-hint" id="theaterHint">Esc or T to leave theater mode</div>
+
 <div class="toast-stack" id="toastStack"></div>
 <canvas id="burst"></canvas>
 <div class="modal-veil" id="modalVeil"><div class="modal" id="modalBody"></div></div>
@@ -2012,6 +2082,24 @@ let aiCfg = (function(){
 })();
 function saveAiCfg(){ try{ localStorage.setItem(AI_CFG_STORE, JSON.stringify(aiCfg)); }catch(e){} }
 const aiIsLocal = ()=> aiCfg.provider === 'ollama';
+
+/* ---------- Video library (device-local) ----------
+ * Where downloaded videos are kept. A path that means something on this PC
+ * means nothing on the phone, so this stays out of the synced blob for the
+ * same reason the Ollama URL does. Subtitle languages live here too: they
+ * are asked for by name, and a narrow list is what keeps YouTube from
+ * answering a caption request with HTTP 429. */
+const VIDLIB_STORE = 'questline_vidlib_v1';
+function defaultVidLib(){ return { folder:null, langs:['en','de','vi'] }; }
+let vidLib = (function(){
+  try{
+    const stored = JSON.parse(localStorage.getItem(VIDLIB_STORE));
+    if(stored) return Object.assign(defaultVidLib(), stored);
+  }catch(e){}
+  return defaultVidLib();
+})();
+function saveVidLib(){ try{ localStorage.setItem(VIDLIB_STORE, JSON.stringify(vidLib)); }catch(e){} }
+const dlAvailable = ()=> !!(window.vidlib && window.vidlib.start);
 /* Everything the provider layer needs for one call, in one place. */
 function aiArgs(extra){
   aiLastRequestAt = Date.now();
@@ -2315,6 +2403,13 @@ function migrate(s){
     if(!Array.isArray(v.cues)) v.cues = [];
     if(!Array.isArray(v.keyPoints)) v.keyPoints = [];
     if(!Array.isArray(v.chat)) v.chat = [];
+    // Downloaded copy: absolute paths, so they only resolve on the PC that
+    // fetched them — the same trade-off course roots already make.
+    if(v.localPath === undefined) v.localPath = null;
+    if(v.folder === undefined) v.folder = null;
+    if(v.thumbPath === undefined) v.thumbPath = null;
+    if(typeof v.note !== 'string') v.note = '';
+    if(!Array.isArray(v.shots)) v.shots = [];
   });
   if(!s.ai) s.ai = { model:'', count:8 };
   if(s.ai.apiKey !== undefined){
@@ -3355,22 +3450,152 @@ function renderLibrary(){
     else if(pct>0) badges.push('<span class="vbadge">'+pct+'%</span>');
     if(v.questions.length) badges.push('<span class="vbadge q">'+v.questions.length+' Q</span>');
     if(v.quizBest!=null) badges.push('<span class="vbadge ok">'+v.quizBest+'/'+v.questions.length+'</span>');
+    if(isLocalVideo(v)) badges.push('<span class="vid-badge-local">offline</span>');
+
+    // A local poster beats the remote one — it still shows with no connection.
+    const thumbSrc = (v.thumbPath && dlAvailable()) ? mediaUrl(v.thumbPath) : (v.thumb || '');
+    const job = dlJobsByVideo[v.id];
+
+    let dlRow = '';
+    if(job){
+      dlRow = '<div class="vid-dl">'+
+        '<div class="vid-dl-bar"><i style="width:'+(job.pct||0)+'%"></i></div>'+
+        '<div class="vid-dl-txt"><span>'+esc(job.label||'Starting…')+'</span>'+
+        '<span>'+esc(job.right||'')+'</span></div></div>';
+    }
+
+    const dlBtn = dlAvailable() && !job
+      ? (isLocalVideo(v)
+          ? '<button data-action="deldl" title="Delete the downloaded file">'+icon('trash')+'</button>'
+          : '<button data-action="dl" title="Download for offline playback + subtitles">&darr;</button>')
+      : (job ? '<button data-action="canceldl" title="Cancel download">&times;</button>' : '');
+
     return '<div class="vid-card" data-id="'+v.id+'">'+
       '<div class="vid-thumb">'+
-        (v.thumb?'<img src="'+esc(v.thumb)+'" alt="" loading="lazy">':'')+
+        (thumbSrc?'<img src="'+esc(thumbSrc)+'" alt="" loading="lazy">':'')+
         '<div class="vid-badges">'+badges.join('')+'</div>'+
         '<div class="vprog"><i style="width:'+pct+'%"></i></div>'+
       '</div>'+
       '<div class="vid-body">'+
         '<div class="vid-title">'+esc(v.title)+'</div>'+
         '<div class="vid-author">'+esc(v.author||'')+(v.duration?' · '+fmtTime(v.duration):'')+'</div>'+
+        dlRow+
         '<div class="vid-foot">'+
           (g?'<span class="vid-goal"><i style="background:'+g.color+'"></i>'+esc(g.name)+'</span>':'<span></span>')+
-          '<span class="vid-actions"><button data-action="delvid" title="Remove">'+icon('trash')+'</button></span>'+
+          '<span class="vid-actions">'+dlBtn+
+            '<button data-action="delvid" title="Remove">'+icon('trash')+'</button></span>'+
         '</div>'+
       '</div>'+
     '</div>';
   }).join('');
+}
+
+/* ---------- Downloading ----------
+ * yt-dlp fetches the video, its poster and its subtitles in one go. Progress
+ * arrives as events from the main process; this map is what the library grid
+ * draws its bars from, keyed by video so several can run at once. */
+const dlJobsByVideo = {};
+
+function dlSetJob(videoId, patch){
+  if(patch === null) delete dlJobsByVideo[videoId];
+  else dlJobsByVideo[videoId] = Object.assign(dlJobsByVideo[videoId] || {}, patch);
+  renderLibrary();
+}
+
+async function ensureLibraryFolder(){
+  if(vidLib.folder){
+    const ok = await window.vidlib.allow(vidLib.folder);
+    if(ok && ok.ok) return vidLib.folder;
+    showToast({title:'Download folder is gone', sub:'Pick a new one.'});
+  }
+  const picked = await window.vidlib.pickFolder();
+  if(!picked || !picked.ok) return null;
+  vidLib.folder = picked.path;
+  saveVidLib();
+  return vidLib.folder;
+}
+
+async function downloadVideo(id){
+  const v = videoById(id); if(!v) return;
+  if(!dlAvailable()){ showToast({title:'Desktop only', sub:'Downloading needs the desktop app.'}); return; }
+  if(dlJobsByVideo[v.id]) return;
+
+  const check = await window.vidlib.check();
+  if(!check || !check.ok){
+    openConfirm({
+      title:'yt-dlp is not installed',
+      body:esc((check && check.error) || 'yt-dlp was not found.')+'<br><br>Questline uses yt-dlp to download videos and their subtitles. '+
+           'Install it once from a terminal, then try again:<br><br><code>winget install yt-dlp.yt-dlp</code>',
+      confirmLabel:'OK', onConfirm:()=>{}
+    });
+    return;
+  }
+  if(check.warn) showToast({title:'Heads up', sub:check.warn});
+
+  const folder = await ensureLibraryFolder();
+  if(!folder) return;
+
+  const jobId = 'dl'+Date.now()+'_'+v.id;
+  dlSetJob(v.id, { jobId, pct:0, label:'Starting…', right:'' });
+
+  try{
+    const r = await window.vidlib.start({ url:'https://www.youtube.com/watch?v='+v.videoId, dir:folder, jobId, langs:vidLib.langs });
+    if(!r || !r.ok){
+      dlSetJob(v.id, null);
+      if(!(r && r.canceled)) showToast({title:'Download failed', sub:(r && r.error) || 'Unknown error.'});
+      return;
+    }
+    v.localPath = r.path;
+    v.folder = r.folder;
+    v.thumbPath = r.thumb || null;
+    if(r.title) v.title = r.title;
+    if(r.uploader && !v.author) v.author = r.uploader;
+    if(r.duration) v.duration = r.duration;
+    // Subtitles come down with the video, so the transcript is simply ready.
+    if(r.cues && r.cues.length){
+      v.cues = r.cues;
+      v.transcriptLang = r.subLang || 'downloaded';
+      v.transcriptAuto = !!r.subAuto;
+      v.transcriptError = null;
+    }
+    dlSetJob(v.id, null);
+    saveState();
+    showToast({
+      title:'Downloaded', sub: v.title.slice(0,48) + (r.cues && r.cues.length ? ' · '+r.cues.length+' transcript lines' : ' · no subtitles found')
+    });
+    if(currentVideo && currentVideo.id === v.id){
+      renderTranscript(); renderQuiz(); renderSummary(); renderChat();
+    }
+  }catch(err){
+    dlSetJob(v.id, null);
+    showToast({title:'Download failed', sub:String(err && err.message || err)});
+  }
+}
+
+async function cancelDownload(id){
+  const job = dlJobsByVideo[id];
+  if(!job) return;
+  await window.vidlib.cancel(job.jobId);
+  dlSetJob(id, null);
+  showToast({title:'Download cancelled'});
+}
+
+function deleteDownload(id){
+  const v = videoById(id); if(!v || !v.folder) return;
+  openConfirm({
+    title:'Delete the downloaded file?',
+    body:'Removes the video, its poster and its subtitles from disk. <b>'+esc(v.title)+'</b> stays in your library '+
+         'along with its notes, transcript and quiz &mdash; only the file goes.',
+    confirmLabel:'Delete file',
+    onConfirm: async ()=>{
+      const r = await window.vidlib.remove(v.folder);
+      if(!r || !r.ok){ showToast({title:'Could not delete', sub:(r&&r.error)||''}); return; }
+      // The video stays playable through the embed, so drop only the paths.
+      v.localPath = null; v.folder = null; v.thumbPath = null;
+      saveState(); renderLibrary();
+      showToast({title:'File deleted', sub:'The video is still in your library.'});
+    }
+  });
 }
 
 /* ---------- Adding ---------- */
@@ -3395,21 +3620,31 @@ async function addVideo(){
     }catch(e){ /* keep the fallback title */ }
   }
 
-  state.videos.unshift({
+  const entry = {
     id:'v'+Date.now(), videoId:vid, title:meta.title, author:meta.author, thumb:meta.thumb,
     goal:document.getElementById('vidGoal').value, duration:0, lastPos:0,
     cues:[], transcriptLang:null, transcriptAuto:false, transcriptError:null,
     summary:'', keyPoints:[], questions:[], quizBest:null, quizAttempts:0, awarded:false,
+    chat:[], localPath:null, folder:null, thumbPath:null, note:'', shots:[],
     addedAt:todayStr()
-  });
+  };
+  state.videos.unshift(entry);
   input.value='';
   btn.disabled = false; btn.textContent = 'Add video';
   renderLibrary(); saveState();
   showToast({title:'Added to library', sub:meta.title});
+
+  // Pasting a link is meant to end with a playable local copy, so the download
+  // starts straight away. It asks once for a folder, and the × cancels it.
+  if(dlAvailable()) downloadVideo(entry.id);
 }
 
 /* ---------- YouTube IFrame player ---------- */
 let ytPlayer = null, ytReady = false, currentVideo = null, progressTimer = null;
+/* 'local' while a downloaded file is playing, 'yt' while the embed is. Every
+   player call below branches on this rather than probing the DOM. */
+let pvMode = null;
+const learnVideoEl = ()=> document.getElementById('learnVideo');
 
 function loadYTApi(){
   if(window.YT && window.YT.Player){ ytReady = true; return; }
@@ -3423,10 +3658,17 @@ window.onYouTubeIframeAPIReady = function(){
   if(currentVideo) mountPlayer(currentVideo);
 };
 
+/* A video the user downloaded plays from disk; anything still only on YouTube
+   keeps the old embed, so a library built before downloads existed still
+   works exactly as it did. */
+const isLocalVideo = (v)=> !!(v && v.localPath && dlAvailable());
+
 function mountPlayer(v){
+  if(isLocalVideo(v)){ mountLocalPlayer(v); return; }
   if(!ytReady || !(window.YT && window.YT.Player)) return;
   const host = document.getElementById('playerWrap');
   host.innerHTML = '<div id="ytplayer"></div>';
+  pvMode = 'yt';
   ytPlayer = new YT.Player('ytplayer', {
     // Play through the no-cookie host so watching a tutorial doesn't leave
     // YouTube tracking cookies in the app's own session.
@@ -3464,18 +3706,55 @@ function mountPlayer(v){
     }
   });
 }
-function captureProgress(v){
-  if(!ytPlayer || !ytPlayer.getCurrentTime) return;
-  try{
-    const t = ytPlayer.getCurrentTime();
-    const d = ytPlayer.getDuration();
-    if(d && Math.round(d) !== v.duration){ v.duration = Math.round(d); }
-    if(typeof t === 'number' && t > 0){
-      // don't let a rewind erase a further-along bookmark
-      if(t > v.lastPos || v.lastPos - t > 30) v.lastPos = Math.floor(t);
-      updateWatchRow(v); saveState();
+/* Plays the downloaded file over qlmedia://, which serves byte ranges so the
+   scrub bar and arrow-key seeking actually work. */
+function mountLocalPlayer(v){
+  const host = document.getElementById('playerWrap');
+  pvMode = 'local';
+  host.innerHTML = '<video id="learnVideo" controls preload="metadata" crossorigin="anonymous"></video>'+
+                   '<div class="seek-badge" id="learnSeek"></div>';
+  const el = learnVideoEl();
+  el.src = mediaUrl(v.localPath);
+  el.addEventListener('loadedmetadata', ()=>{
+    if(isFinite(el.duration) && Math.round(el.duration) !== v.duration){
+      v.duration = Math.round(el.duration); saveState(); renderLibrary();
     }
-  }catch(e){}
+    // Drop back a couple of seconds so you re-hear the sentence you left on.
+    if(v.lastPos > 3 && v.lastPos < el.duration - 2) el.currentTime = v.lastPos - 2;
+    updateWatchRow(v);
+  }, {once:true});
+  el.addEventListener('pause', ()=>captureProgress(v));
+  el.addEventListener('ended', ()=>{
+    v.lastPos = v.duration || v.lastPos;
+    saveState(); renderLibrary(); updateWatchRow(v);
+    showToast({title:'Video finished', sub:'Try the quiz to lock it in.'});
+  });
+  // Clicking the video takes focus off the notes box so the shortcuts work.
+  el.addEventListener('click', ()=>{
+    const ta = document.getElementById('lnNoteText');
+    if(document.activeElement === ta) ta.blur();
+  });
+  el.play().catch(()=>{});
+  startProgressTimer(v);
+}
+
+function captureProgress(v){
+  let t = null, d = null;
+  if(pvMode === 'local'){
+    const el = learnVideoEl();
+    if(!el) return;
+    t = el.currentTime; d = el.duration;
+  }else{
+    if(!ytPlayer || !ytPlayer.getCurrentTime) return;
+    try{ t = ytPlayer.getCurrentTime(); d = ytPlayer.getDuration(); }catch(e){ return; }
+  }
+  if(!isFinite(d)) d = null;
+  if(d && Math.round(d) !== v.duration){ v.duration = Math.round(d); }
+  if(typeof t === 'number' && t > 0){
+    // don't let a rewind erase a further-along bookmark
+    if(t > v.lastPos || v.lastPos - t > 30) v.lastPos = Math.floor(t);
+    updateWatchRow(v); saveState();
+  }
 }
 function startProgressTimer(v){
   clearInterval(progressTimer);
@@ -3485,10 +3764,19 @@ function stopPlayer(){
   clearInterval(progressTimer); progressTimer = null;
   if(ytPlayer && ytPlayer.destroy){ try{ ytPlayer.destroy(); }catch(e){} }
   ytPlayer = null;
+  const el = learnVideoEl();
+  // Drop the source explicitly; leaving it set keeps the file handle open.
+  if(el){ try{ el.pause(); el.removeAttribute('src'); el.load(); }catch(e){} }
+  pvMode = null;
   const host = document.getElementById('playerWrap');
   if(host) host.innerHTML = '<div id="ytplayer"></div>';
 }
 function seekTo(sec){
+  if(pvMode === 'local'){
+    const el = learnVideoEl();
+    if(el){ el.currentTime = sec; el.play().catch(()=>{}); }
+    return;
+  }
   if(ytPlayer && ytPlayer.seekTo){ ytPlayer.seekTo(sec, true); ytPlayer.playVideo(); }
 }
 function updateWatchRow(v){
@@ -3511,13 +3799,20 @@ function openVideo(id){
   document.getElementById('pvGoal').innerHTML = g ? '<i style="background:'+g.color+'"></i>'+esc(g.name) : '';
   updateWatchRow(v);
   setSubTab('quiz');
-  renderQuiz(); renderSummary(); renderTranscript(); renderChat();
-  loadYTApi();
-  if(ytReady) mountPlayer(v);
+  // Get the video going before the side panels render: a panel that throws
+  // must never be able to stop playback from starting.
+  if(isLocalVideo(v)){
+    mountLocalPlayer(v);          // nothing to wait for, the file is on disk
+  }else{
+    loadYTApi();
+    if(ytReady) mountPlayer(v);
+  }
+  renderQuiz(); renderSummary(); renderTranscript(); renderChat(); renderLearnNotes();
   window.scrollTo({top:0, behavior:'smooth'});
 }
 function closeVideo(){
   if(currentVideo) captureProgress(currentVideo);
+  if(theaterOn) exitTheater();
   stopPlayer();
   currentVideo = null;
   document.getElementById('learnPlayer').style.display = 'none';
@@ -3527,6 +3822,88 @@ function closeVideo(){
 function setSubTab(name){
   document.querySelectorAll('.subtab').forEach(t=>t.classList.toggle('active', t.dataset.sub===name));
   document.querySelectorAll('.subpanel').forEach(p=>p.classList.toggle('active', p.id==='sub-'+name));
+}
+
+/* ---------- Theater mode (Learn and Courses) ----------
+ * Whichever stage is on screen gets pinned over the viewport by class. The
+ * element never moves in the DOM, so the video keeps playing and every
+ * listener, note binding and shortcut stays attached. */
+let theaterOn = false, theaterEl = null, theaterHintTimer = null;
+
+function theaterTarget(){
+  if(state.activeTab === 'learn' && currentVideo) return document.getElementById('learnStage');
+  if(state.activeTab === 'courses' && activeCourseId && activeItemKey) return document.getElementById('courseStage');
+  return null;
+}
+function enterTheater(){
+  if(theaterOn) return;
+  const el = theaterTarget();
+  if(!el){ showToast({title:'Nothing playing', sub:'Open a video first.'}); return; }
+  theaterEl = el;
+  el.classList.add('in-theater');
+  document.body.classList.add('theater-on');
+  theaterOn = true;
+  const h = document.getElementById('theaterHint');
+  h.classList.add('show');
+  clearTimeout(theaterHintTimer);
+  theaterHintTimer = setTimeout(()=>h.classList.remove('show'), 2200);
+}
+function exitTheater(){
+  if(!theaterOn) return;
+  if(theaterEl) theaterEl.classList.remove('in-theater');
+  document.body.classList.remove('theater-on');
+  document.getElementById('theaterHint').classList.remove('show');
+  theaterEl = null; theaterOn = false;
+}
+function toggleTheater(){ theaterOn ? exitTheater() : enterTheater(); }
+
+document.getElementById('learnTheater').addEventListener('click', toggleTheater);
+document.getElementById('courseTheater').addEventListener('click', toggleTheater);
+document.getElementById('theaterVeil').addEventListener('click', exitTheater);
+
+/* Keyboard control for a downloaded video in Learn — the same set the course
+ * player uses, and it stands down the same way while you are typing a note. */
+document.addEventListener('keydown', e=>{
+  if(e.ctrlKey || e.altKey || e.metaKey) return;
+  const t = e.target;
+  const typing = t && (t.tagName==='TEXTAREA' || t.tagName==='INPUT' || t.tagName==='SELECT' || t.isContentEditable);
+
+  if(e.key==='Escape' && theaterOn){ e.preventDefault(); exitTheater(); return; }
+  if(document.getElementById('setVeil').classList.contains('open')) return;
+  if(document.getElementById('modalVeil').classList.contains('open')) return;
+  if(typing) return;
+
+  if((e.key==='t' || e.key==='T') && theaterTarget()){ e.preventDefault(); toggleTheater(); return; }
+
+  if(state.activeTab !== 'learn' || pvMode !== 'local') return;
+  const v = learnVideoEl();
+  if(!v || !v.src) return;
+  const jump = (d)=>{
+    const dur = isFinite(v.duration) ? v.duration : 0;
+    v.currentTime = Math.max(0, Math.min(dur, v.currentTime + d));
+    flashLearnSeek((d>0?'▶ +':'◀ ')+Math.abs(d)+'s');
+  };
+  switch(e.key){
+    case 'ArrowLeft':  e.preventDefault(); jump(e.shiftKey ? -10 : -5); break;
+    case 'ArrowRight': e.preventDefault(); jump(e.shiftKey ?  10 :  5); break;
+    case 'j': case 'J': e.preventDefault(); jump(-10); break;
+    case 'l': case 'L': e.preventDefault(); jump(10); break;
+    case 'k': case 'K': case ' ':
+      e.preventDefault();
+      if(v.paused){ v.play().catch(()=>{}); flashLearnSeek('▶'); } else { v.pause(); flashLearnSeek('‖'); }
+      break;
+    case 'ArrowUp':   e.preventDefault(); v.volume = Math.min(1, v.volume+0.1); flashLearnSeek('vol '+Math.round(v.volume*100)+'%'); break;
+    case 'ArrowDown': e.preventDefault(); v.volume = Math.max(0, v.volume-0.1); flashLearnSeek('vol '+Math.round(v.volume*100)+'%'); break;
+    default: return;
+  }
+});
+let learnSeekTimer = null;
+function flashLearnSeek(text){
+  const b = document.getElementById('learnSeek');
+  if(!b) return;
+  b.textContent = text; b.classList.add('show');
+  clearTimeout(learnSeekTimer);
+  learnSeekTimer = setTimeout(()=>b.classList.remove('show'), 600);
 }
 
 /* ---------- Transcript ---------- */
@@ -3545,9 +3922,11 @@ function renderTranscript(){
       '<div class="tr-cue" data-t="'+c.t+'"><span class="tr-time">'+fmtTime(c.t)+'</span><span class="tr-text">'+esc(c.text)+'</span></div>'
     ).join('')+'</div>';
   } else if(v.transcriptError){
-    body = '<div class="empty-row" style="color:var(--danger)">'+esc(v.transcriptError)+' If this keeps happening, use "Paste transcript" above instead.</div>';
+    body = '<div class="empty-row" style="color:var(--danger)">'+esc(v.transcriptError)+
+      (v.folder ? ' Try "Paste transcript" above.' : ' Downloading the video also saves its subtitles — that is the reliable route now.')+'</div>';
   } else {
-    body = '<div class="empty-row">No transcript pulled yet. It powers the summary and the quiz, so grab it first.</div>';
+    body = '<div class="empty-row">No transcript yet. It powers the summary and the quiz, so grab it first.'+
+      (v.folder ? '' : ' Downloading the video pulls the subtitles down with it.')+'</div>';
   }
   box.innerHTML = tools + body;
   const f = document.getElementById('fetchTr'); if(f) f.addEventListener('click', fetchTranscript);
@@ -3564,8 +3943,31 @@ function renderTranscript(){
 }
 async function fetchTranscript(){
   const v = currentVideo; if(!v) return;
-  if(!learnAvailable()){ showToast({title:'Not available here', sub:'Open the desktop app, or set up sync on this device.'}); return; }
   const box = document.getElementById('transcriptBox');
+
+  /* A downloaded video already has its subtitles sitting next to it — yt-dlp
+     fetched them through the same player API it used for the video, which is
+     the only route YouTube still answers. Read those instead of scraping. */
+  if(v.folder && dlAvailable()){
+    box.innerHTML = '<div class="gen-box"><div class="spinner"></div>Reading the saved subtitles…</div>';
+    try{
+      const r = await window.vidlib.subs({ folder:v.folder, langs:vidLib.langs });
+      if(r && r.ok && r.cues.length){
+        v.cues = r.cues; v.transcriptLang = r.lang; v.transcriptError = null;
+        saveState();
+        showToast({title:'Transcript ready', sub:r.cues.length+' lines'});
+      }else{
+        v.transcriptError = (r && r.error) || 'No subtitles were saved with this video.';
+        saveState();
+      }
+    }catch(err){
+      v.transcriptError = String(err.message||err); saveState();
+    }
+    renderTranscript(); renderQuiz(); renderSummary(); renderChat(); renderLibrary();
+    return;
+  }
+
+  if(!learnAvailable()){ showToast({title:'Not available here', sub:'Open the desktop app, or set up sync on this device.'}); return; }
   box.innerHTML = '<div class="gen-box"><div class="spinner"></div>Reading the captions from YouTube…</div>';
   try{
     const r = await api.ytTranscript(v.videoId);
@@ -3670,6 +4072,9 @@ const CHAT_TRANSCRIPT_LIMIT = 20000;
 
 function renderChat(){
   const v = currentVideo; if(!v) return;
+  // A video added since the last reload has not been through migrate() yet.
+  if(!Array.isArray(v.chat)) v.chat = [];
+  if(!Array.isArray(v.cues)) v.cues = [];
   const box = document.getElementById('chatBox');
   if(!v.cues.length){
     box.innerHTML = '<div class="chat-empty">Chat needs the transcript first — grab it from the Transcript tab, then come back here.</div>';
@@ -4145,17 +4550,42 @@ document.getElementById('subtabs').addEventListener('click', e=>{
 document.getElementById('vidGrid').addEventListener('click', e=>{
   const card = e.target.closest('.vid-card'); if(!card) return;
   const id = card.dataset.id;
+  if(e.target.closest('[data-action="dl"]')){ e.stopPropagation(); downloadVideo(id); return; }
+  if(e.target.closest('[data-action="canceldl"]')){ e.stopPropagation(); cancelDownload(id); return; }
+  if(e.target.closest('[data-action="deldl"]')){ e.stopPropagation(); deleteDownload(id); return; }
   if(e.target.closest('[data-action="delvid"]')){
     const i = state.videos.findIndex(v=>v.id===id);
     if(i>-1){
       const removed = state.videos[i];
+      // Removing the entry would otherwise strand the downloaded file with no
+      // way back to it, so clear it out too.
+      if(removed.folder && dlAvailable()){
+        window.vidlib.remove(removed.folder).catch(()=>{});
+      }
       state.videos.splice(i,1); renderLibrary(); saveState();
-      showToast({title:'Removed', sub:removed.title, undo:()=>{ state.videos.splice(i,0,removed); saveState(); renderLibrary(); }});
+      showToast({title:'Removed', sub:removed.title});
     }
     return;
   }
   openVideo(id);
 });
+
+/* Live progress from yt-dlp. The percentages belong to whichever job the main
+   process reports, so several downloads can run without crossing wires. */
+if(dlAvailable()){
+  window.vidlib.onProgress(d=>{
+    const entry = Object.entries(dlJobsByVideo).find(([, j])=>j.jobId === d.jobId);
+    if(!entry) return;
+    const [videoId] = entry;
+    if(d.stage === 'download'){
+      dlSetJob(videoId, { pct:d.pct||0, label:'Downloading '+(d.pct||0).toFixed(0)+'%', right:[d.speed, d.eta && ('ETA '+d.eta)].filter(Boolean).join(' · ') });
+    }else if(d.stage === 'merging'){
+      dlSetJob(videoId, { pct:99, label:'Merging video and audio…', right:'' });
+    }else if(d.stage === 'subtitles'){
+      dlSetJob(videoId, { label:'Fetching subtitles…' });
+    }
+  });
+}
 
 /* ============ RENDER: DISCIPLINES + OBJECTIVES ============ */
 function objectivesBlockHtml(g){
@@ -7732,7 +8162,7 @@ async function shotDelete(id){
 /* ---------- Library ---------- */
 let activeCourseId = null;
 let activeItemKey = null;
-let shotUrls = [];
+let shotUrls = { courses:[], learn:[] };
 
 function renderCourseLibrary(){
   const list = state.courses || [];
@@ -7946,6 +8376,26 @@ function captureCourseProgress(){
 
 /* ---------- Notes ---------- */
 let noteTimer = null;
+
+/* Both players store notes in the same shape — a {note, shots[]} owner plus a
+ * <video> to stamp times from — so one set of functions serves the Courses
+ * tree and the Learn library instead of two parallel copies. The only thing
+ * that differs is which object and which elements are in play. */
+function noteCtx(){
+  if(state.activeTab === 'courses' && activeCourseId && activeItemKey){
+    const c = courseById(activeCourseId); if(!c) return null;
+    return { key:'courses', obj:courseItem(c, activeItemKey), video:document.getElementById('courseVideo'),
+             ta:document.getElementById('noteText'), host:document.getElementById('noteShots'),
+             saved:document.getElementById('noteSaved') };
+  }
+  if(state.activeTab === 'learn' && currentVideo){
+    return { key:'learn', obj:currentVideo, video:(pvMode==='local' ? learnVideoEl() : null),
+             ta:document.getElementById('lnNoteText'), host:document.getElementById('lnNoteShots'),
+             saved:document.getElementById('lnNoteSaved') };
+  }
+  return null;
+}
+
 function loadNoteFor(key){
   const c = courseById(activeCourseId); if(!c) return;
   const it = courseItem(c, key);
@@ -7953,21 +8403,26 @@ function loadNoteFor(key){
   document.getElementById('noteSaved').textContent = '';
   renderShots();
 }
+function renderLearnNotes(){
+  const v = currentVideo; if(!v) return;
+  document.getElementById('lnNoteText').value = v.note || '';
+  document.getElementById('lnNoteSaved').textContent = '';
+  renderShots();
+}
 function saveNoteSoon(){
-  const c = courseById(activeCourseId);
-  if(!c || !activeItemKey) return;
+  const ctx = noteCtx();
+  if(!ctx) return;
   clearTimeout(noteTimer);
   noteTimer = setTimeout(()=>{
-    const it = courseItem(c, activeItemKey);
-    it.note = document.getElementById('noteText').value;
+    ctx.obj.note = ctx.ta.value;
     saveState();
-    const s = document.getElementById('noteSaved');
-    s.textContent = 'saved';
-    setTimeout(()=>{ if(s.textContent==='saved') s.textContent=''; }, 1600);
+    ctx.saved.textContent = 'saved';
+    setTimeout(()=>{ if(ctx.saved.textContent==='saved') ctx.saved.textContent=''; }, 1600);
   }, 600);
 }
 function insertAtCursor(text){
-  const ta = document.getElementById('noteText');
+  const ctx = noteCtx(); if(!ctx) return;
+  const ta = ctx.ta;
   const a = ta.selectionStart, b = ta.selectionEnd;
   ta.value = ta.value.slice(0,a) + text + ta.value.slice(b);
   ta.selectionStart = ta.selectionEnd = a + text.length;
@@ -7976,9 +8431,9 @@ function insertAtCursor(text){
 }
 
 async function addShotBlob(blob){
-  const c = courseById(activeCourseId);
-  if(!c || !activeItemKey){ showToast({title:'Pick a video first'}); return; }
-  const it = courseItem(c, activeItemKey);
+  const ctx = noteCtx();
+  if(!ctx){ showToast({title:'Pick a video first'}); return; }
+  const it = ctx.obj;
   if(!Array.isArray(it.shots)) it.shots = [];
   const id = 's'+Date.now()+'_'+Math.random().toString(36).slice(2,7);
   try{
@@ -7992,19 +8447,21 @@ async function addShotBlob(blob){
 }
 
 async function renderShots(){
-  const host = document.getElementById('noteShots');
-  shotUrls.forEach(u=>URL.revokeObjectURL(u));
-  shotUrls = [];
+  const ctx = noteCtx();
+  if(!ctx) return;
+  const host = ctx.host;
+  // Object URLs are tracked per tab: revoking the other tab's would leave its
+  // thumbnails broken when you switch back to it.
+  (shotUrls[ctx.key] || []).forEach(u=>URL.revokeObjectURL(u));
+  shotUrls[ctx.key] = [];
   host.innerHTML = '';
-  const c = courseById(activeCourseId);
-  if(!c || !activeItemKey) return;
-  const it = courseItem(c, activeItemKey);
+  const it = ctx.obj;
   const ids = Array.isArray(it.shots) ? it.shots : [];
   for(const id of ids){
     const blob = await shotGet(id);
     if(!blob) continue;
     const url = URL.createObjectURL(blob);
-    shotUrls.push(url);
+    shotUrls[ctx.key].push(url);
     const wrap = document.createElement('div');
     wrap.className = 'note-shot';
     const img = document.createElement('img');
@@ -8029,7 +8486,11 @@ async function renderShots(){
 }
 
 function captureFrame(){
-  const v = document.getElementById('courseVideo');
+  const ctx = noteCtx();
+  const v = ctx && ctx.video;
+  // An embedded YouTube video is an iframe, not a <video> — there is no frame
+  // here to read, and no way to get one without the file.
+  if(ctx && !v){ showToast({title:'Download the video first', sub:'Frames can only be grabbed from a local copy.'}); return; }
   if(!v || !v.videoWidth){ showToast({title:'Nothing to capture yet'}); return; }
   const c = document.createElement('canvas');
   c.width = v.videoWidth; c.height = v.videoHeight;
@@ -8166,6 +8627,33 @@ document.getElementById('noteFile').addEventListener('change', async e=>{
   e.target.value = '';
 });
 document.getElementById('shotVeil').addEventListener('click', ()=>document.getElementById('shotVeil').classList.remove('open'));
+
+/* The same controls on the Learn side. They call the same functions — noteCtx()
+   works out which video is being annotated. */
+document.getElementById('lnNoteText').addEventListener('input', saveNoteSoon);
+document.getElementById('lnNoteText').addEventListener('paste', e=>{
+  const items = (e.clipboardData && e.clipboardData.items) || [];
+  for(const it of items){
+    if(it.type && it.type.startsWith('image/')){
+      const blob = it.getAsFile();
+      if(blob){ e.preventDefault(); addShotBlob(blob); showToast({title:'Image attached'}); }
+      return;
+    }
+  }
+});
+document.getElementById('lnNoteStamp').addEventListener('click', ()=>{
+  const ctx = noteCtx();
+  // Falls back to the tracked watch position when the video is still embedded.
+  const at = (ctx && ctx.video) ? (ctx.video.currentTime||0) : ((currentVideo && currentVideo.lastPos)||0);
+  insertAtCursor('['+fmtTime(at)+'] ');
+});
+document.getElementById('lnNoteShot').addEventListener('click', captureFrame);
+document.getElementById('lnNoteUpload').addEventListener('click', ()=>document.getElementById('lnNoteFile').click());
+document.getElementById('lnNoteFile').addEventListener('change', async e=>{
+  const files = Array.from(e.target.files||[]);
+  for(const f of files){ if(f.type.startsWith('image/')) await addShotBlob(f); }
+  e.target.value = '';
+});
 
 /* ============ APPEARANCE ============ */
 function hexToRgb(hex){
@@ -8408,9 +8896,64 @@ function renderSettings(){
   const tab = activeSettingsTab;
   if(tab==='appearance')      renderAppearanceTab(body);
   else if(tab==='sync')       { body.innerHTML = '<div class="set-panel-title">Sync</div><div id="setHost"></div>'; openSyncSettings(document.getElementById('setHost')); }
-  else if(tab==='learn')      { body.innerHTML = '<div class="set-panel-title">Learn</div><div id="setHost"></div>'; openAiSettings(document.getElementById('setHost')); }
+  else if(tab==='learn')      {
+    body.innerHTML = '<div class="set-panel-title">Learn</div><div id="setVidHost"></div><div id="setHost"></div>';
+    renderVideoLibSettings(document.getElementById('setVidHost'));
+    openAiSettings(document.getElementById('setHost'));
+  }
   else if(tab==='timetable')  { body.innerHTML = '<div class="set-panel-title">Timetable</div><div id="setHost"></div>'; openUntis(document.getElementById('setHost')); }
   else if(tab==='advanced')   renderAdvancedTab(body);
+}
+
+/* Where downloads land, and which subtitle languages to ask YouTube for. Both
+   are device-local: the folder is a path only this PC understands. */
+function renderVideoLibSettings(host){
+  if(!dlAvailable()){
+    host.innerHTML = settingsGroup('vidlib', 'Video downloads',
+      settingsRow('Not available here', 'Downloading videos needs the desktop app.', ''));
+    return;
+  }
+  host.innerHTML = settingsGroup('vidlib', 'Video downloads',
+    settingsRow('Download folder', 'Where downloaded videos, posters and subtitles are kept.',
+      '<span class="set-hex" id="vlFolder" style="max-width:280px; overflow:hidden; text-overflow:ellipsis">'+
+        esc(vidLib.folder || 'Not set')+'</span>'+
+      '<button class="ghost-btn" id="vlPick">Choose…</button>')+
+    settingsRow('Subtitle languages', 'Asked for in this order, first match wins. Keep the list short — asking for many at once gets the caption server to rate-limit you.',
+      '<input type="text" class="fld" id="vlLangs" style="max-width:200px" value="'+esc(vidLib.langs.join(', '))+'">')+
+    settingsRow('yt-dlp', 'Downloads and subtitles both go through yt-dlp. Keep it updated — YouTube changes often.',
+      '<span class="set-hex" id="vlTool">checking…</span>'+
+      '<button class="btn-ghost-sm" id="vlCheck">Re-check</button>')
+  );
+
+  document.getElementById('vlPick').addEventListener('click', async ()=>{
+    const r = await window.vidlib.pickFolder();
+    if(!r || !r.ok) return;
+    vidLib.folder = r.path; saveVidLib();
+    document.getElementById('vlFolder').textContent = r.path;
+    showToast({title:'Download folder set'});
+  });
+
+  const langs = document.getElementById('vlLangs');
+  langs.addEventListener('change', ()=>{
+    const list = langs.value.split(',').map(s=>s.trim().toLowerCase()).filter(Boolean);
+    vidLib.langs = list.length ? list : defaultVidLib().langs;
+    langs.value = vidLib.langs.join(', ');
+    saveVidLib();
+  });
+
+  const showTools = async (refresh)=>{
+    const el = document.getElementById('vlTool');
+    if(!el) return;
+    el.textContent = 'checking…';
+    const c = await window.vidlib.check(refresh);
+    if(!el.isConnected) return;
+    el.textContent = (c && c.ok)
+      ? 'yt-dlp ' + c.ytdlp + (c.ffmpeg ? ' · ffmpeg ok' : ' · ffmpeg MISSING')
+      : 'not installed';
+    el.style.color = (c && c.ok && c.ffmpeg) ? 'var(--teal)' : 'var(--danger)';
+  };
+  document.getElementById('vlCheck').addEventListener('click', ()=>showTools(true));
+  showTools(false);
 }
 
 let apDraft = null;          // staged appearance edits, committed by Apply
@@ -8624,6 +9167,16 @@ applyAppearance();
 renderBgMedia();
 if(window.courses && window.courses.allow){
   (state.courses||[]).forEach(c=>{ if(c.root) window.courses.allow(c.root); });
+}
+// qlmedia:// only serves files under a folder the user chose, and that list is
+// rebuilt from scratch each launch — so re-authorise the download library too,
+// or every downloaded video would 403 until the folder was picked again.
+if(dlAvailable() && vidLib.folder){
+  window.vidlib.allow(vidLib.folder).then(r=>{
+    if(r && !r.ok && state.videos.some(v=>v.localPath)){
+      showToast({title:'Download folder missing', sub:'Downloaded videos will not play until you pick it again in Settings.'});
+    }
+  }).catch(()=>{});
 }
 setTab(state.activeTab || 'overview');
 renderAll();

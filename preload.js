@@ -16,6 +16,26 @@ contextBridge.exposeInMainWorld('courses', {
   reveal: (target) => ipcRenderer.invoke('courses-reveal', target)
 });
 
+// Downloading YouTube videos through yt-dlp so they can be owned locally:
+// check the tooling, pick a library folder, run/cancel a download, and read
+// the subtitles back off disk afterwards.
+contextBridge.exposeInMainWorld('vidlib', {
+  check: (refresh) => ipcRenderer.invoke('dl-check', refresh),
+  pickFolder: () => ipcRenderer.invoke('dl-pick-folder'),
+  allow: (dir) => ipcRenderer.invoke('dl-allow', dir),
+  start: (opts) => ipcRenderer.invoke('dl-start', opts),
+  cancel: (jobId) => ipcRenderer.invoke('dl-cancel', jobId),
+  remove: (folder) => ipcRenderer.invoke('dl-remove', folder),
+  subs: (opts) => ipcRenderer.invoke('dl-subs', opts),
+  // Progress arrives as events rather than a return value, so the renderer
+  // can draw a live bar instead of waiting for the whole download.
+  onProgress: (cb) => {
+    const fn = (_e, data) => { try { cb(data); } catch (err) {} };
+    ipcRenderer.on('dl-progress', fn);
+    return () => ipcRenderer.removeListener('dl-progress', fn);
+  }
+});
+
 contextBridge.exposeInMainWorld('learn', {
   meta: (videoId) => ipcRenderer.invoke('yt-meta', videoId),
   transcript: (videoId) => ipcRenderer.invoke('yt-transcript', videoId),
