@@ -4193,6 +4193,41 @@ function wireGenButton(){
   const a = document.getElementById('goAi'); if(a) a.addEventListener('click', ()=>openAiSettings());
   const g = document.getElementById('goGen'); if(g) g.addEventListener('click', ()=>generateAll(false));
 }
+/* The shape the quiz must come back in.
+ *
+ * This is not documentation — it is handed to the provider, and Ollama turns
+ * it into a decoding grammar so the model cannot emit anything else. Without
+ * it a 3B model answers with prose or a markdown fence far more often than
+ * not, which is what "the model did not return usable JSON" always was. */
+/* The counts are part of the grammar, not just the prompt. Asking a small
+   model for "exactly 8 questions" in prose reliably gets one or two back;
+   pinning minItems/maxItems makes the shortfall impossible. */
+function quizSchema(count){
+  return {
+    type:'object',
+    properties:{
+      summary:{ type:'string' },
+      keyPoints:{ type:'array', items:{ type:'string' }, minItems:4, maxItems:7 },
+      questions:{
+        type:'array', minItems:count, maxItems:count,
+        items:{
+          type:'object',
+          properties:{
+            difficulty:{ type:'string', enum:['easy','medium','hard','expert'] },
+            q:{ type:'string' },
+            options:{ type:'array', items:{ type:'string' }, minItems:4, maxItems:4 },
+            correct:{ type:'integer', minimum:0, maximum:3 },
+            why:{ type:'string' },
+            t:{ type:'integer' }
+          },
+          required:['difficulty','q','options','correct','why','t']
+        }
+      }
+    },
+    required:['summary','keyPoints','questions']
+  };
+}
+
 /* The quiz prompt and its parsing live here rather than in the main process, so
    they run through whichever provider is selected — including a local one. */
 async function aiQuizFromTranscript(v, transcript){
@@ -4214,7 +4249,12 @@ async function aiQuizFromTranscript(v, transcript){
     '- Base everything strictly on the transcript.\n'+
     'Return ONLY the raw JSON object. No markdown fences, no commentary.';
 
-  const res = await api.aiComplete(aiArgs({ prompt, maxTokens: 4000, temperature: 0.4 }));
+  // A constrained answer is longer than an unconstrained one — it cannot stop
+  // early — so give it enough room for `count` full questions.
+  const res = await api.aiComplete(aiArgs({
+    prompt, temperature: 0.4, format: quizSchema(count),
+    maxTokens: Math.min(8000, 1200 + count * 320)
+  }));
   if(!res || !res.ok) return res || { ok:false, error:'No answer' };
   let parsed;
   try{ parsed = aiParseJson(res.text); }
@@ -6510,6 +6550,20 @@ const CARD_TYPES = [
   { id:'production',  name:'Sentence',    hint:'use it in a sentence of your own', needsExample:true }
 ];
 const CEFR = ['A1','A2','B1','B2','C1','C2'];
+/* Same reason as QUIZ_SCHEMA: handed to the provider so a local model is
+   constrained to this shape rather than asked nicely for it. */
+const CARD_FILL_SCHEMA = {
+  type:'object',
+  properties:{
+    translation:{ type:'string' },
+    example:{ type:'string' },
+    exampleTr:{ type:'string' },
+    translationVi:{ type:'string' },
+    cefr:{ type:'string', enum:CEFR },
+    tags:{ type:'array', items:{ type:'string' } }
+  },
+  required:['translation','example','exampleTr','translationVi','cefr','tags']
+};
 const LANGS = [
   { code:'de-DE', name:'German' },   { code:'en-US', name:'English' },
   { code:'fr-FR', name:'French' },   { code:'es-ES', name:'Spanish' },
@@ -7082,7 +7136,7 @@ function openAddWord(noteId){
       '"tags":["2-4 short tags such as part of speech or register"]}\n'+
       'The example must sound like something a person would actually say.';
     try{
-      const res = await api.aiComplete(aiArgs({ prompt, maxTokens: 700 }));
+      const res = await api.aiComplete(aiArgs({ prompt, maxTokens: 700, format: CARD_FILL_SCHEMA }));
       if(!res || !res.ok) throw new Error((res && res.error) || 'AI call failed');
       let t = String(res.text||'').trim().replace(/^```(?:json)?\s*/i,'').replace(/\s*```$/,'');
       const a = t.indexOf('{'), b2 = t.lastIndexOf('}');

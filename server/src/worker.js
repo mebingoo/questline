@@ -376,20 +376,34 @@ async function aiComplete(request) {
   const model = String(opts.model || '').trim() || (isAnthropic ? 'claude-3-5-haiku-latest' : 'gpt-4o-mini');
   const maxTokens = Math.max(256, Math.min(4000, parseInt(opts.maxTokens, 10) || 1500));
   let text = '';
+  // The desktop side asks for JSON-shaped answers with `format`; mirror that
+  // here so the phone gets the same reliability from the cloud providers.
+  const wantsJson = !!opts.format;
   if (isAnthropic) {
     const r = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'x-api-key': key, 'anthropic-version': '2023-06-01' },
-      body: JSON.stringify({ model, max_tokens: maxTokens, messages: [{ role: 'user', content: prompt }] })
+      body: JSON.stringify({
+        model, max_tokens: maxTokens,
+        // No JSON mode on this API, so prefill the opening brace: the reply
+        // continues the object instead of introducing it with prose.
+        messages: wantsJson
+          ? [{ role: 'user', content: prompt }, { role: 'assistant', content: '{' }]
+          : [{ role: 'user', content: prompt }]
+      })
     });
     const j = await r.json();
     if (j.error) return json({ ok: false, error: j.error.message || 'Anthropic error' });
     text = (j.content || []).map(c => c.text || '').join('');
+    if (wantsJson) text = '{' + text;      // the prefill is not echoed back
   } else {
     const r = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key },
-      body: JSON.stringify({ model, max_tokens: maxTokens, messages: [{ role: 'user', content: prompt }] })
+      body: JSON.stringify(Object.assign(
+        { model, max_tokens: maxTokens, messages: [{ role: 'user', content: prompt }] },
+        wantsJson ? { response_format: { type: 'json_object' } } : {}
+      ))
     });
     const j = await r.json();
     if (j.error) return json({ ok: false, error: j.error.message || 'OpenAI error' });

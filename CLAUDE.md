@@ -75,6 +75,16 @@ no account and sends nothing off the machine; Anthropic and OpenAI are there for
 anyone who wants them. Adding a provider means adding one object; nothing that
 calls it needs to change.
 
+**Anything that must come back as JSON passes a `format` schema.** Ollama
+compiles it to a decoding grammar, so the model physically cannot emit
+anything else; OpenAI gets `response_format: json_object` and Anthropic gets a
+`{` prefill. Asking for JSON in the prompt alone is not equivalent — llama3.2
+and qwen2.5:7b both answered with prose or a markdown fence essentially every
+time, which was the whole of "the model did not return usable JSON".
+Put the counts in the schema too (`minItems`/`maxItems`): they are enforced by
+the grammar, whereas "exactly 8 questions" in prose gets one or two back.
+See `quizSchema()` and `CARD_FILL_SCHEMA`.
+
 Prompts live in the renderer, not in `main.js`, so every AI feature works
 through whichever provider is selected. Provider choice, Ollama URL and model
 are device-local (`questline_aicfg_v1`) — an address that means something on

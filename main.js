@@ -1172,19 +1172,23 @@ const AI_PROVIDERS = {
     async complete(o) {
       const base = cleanBase(o.baseUrl);
       const model = String(o.model || '').trim() || 'llama3.2';
-      const r = await httpJSON(base + '/api/generate', {
-        method: 'POST',
-        body: {
-          model,
-          prompt: o.prompt,
-          stream: false,
-          keep_alive: normalizeKeepAlive(o.keepAlive),
-          options: {
-            temperature: o.temperature == null ? 0.7 : o.temperature,
-            num_predict: Math.max(128, Math.min(4096, parseInt(o.maxTokens, 10) || 1200))
-          }
+      const body = {
+        model,
+        prompt: o.prompt,
+        stream: false,
+        keep_alive: normalizeKeepAlive(o.keepAlive),
+        options: {
+          temperature: o.temperature == null ? 0.7 : o.temperature,
+          num_predict: Math.max(128, Math.min(8192, parseInt(o.maxTokens, 10) || 1200))
         }
-      });
+      };
+      /* Constrained decoding. Given a JSON schema, Ollama compiles it to a
+         grammar and the model physically cannot emit anything that doesn't
+         match — which is the difference between a 3B model being useless here
+         and being reliable. Asking politely in the prompt is not equivalent:
+         small models answer with prose or a markdown fence most of the time. */
+      if (o.format) body.format = o.format;
+      const r = await httpJSON(base + '/api/generate', { method: 'POST', body });
       if (r.status === 404) {
         return { ok: false, error: 'Model "' + model + '" is not pulled yet. Run:  ollama pull ' + model };
       }
@@ -1260,14 +1264,22 @@ const AI_PROVIDERS = {
         headers: { 'x-api-key': o.apiKey, 'anthropic-version': '2023-06-01' },
         body: {
           model: String(o.model || '').trim() || 'claude-3-5-haiku-latest',
-          max_tokens: Math.max(128, Math.min(4096, parseInt(o.maxTokens, 10) || 1200)),
-          messages: [{ role: 'user', content: o.prompt }]
+          max_tokens: Math.max(128, Math.min(8192, parseInt(o.maxTokens, 10) || 1200)),
+          messages: [{ role: 'user', content: o.prompt }],
+          // No JSON mode here, so prefill the opening brace instead: the reply
+          // then continues the object rather than introducing it with prose.
+          ...(o.format ? { messages: [
+            { role: 'user', content: o.prompt },
+            { role: 'assistant', content: '{' }
+          ] } : {})
         }
       });
       const j = r.json;
       if (j && j.error) return { ok: false, error: j.error.message || 'Anthropic error' };
       if (r.status !== 200) return { ok: false, error: 'Anthropic HTTP ' + r.status };
-      return { ok: true, text: (j.content || []).map((c) => c.text || '').join('') };
+      const out = (j.content || []).map((c) => c.text || '').join('');
+      // The prefilled "{" is not echoed back in the reply, so restore it.
+      return { ok: true, text: o.format ? '{' + out : out };
     },
     async models() { return { ok: true, models: ['claude-3-5-haiku-latest', 'claude-sonnet-4-5', 'claude-opus-4-1'] }; },
     async health(o) { return o.apiKey ? { ok: true, detail: 'Key present' } : { ok: false, error: 'No API key set.' }; }
@@ -1282,8 +1294,10 @@ const AI_PROVIDERS = {
         headers: { 'Authorization': 'Bearer ' + o.apiKey },
         body: {
           model: String(o.model || '').trim() || 'gpt-4o-mini',
-          max_tokens: Math.max(128, Math.min(4096, parseInt(o.maxTokens, 10) || 1200)),
-          messages: [{ role: 'user', content: o.prompt }]
+          max_tokens: Math.max(128, Math.min(8192, parseInt(o.maxTokens, 10) || 1200)),
+          messages: [{ role: 'user', content: o.prompt }],
+          // OpenAI has its own JSON mode; the schema itself stays in the prompt.
+          ...(o.format ? { response_format: { type: 'json_object' } } : {})
         }
       });
       const j = r.json;
