@@ -1043,6 +1043,15 @@
   .ai-dot{width:8px; height:8px; border-radius:50%; flex:none; display:inline-block;}
   .ai-status-hint{color:var(--text-faint);}
 
+  .chat-list{display:flex; flex-direction:column; gap:12px; max-height:52vh; overflow-y:auto; padding-right:4px; margin-bottom:14px;}
+  .chat-msg{max-width:78%; padding:10px 13px; border-radius:var(--radius-m); font-size:13px; line-height:1.55; white-space:pre-wrap;}
+  .chat-msg.user{align-self:flex-end; background:var(--gold); color:var(--bg-2);}
+  .chat-msg.ai{align-self:flex-start; background:var(--surface-2); border:1px solid var(--border); color:var(--text);}
+  .chat-msg.thinking{color:var(--text-faint); font-family:var(--font-mono); font-size:11px;}
+  .chat-row{display:flex; gap:8px;}
+  .chat-row input{flex:1;}
+  .chat-empty{color:var(--text-faint); font-size:12.5px; padding:20px 0;}
+
   /* ============ JOURNAL ============ */
   .jr-capture{display:flex; gap:8px; margin-bottom:14px;}
   .jr-capture input{flex:1;}
@@ -1585,10 +1594,12 @@
             <button class="subtab active" data-sub="quiz">Quiz</button>
             <button class="subtab" data-sub="summary">Summary</button>
             <button class="subtab" data-sub="transcript">Transcript</button>
+            <button class="subtab" data-sub="chat">Chat</button>
           </div>
           <div class="subpanel active" id="sub-quiz"><div class="panel-box" id="quizBox"></div></div>
           <div class="subpanel" id="sub-summary"><div class="panel-box" id="summaryBox"></div></div>
           <div class="subpanel" id="sub-transcript"><div class="panel-box" id="transcriptBox"></div></div>
+          <div class="subpanel" id="sub-chat"><div class="panel-box" id="chatBox"></div></div>
         </div>
       </div>
     </section>
@@ -2303,6 +2314,7 @@ function migrate(s){
     if(!Array.isArray(v.questions)) v.questions = [];
     if(!Array.isArray(v.cues)) v.cues = [];
     if(!Array.isArray(v.keyPoints)) v.keyPoints = [];
+    if(!Array.isArray(v.chat)) v.chat = [];
   });
   if(!s.ai) s.ai = { model:'', count:8 };
   if(s.ai.apiKey !== undefined){
@@ -3499,7 +3511,7 @@ function openVideo(id){
   document.getElementById('pvGoal').innerHTML = g ? '<i style="background:'+g.color+'"></i>'+esc(g.name) : '';
   updateWatchRow(v);
   setSubTab('quiz');
-  renderQuiz(); renderSummary(); renderTranscript();
+  renderQuiz(); renderSummary(); renderTranscript(); renderChat();
   loadYTApi();
   if(ytReady) mountPlayer(v);
   window.scrollTo({top:0, behavior:'smooth'});
@@ -3570,6 +3582,86 @@ async function fetchTranscript(){
     v.transcriptError = String(err.message||err); saveState();
   }
   renderTranscript(); renderQuiz(); renderSummary(); renderLibrary();
+}
+
+/* ---------- Chat with the video ----------
+ * Reuses the same aiComplete/aiArgs path as the quiz builder and the flash-
+ * card tutor — one prompt in, one answer out, whichever provider is
+ * selected. The model has no memory of its own, so each turn resends the
+ * transcript plus a short window of prior turns as plain text. */
+const CHAT_HISTORY_TURNS = 6;      // how many prior exchanges ride along in the prompt
+const CHAT_TRANSCRIPT_LIMIT = 20000;
+
+function renderChat(){
+  const v = currentVideo; if(!v) return;
+  const box = document.getElementById('chatBox');
+  if(!v.cues.length){
+    box.innerHTML = '<div class="chat-empty">Chat needs the transcript first — grab it from the Transcript tab, then come back here.</div>';
+    return;
+  }
+  box.innerHTML =
+    '<div class="chat-list" id="chatList">'+
+      (v.chat.length ? v.chat.map(chatBubbleHtml).join('') :
+        '<div class="chat-empty">Ask anything about this video — the model only sees the transcript, not the video itself.</div>')+
+    '</div>'+
+    '<div class="chat-row">'+
+      '<input type="text" class="fld" id="chatInput" placeholder="e.g. What does he say about the modifier stack?">'+
+      '<button class="btn-primary" id="chatSend">Send</button>'+
+    '</div>';
+  const list = document.getElementById('chatList');
+  list.scrollTop = list.scrollHeight;
+  document.getElementById('chatSend').addEventListener('click', sendChatMessage);
+  document.getElementById('chatInput').addEventListener('keydown', e=>{
+    if(e.key==='Enter'){ e.preventDefault(); sendChatMessage(); }
+  });
+}
+function chatBubbleHtml(m){
+  return '<div class="chat-msg '+(m.role==='user'?'user':'ai')+'">'+esc(m.text)+'</div>';
+}
+
+async function sendChatMessage(){
+  const v = currentVideo; if(!v || !v.cues.length) return;
+  const input = document.getElementById('chatInput');
+  const question = input.value.trim();
+  if(!question) return;
+  if(!aiIsLocal() && !aiKey){ openAiSettings(); return; }
+
+  v.chat.push({role:'user', text:question, ts:Date.now()});
+  input.value = '';
+  renderChat();
+  const list = document.getElementById('chatList');
+  list.insertAdjacentHTML('beforeend', '<div class="chat-msg thinking" id="chatThinking">thinking…</div>');
+  list.scrollTop = list.scrollHeight;
+  document.getElementById('chatSend').disabled = true;
+
+  let transcript = v.cues.map(c=>c.t+'s: '+c.text).join('\n');
+  if(transcript.length > CHAT_TRANSCRIPT_LIMIT){
+    transcript = transcript.slice(0, Math.floor(CHAT_TRANSCRIPT_LIMIT*0.7)) +
+      '\n...[middle trimmed]...\n' + transcript.slice(-Math.floor(CHAT_TRANSCRIPT_LIMIT*0.3));
+  }
+  const priorTurns = v.chat.slice(0, -1).slice(-CHAT_HISTORY_TURNS*2);
+  const history = priorTurns.map(m=>(m.role==='user'?'Student: ':'Tutor: ')+m.text).join('\n');
+
+  const prompt = 'You are a tutor discussing a video tutorial with a student, using only the transcript below.\n\n'+
+    'VIDEO TITLE: '+(v.title||'Untitled')+'\n\n'+
+    'TRANSCRIPT (each line starts with its timestamp in seconds):\n'+transcript+'\n\n'+
+    (history ? 'CONVERSATION SO FAR:\n'+history+'\n\n' : '')+
+    'Student: '+question+'\n'+
+    'Answer only from what the transcript actually says. If it does not cover the question, say so honestly '+
+    'rather than guessing. Keep the answer under 120 words unless the question genuinely needs more. '+
+    'Reply with plain prose only — no markdown, no headings.\n'+
+    'Tutor:';
+
+  try{
+    const res = await api.aiComplete(aiArgs({ prompt, maxTokens: 500, temperature: 0.4 }));
+    if(!res || !res.ok) throw new Error((res && res.error) || 'No answer.');
+    v.chat.push({role:'ai', text:String(res.text).trim(), ts:Date.now()});
+  }catch(err){
+    v.chat.push({role:'ai', text:'Could not get an answer: '+String(err && err.message || err), ts:Date.now()});
+  }
+  document.getElementById('chatSend').disabled = false;
+  saveState();
+  renderChat();
 }
 
 /* ---------- Summary ---------- */

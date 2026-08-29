@@ -674,19 +674,36 @@ ipcMain.handle('yt-transcript', async (event, videoId) => {
         var cap = pr.captions && pr.captions.playerCaptionsTracklistRenderer;
         var tracks = (cap && cap.captionTracks) || [];
         if (!tracks.length) return { err: 'nocaptions', duration: parseInt(det.lengthSeconds||0,10), title: det.title||'' };
-        var pick = tracks.find(function(t){ return t.languageCode==='en' && t.kind!=='asr'; })
-                || tracks.find(function(t){ return t.languageCode==='en'; })
-                || tracks.find(function(t){ return t.languageCode==='de'; })
-                || tracks[0];
-        var res = await fetch(pick.baseUrl + '&fmt=json3');
-        if (!res.ok) return { err: 'fetch'+res.status };
-        var j = await res.json();
-        var cues = (j.events||[]).filter(function(e){ return e.segs; }).map(function(e){
-          return { t: Math.round((e.tStartMs||0)/1000),
-                   text: e.segs.map(function(s){ return s.utf8; }).join('').replace(/\\n/g,' ').trim() };
-        }).filter(function(c){ return c.text; });
-        return { cues: cues, lang: pick.languageCode, auto: pick.kind==='asr',
-                 duration: parseInt(det.lengthSeconds||0,10), title: det.title||'' };
+        // Priority order, then every remaining track as a last resort — a
+        // specific track's caption server can be empty even when others on
+        // the same video work fine, so one bad track should not be fatal.
+        var order = [];
+        [tracks.find(function(t){ return t.languageCode==='en' && t.kind!=='asr'; }),
+         tracks.find(function(t){ return t.languageCode==='en'; }),
+         tracks.find(function(t){ return t.languageCode==='de'; }),
+         tracks[0]].forEach(function(t){ if (t && order.indexOf(t)===-1) order.push(t); });
+        tracks.forEach(function(t){ if (order.indexOf(t)===-1) order.push(t); });
+
+        var lastErr = 'unknown';
+        for (var i = 0; i < order.length; i++) {
+          var t = order[i];
+          try {
+            var res = await fetch(t.baseUrl + '&fmt=json3');
+            if (!res.ok) { lastErr = 'fetch'+res.status; continue; }
+            var bodyText = await res.text();
+            if (!bodyText || !bodyText.trim()) { lastErr = 'empty response'; continue; }
+            var j;
+            try { j = JSON.parse(bodyText); } catch (e) { lastErr = 'unparseable response'; continue; }
+            var cues = (j.events||[]).filter(function(e){ return e.segs; }).map(function(e){
+              return { t: Math.round((e.tStartMs||0)/1000),
+                       text: e.segs.map(function(s){ return s.utf8; }).join('').replace(/\\n/g,' ').trim() };
+            }).filter(function(c){ return c.text; });
+            if (!cues.length) { lastErr = 'track had no usable cues'; continue; }
+            return { cues: cues, lang: t.languageCode, auto: t.kind==='asr',
+                     duration: parseInt(det.lengthSeconds||0,10), title: det.title||'' };
+          } catch (e) { lastErr = String(e && e.message || e); }
+        }
+        return { err: 'alltracks', detail: lastErr, duration: parseInt(det.lengthSeconds||0,10), title: det.title||'' };
       } catch(e) { return { err: String(e && e.message || e) }; }
     })()`);
 
@@ -695,6 +712,9 @@ ipcMain.handle('yt-transcript', async (event, videoId) => {
       return { ok: false, error: 'This video has no captions, so there is no transcript to pull.', duration: out.duration || 0, title: out.title || '' };
     }
     if (out.err === 'nopr') return { ok: false, error: 'YouTube did not return player data (it may be age-restricted or region-blocked).' };
+    if (out.err === 'alltracks') {
+      return { ok: false, error: 'YouTube’s caption server did not return usable captions for this video (' + out.detail + '). This is usually transient — try again in a moment.', duration: out.duration || 0, title: out.title || '' };
+    }
     if (out.err) return { ok: false, error: 'Transcript failed: ' + out.err };
     if (!out.cues || !out.cues.length) return { ok: false, error: 'Captions were empty.' };
 
