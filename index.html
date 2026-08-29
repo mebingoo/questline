@@ -3535,6 +3535,7 @@ function renderTranscript(){
   const box = document.getElementById('transcriptBox');
   const tools = '<div class="tr-tools">'+
     '<button class="ghost-btn" id="fetchTr">'+(v.cues.length?'Re-fetch transcript':'Get transcript')+'</button>'+
+    '<button class="ghost-btn" id="pasteTrBtn">Paste transcript</button>'+
     (v.cues.length?'<button class="ghost-btn" id="copyTr">Copy as text</button>':'')+
     (v.transcriptLang?'<span class="watch-text" style="align-self:center">'+esc(v.transcriptLang)+(v.transcriptAuto?' · auto-generated':'')+' · '+v.cues.length+' lines</span>':'')+
   '</div>';
@@ -3544,12 +3545,13 @@ function renderTranscript(){
       '<div class="tr-cue" data-t="'+c.t+'"><span class="tr-time">'+fmtTime(c.t)+'</span><span class="tr-text">'+esc(c.text)+'</span></div>'
     ).join('')+'</div>';
   } else if(v.transcriptError){
-    body = '<div class="empty-row" style="color:var(--danger)">'+esc(v.transcriptError)+'</div>';
+    body = '<div class="empty-row" style="color:var(--danger)">'+esc(v.transcriptError)+' If this keeps happening, use "Paste transcript" above instead.</div>';
   } else {
     body = '<div class="empty-row">No transcript pulled yet. It powers the summary and the quiz, so grab it first.</div>';
   }
   box.innerHTML = tools + body;
   const f = document.getElementById('fetchTr'); if(f) f.addEventListener('click', fetchTranscript);
+  const p = document.getElementById('pasteTrBtn'); if(p) p.addEventListener('click', openPasteTranscript);
   const c = document.getElementById('copyTr');
   if(c) c.addEventListener('click', ()=>{
     const text = v.cues.map(x=>fmtTime(x.t)+'  '+x.text).join('\n');
@@ -3582,6 +3584,80 @@ async function fetchTranscript(){
     v.transcriptError = String(err.message||err); saveState();
   }
   renderTranscript(); renderQuiz(); renderSummary(); renderLibrary();
+}
+
+/* YouTube blocks automated caption fetching for a growing share of videos
+ * (classic timedtext URLs return empty bodies, the get_transcript API
+ * demands anti-bot tokens we can't produce, and the watch page never
+ * hydrates its SPA shell in an automated window). When that happens the
+ * user can still open the video in a real browser, copy the transcript
+ * panel's text, and paste it here — this parser accepts that raw copy,
+ * an .srt paste, or plain prose with no timestamps at all. */
+function parseTimeToSeconds(s){
+  const parts = String(s).split(':').map(Number);
+  if(parts.some(isNaN)) return 0;
+  if(parts.length===3) return parts[0]*3600+parts[1]*60+parts[2];
+  if(parts.length===2) return parts[0]*60+parts[1];
+  return parts[0]||0;
+}
+function parsePastedTranscript(raw){
+  const text = String(raw||'').replace(/\r\n/g,'\n').trim();
+  if(!text) return null;
+  const lines = text.split('\n');
+
+  if(/\d{2}:\d{2}:\d{2}[,.]\d{3}\s*-->\s*\d{2}:\d{2}:\d{2}[,.]\d{3}/.test(text)){
+    const cues = [];
+    for(const block of text.split(/\n\s*\n/)){
+      const bl = block.split('\n').filter(x=>x.trim());
+      const tsLine = bl.find(l=>/-->/.test(l));
+      if(!tsLine) continue;
+      const m = tsLine.match(/(\d{2}):(\d{2}):(\d{2})[,.]\d{3}\s*-->/);
+      if(!m) continue;
+      const t = (+m[1])*3600 + (+m[2])*60 + (+m[3]);
+      const txt = bl.slice(bl.indexOf(tsLine)+1).filter(l=>!/^\d+$/.test(l.trim())).join(' ').trim();
+      if(txt) cues.push({t, text: txt});
+    }
+    if(cues.length) return {cues, lang:'manual (SRT)'};
+  }
+
+  const tsLineRe = /^\(?(\d{1,2}:)?\d{1,2}:\d{2}\)?$/;
+  const cues2 = []; let i = 0;
+  while(i < lines.length){
+    const l = lines[i].trim();
+    if(tsLineRe.test(l)){
+      const t = parseTimeToSeconds(l.replace(/[()]/g,''));
+      let txt = ''; let j = i+1;
+      while(j < lines.length && !tsLineRe.test(lines[j].trim())){
+        if(lines[j].trim()) txt += (txt?' ':'') + lines[j].trim();
+        j++;
+      }
+      if(txt) cues2.push({t, text: txt});
+      i = j;
+    } else i++;
+  }
+  if(cues2.length >= 2) return {cues: cues2, lang:'manual'};
+
+  const chunks = text.split(/(?<=[.!?])\s+|\n+/).map(s=>s.trim()).filter(Boolean);
+  if(!chunks.length) return null;
+  return {cues: chunks.map((c,idx)=>({t: idx*4, text: c})), lang:'manual (no timestamps)'};
+}
+function openPasteTranscript(){
+  const v = currentVideo; if(!v) return;
+  const m = document.getElementById('modalBody');
+  m.innerHTML = '<h3>Paste transcript</h3>'+
+    '<p class="watch-text">YouTube is blocking automatic transcript fetching for some videos right now. Open the video on youtube.com, click <b>···</b> under the player → <b>Show transcript</b>, select all the text in that panel and copy it — then paste it below. Plain text or an .srt paste both work.</p>'+
+    '<textarea class="note-area" id="pasteTr" style="min-height:220px" placeholder="Paste the transcript text here…"></textarea>'+
+    '<div class="actions"><button class="btn-text" id="mCancel">Cancel</button><button class="btn-primary" id="mPasteSubmit">Use this transcript</button></div>';
+  document.getElementById('modalVeil').classList.add('open');
+  document.getElementById('mCancel').addEventListener('click', closeModal);
+  document.getElementById('mPasteSubmit').addEventListener('click', ()=>{
+    const parsed = parsePastedTranscript(document.getElementById('pasteTr').value);
+    if(!parsed || !parsed.cues.length){ showToast({title:'Nothing to use', sub:'Paste some transcript text first.'}); return; }
+    v.cues = parsed.cues; v.transcriptLang = parsed.lang; v.transcriptAuto = false; v.transcriptError = null;
+    saveState(); closeModal();
+    renderTranscript(); renderQuiz(); renderSummary(); renderLibrary(); renderChat();
+    showToast({title:'Transcript ready', sub:parsed.cues.length+' lines'});
+  });
 }
 
 /* ---------- Chat with the video ----------
