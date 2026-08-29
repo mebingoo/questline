@@ -1303,6 +1303,86 @@
     .tree-side{width:auto; border-left:none; border-top:1px solid var(--border); max-height:44vh;}
   }
 
+  /* ============ REFERENCE BOARD ============ */
+  /* An infinite canvas: .ref-stage is the fixed viewport, .ref-world is an
+     unbounded plane inside it that gets panned and zoomed by one transform.
+     Items are positioned in world coordinates and never touched by zoom
+     maths themselves — the parent transform does all of it. */
+  .ref-bar{display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:12px;}
+  .ref-bar .ref-spacer{flex:1;}
+  .ref-zoom{font-family:var(--font-mono); font-size:11px; color:var(--text-faint); min-width:46px; text-align:right;}
+  .ref-boardsel{max-width:190px;}
+
+  .ref-stage{
+    position:relative; width:100%; height:min(72vh, 760px);
+    background:var(--surface-2); border:1px solid var(--border); border-radius:var(--radius-m);
+    overflow:hidden; touch-action:none; cursor:grab;
+  }
+  .ref-stage.panning{cursor:grabbing;}
+  .ref-stage.dropping{border-color:var(--gold); background:var(--surface-3);}
+  .ref-world{position:absolute; top:0; left:0; transform-origin:0 0; will-change:transform;}
+
+  .ref-item{position:absolute; user-select:none;}
+  .ref-item img{
+    display:block; width:100%; height:auto; pointer-events:none;
+    border-radius:2px; background:#000; box-shadow:0 2px 14px rgba(0,0,0,0.45);
+  }
+  .ref-item.sel img{outline:2px solid var(--gold); outline-offset:2px;}
+  /* Scaled against the zoom so the grab target stays the same size on screen
+     however far in or out you are. */
+  .ref-handle{
+    position:absolute; right:0; bottom:0; width:14px; height:14px;
+    background:var(--gold); border-radius:2px; cursor:nwse-resize;
+    transform:translate(50%,50%) scale(var(--inv,1)); transform-origin:center;
+    opacity:0; transition:opacity .12s;
+  }
+  .ref-item:hover .ref-handle, .ref-item.sel .ref-handle{opacity:1;}
+  .ref-del{
+    position:absolute; left:0; top:0; width:16px; height:16px; padding:0; line-height:14px;
+    background:rgba(0,0,0,0.75); color:#fff; border:1px solid var(--border);
+    border-radius:2px; font-size:11px; cursor:pointer;
+    transform:translate(-50%,-50%) scale(var(--inv,1)); transform-origin:center;
+    opacity:0; transition:opacity .12s;
+  }
+  .ref-item:hover .ref-del, .ref-item.sel .ref-del{opacity:1;}
+
+  .ref-empty{
+    position:absolute; inset:0; display:flex; flex-direction:column;
+    align-items:center; justify-content:center; gap:8px; text-align:center;
+    color:var(--text-faint); font-size:12.5px; pointer-events:none; padding:24px;
+  }
+  .ref-hint{font-size:10.5px; color:var(--text-faint); margin-top:8px;}
+
+  /* ---- The always-on-top window (index.html?refs=1) ---- */
+  body.refs-mode{background:var(--bg); overflow:hidden;}
+  body.refs-mode > *{display:none !important;}
+  body.refs-mode > .refs-shell{display:flex !important;}
+  .refs-shell{
+    display:none; position:fixed; inset:0; flex-direction:column;
+    background:var(--bg); border:1px solid var(--border);
+  }
+  /* The only draggable strip — everything interactive inside it opts back out,
+     or the buttons would move the window instead of being clicked. */
+  .refs-titlebar{
+    display:flex; align-items:center; gap:6px; padding:5px 7px;
+    background:var(--surface); border-bottom:1px solid var(--border);
+    -webkit-app-region:drag; flex:0 0 auto;
+  }
+  .refs-titlebar button, .refs-titlebar select, .refs-titlebar input{-webkit-app-region:no-drag;}
+  .refs-title{
+    font-family:var(--font-display); font-size:10px; letter-spacing:0.08em;
+    color:var(--text-faint); margin-right:2px; white-space:nowrap;
+  }
+  .refs-shell .ref-stage{
+    height:auto; flex:1 1 auto; border:0; border-radius:0; background:var(--bg);
+  }
+  .refs-btn{
+    background:var(--surface-2); border:1px solid var(--border); color:var(--text-dim);
+    font-size:10.5px; padding:3px 7px; border-radius:var(--radius-s); cursor:pointer;
+  }
+  .refs-btn:hover{border-color:var(--gold); color:var(--text);}
+  .refs-btn.on{border-color:var(--gold); color:var(--gold);}
+
   /* ============ SETTINGS OVERLAY ============ */
   /* Sits behind everything the user has chosen as a background, and above the app. */
   #bgMedia{position:fixed; inset:0; z-index:-2; overflow:hidden; pointer-events:none;}
@@ -1464,6 +1544,7 @@
     <button class="tab" data-tab="courses"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19V6a2 2 0 0 1 2-2h5l2 2h5a2 2 0 0 1 2 2v11a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1z"/><path d="M10 11l4 2.5-4 2.5z"/></svg> Courses <span class="tabcount" id="tabCourseCount">0</span></button>
     <button class="tab" data-tab="journal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4h11a2 2 0 0 1 2 2v14H7a2 2 0 0 1-2-2z"/><path d="M9 8h6M9 12h6M9 16h3"/></svg> Journal <span class="tabcount" id="tabJournalCount">0</span></button>
     <button class="tab" data-tab="cards"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="6" width="14" height="13" rx="2"/><path d="M7 3h12a2 2 0 0 1 2 2v11"/></svg> Cards <span class="tabcount" id="tabCardsCount">0</span></button>
+    <button class="tab" data-tab="refs"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="13" height="10" rx="1.5"/><rect x="8" y="10" width="13" height="10" rx="1.5"/></svg> Refs <span class="tabcount" id="tabRefsCount">0</span></button>
   </nav>
   <button class="tl-bar" id="tlBar" title="Manage your timeline"></button>
 </header>
@@ -1703,6 +1784,39 @@
     </section>
   </div>
 
+  <div class="tabpanel" id="panel-refs">
+    <section style="margin-top:0;">
+      <div class="section-head">
+        <h2>Reference Board</h2>
+        <div class="section-sub">
+          <span id="refStats"></span>
+          <button class="ghost-btn" id="refPopOut" title="Open a floating window that stays on top of Blender">Float on top</button>
+        </div>
+      </div>
+
+      <div class="ref-bar">
+        <select class="fld ref-boardsel" id="refBoardSel" style="margin:0"></select>
+        <button class="btn-ghost-sm" id="refNewBoard">New board</button>
+        <button class="btn-ghost-sm" id="refRenameBoard">Rename</button>
+        <button class="btn-ghost-sm" id="refDelBoard">Delete board</button>
+        <span class="ref-spacer"></span>
+        <button class="btn-ghost-sm" id="refAdd">Add images</button>
+        <input type="file" id="refFile" accept="image/*" multiple style="display:none">
+        <button class="btn-ghost-sm" id="refFit">Fit</button>
+        <span class="ref-zoom" id="refZoom">100%</span>
+      </div>
+
+      <div class="ref-stage" id="refStage">
+        <div class="ref-world" id="refWorld"></div>
+        <div class="ref-empty" id="refEmpty">
+          <div>Drop images here, paste with Ctrl+V, or use “Add images”.</div>
+          <div class="ref-hint">Drag to move · corner handle to resize · scroll to zoom · drag the background to pan · Delete removes the selected image</div>
+        </div>
+      </div>
+      <div class="ref-hint">Images are kept on this device only — they never go to the server.</div>
+    </section>
+  </div>
+
   <div class="tabpanel" id="panel-journal">
     <section style="margin-top:0;">
       <div class="section-head">
@@ -1834,6 +1948,29 @@
   <div class="srs-bottom" id="srsBottom"></div>
 </div>
 <div class="shot-veil" id="shotVeil"><img id="shotBig" alt=""></div>
+<!-- The floating always-on-top board. Hidden entirely unless the page was
+     loaded as index.html?refs=1, in which case it is the only thing shown. -->
+<div class="refs-shell" id="refsShell">
+  <div class="refs-titlebar">
+    <span class="refs-title">REFS</span>
+    <select class="fld ref-boardsel" id="refsWinBoardSel" style="margin:0; padding:2px 6px; font-size:11px; max-width:130px"></select>
+    <button class="refs-btn" id="refsWinAdd" title="Add images">+</button>
+    <button class="refs-btn" id="refsWinFit" title="Fit all">Fit</button>
+    <input type="file" id="refsWinFile" accept="image/*" multiple style="display:none">
+    <span class="ref-spacer"></span>
+    <button class="refs-btn on" id="refsWinPin" title="Stay on top of other windows">Pin</button>
+    <button class="refs-btn" id="refsWinFade" title="Make the window see-through">Fade</button>
+    <button class="refs-btn" id="refsWinMin" title="Minimise">&ndash;</button>
+    <button class="refs-btn" id="refsWinClose" title="Close">&times;</button>
+  </div>
+  <div class="ref-stage" id="refsWinStage">
+    <div class="ref-world" id="refsWinWorld"></div>
+    <div class="ref-empty" id="refsWinEmpty">
+      <div>Drop or paste images here.</div>
+    </div>
+  </div>
+</div>
+
 <div class="theater-veil" id="theaterVeil"></div>
 <div class="theater-hint" id="theaterHint">Esc or T to leave theater mode</div>
 
@@ -2265,6 +2402,7 @@ function freshState(){
     trees: {},
     timeline: defaultTimeline(),
     journal: { entries:[], lastXpDay:null },
+    refs: defaultRefs(),
     srs: defaultSrs(),
     focusSessions: [], questFavorites: [],
     activeTimer: null,
@@ -2409,6 +2547,9 @@ function migrate(s){
   s.journal.entries.forEach(e=>{ if(!Array.isArray(e.images)) e.images = []; });
   if(!s.timeline || !Array.isArray(s.timeline.events)) s.timeline = defaultTimeline();
   if(!s.timeline.start) s.timeline.start = todayStr();
+  if(!s.refs || !Array.isArray(s.refs.boards) || !s.refs.boards.length) s.refs = defaultRefs();
+  s.refs.boards.forEach(b=>{ if(!Array.isArray(b.items)) b.items = []; });
+  if(!s.refs.boards.some(b=>b.id===s.refs.active)) s.refs.active = s.refs.boards[0].id;
   if(!Array.isArray(s.courses)) s.courses = [];
   s.courses.forEach(c=>{ if(!c.items) c.items = {}; });
   if(!Array.isArray(s.videos)) s.videos = [];
@@ -4825,6 +4966,8 @@ function renderAll(){
   renderTimeline();
   if(typeof renderJournal==='function') renderJournal();
   if(typeof renderSrs==='function') renderSrs();
+  // Picks up board edits made in the other window, which shares this save.
+  if(typeof refRenderAll==='function') refRenderAll();
   renderHeader();
   if(typeof renderCourseLibrary==='function' && !activeCourseId) renderCourseLibrary();
   renderRadar();
@@ -8174,6 +8317,475 @@ document.addEventListener('keydown', e=>{
   if(e.key==='Escape' && document.getElementById('treeVeil').classList.contains('open')) closeSkillTree();
 });
 
+
+/* ============ REFERENCE BOARD ============ *
+ * A PureRef-style board: images on an unbounded plane you pan and zoom.
+ *
+ * Two surfaces show the same board — the tab, and an always-on-top window
+ * (index.html?refs=1) meant to float over Blender. Rather than write the
+ * canvas twice, makeRefSurface() builds one controller and is called once
+ * per surface; both read and write the same state, and the two windows
+ * already share localStorage, so a move in one shows up in the other.
+ *
+ * The images themselves are far too big for the synced blob, so they live
+ * in IndexedDB on this device — the same split the course-note screenshots
+ * use. Only geometry (position, size, stacking) is in state.
+ * ============================================================== */
+
+function defaultRefs(){
+  const id = 'rb'+Date.now();
+  return { boards:[{ id, name:'Board 1', items:[] }], active:id };
+}
+function refBoard(){
+  const r = state.refs;
+  return (r.boards||[]).find(b=>b.id===r.active) || r.boards[0];
+}
+
+/* ---------- image store: device-local, same pattern as shots/background ---------- */
+const REF_DB = 'questline-refs', REF_STORE = 'images';
+function refDb(){
+  return new Promise((res, rej)=>{
+    const r = indexedDB.open(REF_DB, 1);
+    r.onupgradeneeded = ()=>{ if(!r.result.objectStoreNames.contains(REF_STORE)) r.result.createObjectStore(REF_STORE); };
+    r.onsuccess = ()=>res(r.result);
+    r.onerror = ()=>rej(r.error);
+  });
+}
+async function refPut(id, blob){
+  const db = await refDb();
+  return new Promise((res, rej)=>{
+    const tx = db.transaction(REF_STORE, 'readwrite');
+    tx.objectStore(REF_STORE).put(blob, id);
+    tx.oncomplete = ()=>res(true); tx.onerror = ()=>rej(tx.error);
+  });
+}
+async function refGet(id){
+  try{
+    const db = await refDb();
+    return await new Promise(res=>{
+      const tx = db.transaction(REF_STORE, 'readonly');
+      const q = tx.objectStore(REF_STORE).get(id);
+      q.onsuccess = ()=>res(q.result||null); q.onerror = ()=>res(null);
+    });
+  }catch(e){ return null; }
+}
+async function refDelete(id){
+  try{
+    const db = await refDb();
+    await new Promise(res=>{
+      const tx = db.transaction(REF_STORE, 'readwrite');
+      tx.objectStore(REF_STORE).delete(id);
+      tx.oncomplete = ()=>res(); tx.onerror = ()=>res();
+    });
+  }catch(e){}
+}
+
+/* A phone screenshot is 3 MB and a render can be 30. Anything oversized is
+   re-encoded once, on the way in, so a board of 40 references doesn't turn
+   into a gigabyte on disk. WebP because it keeps transparency, which JPEG
+   would quietly flatten to black. */
+const REF_MAX_EDGE = 3000, REF_MAX_BYTES = 5*1024*1024;
+async function refPrepImage(blob){
+  let bmp;
+  try{ bmp = await createImageBitmap(blob); }
+  catch(e){ return null; }                       // not a decodable image
+  const w = bmp.width, h = bmp.height;
+  if(w <= REF_MAX_EDGE && h <= REF_MAX_EDGE && blob.size <= REF_MAX_BYTES){
+    if(bmp.close) bmp.close();
+    return { blob, w, h };
+  }
+  const s = Math.min(REF_MAX_EDGE/w, REF_MAX_EDGE/h, 1);
+  const cw = Math.max(1, Math.round(w*s)), ch = Math.max(1, Math.round(h*s));
+  const c = document.createElement('canvas');
+  c.width = cw; c.height = ch;
+  c.getContext('2d').drawImage(bmp, 0, 0, cw, ch);
+  if(bmp.close) bmp.close();
+  const out = await new Promise(res=>c.toBlob(res, 'image/webp', 0.92));
+  return { blob: out || blob, w: cw, h: ch };
+}
+
+const REF_MIN_ZOOM = 0.05, REF_MAX_ZOOM = 8;
+const refSurfaces = [];
+
+function makeRefSurface(ids){
+  const stage = document.getElementById(ids.stage);
+  const world = document.getElementById(ids.world);
+  if(!stage || !world) return null;
+  const empty = ids.empty ? document.getElementById(ids.empty) : null;
+  const zoomEl = ids.zoom ? document.getElementById(ids.zoom) : null;
+
+  let pan = {x:0, y:0}, zoom = 1;
+  let sig = null;              // what is currently drawn
+  let urls = [];               // object URLs to release on the next rebuild
+  let act = null;              // the interaction in progress
+  let selId = null;
+  let fitPending = true;       // fit once, the first time a board is drawn
+
+  const clamp = (v,a,b)=>Math.max(a, Math.min(b, v));
+  const boardSig = (b)=> b ? b.id+'|'+JSON.stringify(b.items) : '';
+
+  function applyTransform(){
+    world.style.transform = 'translate('+pan.x+'px,'+pan.y+'px) scale('+zoom+')';
+    // Handles are drawn at 1/zoom so they stay the same size on screen.
+    world.style.setProperty('--inv', String(1/zoom));
+    if(zoomEl) zoomEl.textContent = Math.round(zoom*100)+'%';
+  }
+  function markDrawn(){ sig = boardSig(refBoard()); }
+  function setSelected(id){
+    selId = id;
+    world.querySelectorAll('.ref-item').forEach(el=>el.classList.toggle('sel', el.dataset.id===id));
+  }
+
+  async function build(){
+    const b = refBoard();
+    const next = boardSig(b);
+    if(next === sig) return;               // nothing changed — don't churn the DOM
+    sig = next;
+    urls.forEach(u=>URL.revokeObjectURL(u)); urls = [];
+    world.innerHTML = '';
+    for(const it of (b ? b.items : [])){
+      const el = document.createElement('div');
+      el.className = 'ref-item' + (it.id===selId ? ' sel' : '');
+      el.dataset.id = it.id;
+      el.style.left = it.x+'px'; el.style.top = it.y+'px';
+      el.style.width = it.w+'px'; el.style.zIndex = String(it.z||1);
+      const img = document.createElement('img');
+      img.alt = ''; img.draggable = false;
+      const blob = await refGet(it.imgId);
+      if(blob){ const u = URL.createObjectURL(blob); urls.push(u); img.src = u; }
+      const del = document.createElement('button');
+      del.className = 'ref-del'; del.type = 'button'; del.textContent = '×'; del.title = 'Remove';
+      const h = document.createElement('div');
+      h.className = 'ref-handle'; h.title = 'Resize';
+      el.appendChild(img); el.appendChild(del); el.appendChild(h);
+      world.appendChild(el);
+    }
+    if(empty) empty.style.display = (b && b.items.length) ? 'none' : '';
+    applyTransform();
+    if(fitPending && b && b.items.length){ fitPending = false; fit(); }
+  }
+
+  function fit(){
+    const b = refBoard();
+    if(!b || !b.items.length){ pan = {x:0,y:0}; zoom = 1; applyTransform(); return; }
+    let minX=Infinity, minY=Infinity, maxX=-Infinity, maxY=-Infinity;
+    b.items.forEach(i=>{
+      minX = Math.min(minX, i.x); minY = Math.min(minY, i.y);
+      maxX = Math.max(maxX, i.x+i.w); maxY = Math.max(maxY, i.y+i.h);
+    });
+    const pad = 40;
+    const bw = (maxX-minX)+pad*2, bh = (maxY-minY)+pad*2;
+    const r = stage.getBoundingClientRect();
+    if(!r.width || !r.height || !isFinite(bw) || !isFinite(bh)) return;
+    zoom = clamp(Math.min(r.width/bw, r.height/bh), REF_MIN_ZOOM, 1.5);
+    pan.x = r.width/2  - ((minX+maxX)/2)*zoom;
+    pan.y = r.height/2 - ((minY+maxY)/2)*zoom;
+    applyTransform();
+  }
+
+  // screen pixels -> board coordinates
+  function toWorld(clientX, clientY){
+    const r = stage.getBoundingClientRect();
+    return { x: (clientX - r.left - pan.x)/zoom, y: (clientY - r.top - pan.y)/zoom };
+  }
+
+  async function addFiles(files, at){
+    const b = refBoard(); if(!b) return;
+    const list = Array.from(files||[]).filter(f=>f && f.type && f.type.startsWith('image/'));
+    if(!list.length) return;
+    const r = stage.getBoundingClientRect();
+    const centre = at || toWorld(r.left + r.width/2, r.top + r.height/2);
+    let z = b.items.reduce((m,i)=>Math.max(m, i.z||0), 0);
+    let placed = 0, failed = 0;
+    for(const f of list){
+      const prepped = await refPrepImage(f);
+      if(!prepped){ failed++; continue; }
+      const imgId = 'ri'+Date.now()+'_'+Math.random().toString(36).slice(2,7);
+      try{ await refPut(imgId, prepped.blob); }
+      catch(e){ failed++; continue; }
+      // Land at a readable size rather than 4000px wide, and cascade so a
+      // multi-file drop doesn't stack every image on one spot.
+      const s = Math.min(1, 420/Math.max(prepped.w, prepped.h));
+      const w = Math.max(40, Math.round(prepped.w*s)), h = Math.max(40, Math.round(prepped.h*s));
+      const off = placed*26;
+      b.items.push({
+        id:'rt'+Date.now()+'_'+Math.random().toString(36).slice(2,7),
+        imgId, x: Math.round(centre.x - w/2 + off), y: Math.round(centre.y - h/2 + off),
+        w, h, z: ++z
+      });
+      placed++;
+    }
+    if(placed){ saveState(); refRenderAll(); }
+    if(failed) showToast({title:'Some files were skipped', sub:failed+' could not be read as an image.'});
+    else if(placed) showToast({title:'Added', sub:placed+' image'+(placed===1?'':'s')});
+  }
+
+  function removeItem(id){
+    const b = refBoard(); if(!b) return;
+    const i = b.items.findIndex(x=>x.id===id);
+    if(i < 0) return;
+    const gone = b.items.splice(i,1)[0];
+    // Drop the blob too, unless another item still points at it.
+    const stillUsed = state.refs.boards.some(bd=>bd.items.some(x=>x.imgId===gone.imgId));
+    if(!stillUsed) refDelete(gone.imgId);
+    if(selId === id) selId = null;
+    saveState(); refRenderAll();
+  }
+
+  /* ---- interaction ---- */
+  stage.addEventListener('pointerdown', (e)=>{
+    if(e.button !== 0 && e.button !== 1) return;
+    const b = refBoard(); if(!b) return;
+
+    const delBtn = e.target.closest('.ref-del');
+    if(delBtn){ e.preventDefault(); removeItem(delBtn.parentElement.dataset.id); return; }
+
+    const handle = e.target.closest('.ref-handle');
+    const hit = e.target.closest('.ref-item');
+
+    // Middle button always pans, whatever sits under it.
+    if(hit && e.button === 0){
+      const it = b.items.find(x=>x.id===hit.dataset.id);
+      if(!it) return;
+      setSelected(it.id);
+      // Clicking an image raises it, the way stacked references should behave.
+      const top = b.items.reduce((m,i)=>Math.max(m, i.z||0), 0);
+      if((it.z||0) < top){ it.z = top+1; hit.style.zIndex = String(it.z); }
+      const w0 = toWorld(e.clientX, e.clientY);
+      act = handle
+        ? { kind:'resize', it, el:hit, startW:it.w, startH:it.h, ox:w0.x }
+        : { kind:'move',   it, el:hit, dx:w0.x - it.x, dy:w0.y - it.y };
+    }else{
+      setSelected(null);
+      act = { kind:'pan', sx:e.clientX, sy:e.clientY, px:pan.x, py:pan.y };
+      stage.classList.add('panning');
+    }
+    try{ stage.setPointerCapture(e.pointerId); }catch(err){}
+    e.preventDefault();
+  });
+
+  stage.addEventListener('pointermove', (e)=>{
+    if(!act) return;
+    if(act.kind === 'pan'){
+      pan.x = act.px + (e.clientX - act.sx);
+      pan.y = act.py + (e.clientY - act.sy);
+      applyTransform();
+      return;
+    }
+    const w = toWorld(e.clientX, e.clientY);
+    if(act.kind === 'move'){
+      act.it.x = Math.round(w.x - act.dx);
+      act.it.y = Math.round(w.y - act.dy);
+      act.el.style.left = act.it.x+'px';
+      act.el.style.top  = act.it.y+'px';
+    }else if(act.kind === 'resize'){
+      const ratio = act.startH / act.startW;
+      const nw = Math.max(40, Math.round(act.startW + (w.x - act.ox)));
+      act.it.w = nw;
+      act.it.h = Math.round(nw * ratio);
+      act.el.style.width = nw+'px';
+    }
+  });
+
+  function endAct(e){
+    if(!act) return;
+    const changed = act.kind !== 'pan';
+    act = null;
+    stage.classList.remove('panning');
+    try{ stage.releasePointerCapture(e.pointerId); }catch(err){}
+    if(changed){
+      // The DOM already shows the result, so record it as drawn before saving:
+      // otherwise our own write would come back as a full rebuild.
+      markDrawn();
+      saveState();
+      refSurfaces.forEach(s=>{ if(s.surface !== api) s.surface.refresh(); });
+    }
+  }
+  stage.addEventListener('pointerup', endAct);
+  stage.addEventListener('pointercancel', endAct);
+
+  stage.addEventListener('wheel', (e)=>{
+    e.preventDefault();                       // never scroll the page over the board
+    const r = stage.getBoundingClientRect();
+    const mx = e.clientX - r.left, my = e.clientY - r.top;
+    // Keep whatever is under the cursor pinned while the scale changes.
+    const wx = (mx - pan.x)/zoom, wy = (my - pan.y)/zoom;
+    zoom = clamp(zoom * (e.deltaY < 0 ? 1.12 : 1/1.12), REF_MIN_ZOOM, REF_MAX_ZOOM);
+    pan.x = mx - wx*zoom;
+    pan.y = my - wy*zoom;
+    applyTransform();
+  }, { passive:false });
+
+  stage.addEventListener('dragover', (e)=>{ e.preventDefault(); stage.classList.add('dropping'); });
+  stage.addEventListener('dragleave', ()=>stage.classList.remove('dropping'));
+  stage.addEventListener('drop', (e)=>{
+    e.preventDefault();
+    stage.classList.remove('dropping');
+    const files = e.dataTransfer && e.dataTransfer.files;
+    if(files && files.length) addFiles(files, toWorld(e.clientX, e.clientY));
+  });
+
+  const api = {
+    refresh: build,
+    fit,
+    addFiles,
+    deleteSelected(){ if(selId) removeItem(selId); },
+    hasSelection(){ return !!selId; },
+    resetFit(){ fitPending = true; },
+    stage
+  };
+  refSurfaces.push({ surface: api });
+  return api;
+}
+
+/* Redraws every surface and the counters. Called after any change to a
+   board, and by renderAll() when the other window writes. */
+function refRenderAll(){
+  refSurfaces.forEach(s=>s.surface.refresh());
+  const b = refBoard();
+  const boards = state.refs.boards || [];
+  const cnt = document.getElementById('tabRefsCount');
+  if(cnt) cnt.textContent = String(boards.reduce((m,x)=>m+x.items.length, 0));
+  const stats = document.getElementById('refStats');
+  if(stats) stats.textContent = boards.length+' board'+(boards.length===1?'':'s')+
+    ' · '+(b ? b.items.length : 0)+' on this one';
+  refFillBoardSelects();
+}
+function refFillBoardSelects(){
+  ['refBoardSel','refsWinBoardSel'].forEach(id=>{
+    const sel = document.getElementById(id);
+    if(!sel) return;
+    const html = (state.refs.boards||[]).map(b=>
+      '<option value="'+esc(b.id)+'"'+(b.id===state.refs.active?' selected':'')+'>'+esc(b.name)+'</option>').join('');
+    if(sel.innerHTML !== html) sel.innerHTML = html;
+    sel.value = state.refs.active;
+  });
+}
+function refSwitchBoard(id){
+  if(!(state.refs.boards||[]).some(b=>b.id===id)) return;
+  state.refs.active = id;
+  saveState();
+  refSurfaces.forEach(s=>s.surface.resetFit());
+  refRenderAll();
+}
+
+/* ---------- wiring ---------- */
+const refsWindowMode = new URLSearchParams(location.search).get('refs')==='1';
+let refTabSurface = null, refWinSurface = null;
+
+function refActiveSurface(){
+  // Whichever board the user is actually looking at right now.
+  if(refsWindowMode) return refWinSurface;
+  return state.activeTab==='refs' ? refTabSurface : null;
+}
+
+if(refsWindowMode){
+  document.body.classList.add('refs-mode');
+  refWinSurface = makeRefSurface({ stage:'refsWinStage', world:'refsWinWorld', empty:'refsWinEmpty' });
+
+  document.getElementById('refsWinBoardSel').addEventListener('change', e=>refSwitchBoard(e.target.value));
+  document.getElementById('refsWinFit').addEventListener('click', ()=>refWinSurface.fit());
+  document.getElementById('refsWinAdd').addEventListener('click', ()=>document.getElementById('refsWinFile').click());
+  document.getElementById('refsWinFile').addEventListener('change', e=>{
+    refWinSurface.addFiles(e.target.files); e.target.value = '';
+  });
+  document.getElementById('refsWinClose').addEventListener('click', ()=>window.refsCtl && window.refsCtl.close());
+  document.getElementById('refsWinMin').addEventListener('click', ()=>window.refsCtl && window.refsCtl.minimize());
+
+  // Unpinning lets it drop behind Blender without closing the board.
+  let pinned = true;
+  document.getElementById('refsWinPin').addEventListener('click', e=>{
+    pinned = !pinned;
+    e.currentTarget.classList.toggle('on', pinned);
+    if(window.refsCtl) window.refsCtl.setPinned(pinned);
+  });
+  // Three steps of see-through, for tracing or just keeping an eye on it.
+  const fades = [1, 0.75, 0.45];
+  let fadeIdx = 0;
+  document.getElementById('refsWinFade').addEventListener('click', e=>{
+    fadeIdx = (fadeIdx+1) % fades.length;
+    e.currentTarget.classList.toggle('on', fadeIdx !== 0);
+    if(window.refsCtl) window.refsCtl.setOpacity(fades[fadeIdx]);
+  });
+}else{
+  refTabSurface = makeRefSurface({ stage:'refStage', world:'refWorld', empty:'refEmpty', zoom:'refZoom' });
+
+  document.getElementById('refBoardSel').addEventListener('change', e=>refSwitchBoard(e.target.value));
+  document.getElementById('refFit').addEventListener('click', ()=>refTabSurface.fit());
+  document.getElementById('refAdd').addEventListener('click', ()=>document.getElementById('refFile').click());
+  document.getElementById('refFile').addEventListener('change', e=>{
+    refTabSurface.addFiles(e.target.files); e.target.value = '';
+  });
+
+  document.getElementById('refNewBoard').addEventListener('click', ()=>{
+    const b = { id:'rb'+Date.now(), name:'Board '+(state.refs.boards.length+1), items:[] };
+    state.refs.boards.push(b);
+    refSwitchBoard(b.id);
+    showToast({title:'Board added', sub:b.name});
+  });
+
+  document.getElementById('refRenameBoard').addEventListener('click', ()=>{
+    const b = refBoard(); if(!b) return;
+    const m = document.getElementById('modalBody');
+    m.innerHTML = '<h3>Rename board</h3>'+
+      '<input type="text" class="fld" id="refName" value="'+esc(b.name)+'" maxlength="40">'+
+      '<div class="actions"><button class="btn-text" id="mCancel">Cancel</button>'+
+      '<button class="btn-primary" id="refNameOk">Rename</button></div>';
+    document.getElementById('modalVeil').classList.add('open');
+    document.getElementById('mCancel').addEventListener('click', closeModal);
+    document.getElementById('refNameOk').addEventListener('click', ()=>{
+      const v = document.getElementById('refName').value.trim();
+      if(v){ b.name = v; saveState(); refRenderAll(); }
+      closeModal();
+    });
+  });
+
+  document.getElementById('refDelBoard').addEventListener('click', ()=>{
+    const b = refBoard(); if(!b) return;
+    if(state.refs.boards.length <= 1){ showToast({title:'That is the only board', sub:'Make another one first.'}); return; }
+    openConfirm({
+      title:'Delete this board?',
+      body:'Removes <b>'+esc(b.name)+'</b> and its '+b.items.length+' image'+(b.items.length===1?'':'s')+' from this device.',
+      confirmLabel:'Delete board',
+      onConfirm: async ()=>{
+        const others = state.refs.boards.filter(x=>x.id!==b.id);
+        // Only bin an image if no surviving board still shows it.
+        for(const it of b.items){
+          if(!others.some(o=>o.items.some(x=>x.imgId===it.imgId))) await refDelete(it.imgId);
+        }
+        state.refs.boards = others;
+        refSwitchBoard(others[0].id);
+        showToast({title:'Board deleted'});
+      }
+    });
+  });
+
+  document.getElementById('refPopOut').addEventListener('click', async ()=>{
+    if(!window.refsCtl){ showToast({title:'Desktop only', sub:'The floating board needs the desktop app.'}); return; }
+    await window.refsCtl.open();
+    showToast({title:'Floating board opened', sub:'It stays on top — drag its bar to move it.'});
+  });
+}
+
+// Ctrl+V anywhere on the board's page drops the clipboard image onto it.
+document.addEventListener('paste', e=>{
+  const s = refActiveSurface(); if(!s) return;
+  const items = (e.clipboardData && e.clipboardData.items) || [];
+  const files = [];
+  for(const it of items){
+    if(it.type && it.type.startsWith('image/')){ const f = it.getAsFile(); if(f) files.push(f); }
+  }
+  if(files.length){ e.preventDefault(); s.addFiles(files); }
+});
+
+document.addEventListener('keydown', e=>{
+  const s = refActiveSurface(); if(!s) return;
+  const t = e.target;
+  if(t && (t.tagName==='INPUT' || t.tagName==='TEXTAREA' || t.tagName==='SELECT' || t.isContentEditable)) return;
+  if(document.getElementById('modalVeil').classList.contains('open')) return;
+  if((e.key==='Delete' || e.key==='Backspace') && s.hasSelection()){ e.preventDefault(); s.deleteSelected(); }
+  else if(e.key==='f' || e.key==='F'){ e.preventDefault(); s.fit(); }
+});
 
 /* ============ COURSES ============ */
 /* A course is a folder of videos the user downloaded. The files stay where

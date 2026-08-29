@@ -133,6 +133,25 @@ annotated (Courses item vs Learn video) and every note function works off it.
 Theater mode pins the stage with a CSS class and never re-parents the
 `<video>` — moving one drops its buffer and orphans every listener.
 
+## Reference board
+
+A PureRef-style board (`Refs` tab) plus an always-on-top window meant to sit
+over Blender. Both are the *same* board: `makeRefSurface()` builds one
+controller and is called once per surface, so the canvas is written once.
+
+- The floating window is `index.html?refs=1`, the same trick the pinned widget
+  uses. Both windows share one localStorage **and one IndexedDB**, which is
+  what makes a move in one appear in the other.
+- The canvas is one CSS transform on `.ref-world`; items are positioned in
+  board coordinates and never do zoom maths themselves. Handles are drawn at
+  `1/zoom` so they stay a constant size on screen.
+- Images go to IndexedDB (`questline-refs`), only geometry goes in `state` —
+  a board of 40 references would blow past KV's limit many times over.
+  Anything over 3000px or 5 MB is re-encoded to WebP once, on import.
+- A drag writes straight to the DOM and only saves on pointerup, then marks
+  the new geometry as already-drawn. Skipping that makes the app's own save
+  bounce back through `renderAll()` as a full rebuild, mid-drag.
+
 ## Where data lives — this matters
 
 `state` is encrypted in the browser and pushed to Cloudflare KV. Three things

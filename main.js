@@ -660,6 +660,72 @@ ipcMain.handle('widget-open-main', () => {
   else createWindow();
   return true;
 });
+
+/* ------------------------------------------------------------------ *
+ * Reference board window
+ *
+ * The point of a reference board is to sit on top of Blender while you
+ * work, so it gets its own always-on-top window rather than living only
+ * inside a tab. It loads the same page with ?refs=1; the renderer sees
+ * that and draws the board alone. Both windows share one localStorage
+ * and one IndexedDB, so the board is the same board in either place.
+ *
+ * Unlike the widget this one is resizable and keeps its frame off, so
+ * it behaves like a real floating panel.
+ * ------------------------------------------------------------------ */
+let refsWin = null;
+const refsBoundsPath = () => path.join(app.getPath('userData'), 'refs-bounds.json');
+
+function createRefsWindow() {
+  if (refsWin && !refsWin.isDestroyed()) { refsWin.show(); refsWin.focus(); return refsWin; }
+  const saved = readJSON(refsBoundsPath(), null);
+  const win = new BrowserWindow({
+    width: (saved && saved.width) || 620,
+    height: (saved && saved.height) || 520,
+    x: saved ? saved.x : undefined,
+    y: saved ? saved.y : undefined,
+    minWidth: 260,
+    minHeight: 220,
+    frame: false,
+    alwaysOnTop: true,
+    skipTaskbar: true,
+    backgroundColor: '#0b0b0f',
+    webPreferences: {
+      contextIsolation: true,
+      nodeIntegration: false,
+      spellcheck: false,
+      preload: path.join(__dirname, 'preload.js')
+    }
+  });
+  refsWin = win;
+  hardenWindow(win);
+  // 'screen-saver' keeps it above full-screen apps, which is the whole point.
+  win.setAlwaysOnTop(true, 'screen-saver');
+  win.loadFile(path.join(__dirname, 'index.html'), { query: { refs: '1' } });
+  const persist = () => { if (refsWin === win && !win.isDestroyed()) writeJSON(refsBoundsPath(), win.getBounds()); };
+  win.on('moved', persist);
+  win.on('resize', persist);
+  win.on('closed', () => { if (refsWin === win) refsWin = null; });
+  return win;
+}
+
+ipcMain.handle('refs-open', () => { createRefsWindow(); return true; });
+ipcMain.handle('refs-close', () => { if (refsWin && !refsWin.isDestroyed()) refsWin.close(); return true; });
+ipcMain.handle('refs-is-open', () => !!(refsWin && !refsWin.isDestroyed()));
+ipcMain.handle('refs-set-opacity', (event, value) => {
+  const v = Math.max(0.2, Math.min(1, Number(value) || 1));
+  if (refsWin && !refsWin.isDestroyed()) refsWin.setOpacity(v);
+  return true;
+});
+// Lets the board window get out of the way without being closed.
+ipcMain.handle('refs-set-pinned', (event, pinned) => {
+  if (refsWin && !refsWin.isDestroyed()) refsWin.setAlwaysOnTop(!!pinned, 'screen-saver');
+  return true;
+});
+ipcMain.handle('refs-minimize', () => {
+  if (refsWin && !refsWin.isDestroyed()) refsWin.minimize();
+  return true;
+});
 ipcMain.handle('prefs-get', () => loadPrefs());
 ipcMain.handle('prefs-set', (event, patch) => {
   const prefs = Object.assign(loadPrefs(), patch || {});

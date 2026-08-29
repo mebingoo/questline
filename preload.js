@@ -56,6 +56,17 @@ contextBridge.exposeInMainWorld('ai', {
   providers: () => ipcRenderer.invoke('ai-provider-list')
 });
 
+// The always-on-top reference board window: open/close it, and let the board
+// itself control the frame it lives in (opacity, pin, minimise).
+contextBridge.exposeInMainWorld('refsCtl', {
+  open: () => ipcRenderer.invoke('refs-open'),
+  close: () => ipcRenderer.invoke('refs-close'),
+  isOpen: () => ipcRenderer.invoke('refs-is-open'),
+  setOpacity: (v) => ipcRenderer.invoke('refs-set-opacity', v),
+  setPinned: (p) => ipcRenderer.invoke('refs-set-pinned', p),
+  minimize: () => ipcRenderer.invoke('refs-minimize')
+});
+
 // Read-only: lists/loads the roadmap.json files bundled under data/roadmaps.
 contextBridge.exposeInMainWorld('roadmaps', {
   listSeeds: () => ipcRenderer.invoke('roadmap-list-seeds'),
