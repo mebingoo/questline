@@ -24,6 +24,7 @@
     "directories": {
       "output": "dist"
     },
+    "artifactName": "${productName}-Setup-${version}.${ext}",
     "win": {
       "target": "nsis"
     },

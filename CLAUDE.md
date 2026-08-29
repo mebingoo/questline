@@ -31,6 +31,19 @@ To ship: bump `version` in `package.json`, `npm run dist`, then
 `gh release create vX.Y.Z <installer> <blockmap> dist/latest.yml`.
 The repo must stay **public** — a private one breaks differential updates.
 
+**The uploaded asset name must match `latest.yml` exactly.** GitHub rewrites
+spaces in a filename to dots, so uploading `Questline Setup 1.9.0.exe` stores
+it as `Questline.Setup.1.9.0.exe` while `latest.yml` still points at
+`Questline-Setup-1.9.0.exe` — every client then 404s and silently stays on the
+old version. `build.artifactName` pins the hyphenated name so the built file is
+already correct; don't remove it, and don't rename artifacts by hand. This
+shipped broken twice (v1.8.1, v1.9.0) before it was noticed. After releasing,
+check it actually resolves:
+
+```bash
+curl -sL https://github.com/mebingoo/questline/releases/latest/download/latest.yml
+```
+
 ## Conventions
 
 - All app JS lives in one IIFE in `index.html`. Nothing is global on purpose.
