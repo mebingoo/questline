@@ -405,6 +405,13 @@
     border:1px solid var(--border); border-radius:var(--radius-l); overflow:hidden; margin-bottom:14px;
   }
   .player-wrap iframe{position:absolute; inset:0; width:100%; height:100%; border:0;}
+  /* A downloaded video sits in the same box as the embed. Without this it is
+     laid out at its intrinsic size — 1920x1080 — inside a ~700px box that
+     clips the overflow, so you see a corner of the frame blown up. */
+  .player-wrap video{
+    position:absolute; inset:0; width:100%; height:100%;
+    object-fit:contain; background:#000; display:block;
+  }
   .player-fallback{position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:12px; text-align:center; padding:24px; color:var(--text-dim); font-size:13px;}
 
   .watch-row{display:flex; align-items:center; gap:12px; margin-bottom:20px; flex-wrap:wrap;}
@@ -447,8 +454,17 @@
     background:#000 !important; display:flex !important;
     align-items:center !important; justify-content:center !important;
   }
-  .in-theater video, .in-theater .player-wrap{
+  /* The Learn stage nests the video one level deeper than the Courses stage
+     (stage-wrap > player-wrap > video), so the wrapper has to be stretched
+     too or it keeps its 16/9 box and the video has nothing to fill. */
+  .in-theater .player-wrap{
+    position:absolute !important; inset:0 !important;
+    width:100% !important; height:100% !important; max-height:none !important;
+    aspect-ratio:auto !important; border-radius:0 !important; border:0 !important; margin:0 !important;
+  }
+  .in-theater video{
     width:100% !important; height:100% !important; max-height:100vh !important;
+    object-fit:contain !important;
     aspect-ratio:auto !important; border-radius:0 !important; border:0 !important; margin:0 !important;
   }
   .in-theater .theater-btn{opacity:1; right:18px; bottom:18px;}
