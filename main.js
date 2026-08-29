@@ -295,7 +295,17 @@ ipcMain.handle('prefs-get', () => loadPrefs());
 ipcMain.handle('prefs-set', (event, patch) => {
   const prefs = Object.assign(loadPrefs(), patch || {});
   savePrefs(prefs);
-  try { app.setLoginItemSettings({ openAtLogin: !!prefs.autostart, path: process.execPath, args: [] }); } catch (e) { /* non-fatal */ }
+  try {
+    // In dev (npm start / electron .), process.execPath points at the bare
+    // Electron binary in node_modules, which needs the app path as an arg or it
+    // falls back to Electron's own default demo screen on login. Packaged builds
+    // don't need this since process.execPath already points at the app's own exe.
+    app.setLoginItemSettings({
+      openAtLogin: !!prefs.autostart,
+      path: process.execPath,
+      args: app.isPackaged ? [] : [app.getAppPath()]
+    });
+  } catch (e) { /* non-fatal */ }
   return prefs;
 });
 

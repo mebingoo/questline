@@ -489,6 +489,10 @@
   /* ---------- Disciplines ---------- */
   .disc-grid{display:grid; grid-template-columns:repeat(auto-fill, minmax(250px,1fr)); gap:14px;}
   .disc-card{background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-l); padding:16px; position:relative; overflow:hidden;}
+  .disc-del{position:absolute; top:12px; right:12px; background:none; border:none; color:var(--text-faint); cursor:pointer; padding:4px; opacity:0; z-index:1;}
+  .disc-card:hover .disc-del{opacity:0.7;} .disc-del:hover{opacity:1 !important; color:var(--danger);}
+  .disc-del svg{width:14px;height:14px;}
+
   .disc-card::before{content:""; position:absolute; inset:0 0 auto 0; height:3px; background:var(--dcolor, var(--gold));}
   .disc-top{display:flex; align-items:flex-start; gap:11px; margin-bottom:10px;}
   .disc-icon{
@@ -1824,10 +1828,6 @@ const DEFAULT_GOALS = [
     flavor:'Understand saving and investing well enough to plan ahead.' },
   { id:'language', name:'Language Learning', icon:'globe', color:'#5b87c7',
     flavor:'Reach real fluency in a second language.' },
-  { id:'fitness', name:'Fitness', icon:'flame', color:'#d66b5e',
-    flavor:'Build strength and condition that hold up for the long run.' },
-  { id:'business', name:'Business Builder', icon:'briefcase', color:'#8b7fc9',
-    flavor:'Learn how businesses actually work, from the inside out.' },
   { id:'writing', name:'Writing', icon:'quill', color:'#c77fa8',
     flavor:'Write clearly enough that people want to keep reading.' },
   { id:'school', name:'School & Study', icon:'medal', color:'#c9a227',
@@ -2287,6 +2287,7 @@ function migrate(s){
   if(!s.trees || typeof s.trees !== 'object') s.trees = {};
   if(!s.srs || !Array.isArray(s.srs.decks)) s.srs = defaultSrs();
   ['notes','cards','reviews','decks'].forEach(k=>{ if(!Array.isArray(s.srs[k])) s.srs[k] = []; });
+  s.srs.notes.forEach(n=>{ if(n.translationVi===undefined) n.translationVi = ''; });
   if(!s.srs.daily || typeof s.srs.daily !== 'object') s.srs.daily = {};
   if(!s.srs.config) s.srs.config = defaultSrs().config;
   if(!s.journal || !Array.isArray(s.journal.entries)) s.journal = { entries:[], lastXpDay:null };
@@ -4031,6 +4032,25 @@ function milestoneSummaryHtml(g){
     '</div>'+
     (totalCrit ? '<div class="roadmap-current-track"><i style="width:'+pct+'%"></i></div>' : '');
 }
+/* Removing a quest line cascades to everything that only makes sense while
+ * it exists: its own dailies/weeklies, its focus-block assignments, its skill
+ * tree progress. Things that merely reference it in passing (a course, a
+ * journal entry, a past log line) just lose the tag rather than being
+ * deleted themselves — a course is not "about" a quest line the way a
+ * daily quest is. */
+function cascadeDeleteGoal(goalId){
+  state.dailies = state.dailies.filter(d=>d.goal!==goalId);
+  state.weeklies = state.weeklies.filter(w=>w.goal!==goalId);
+  DAYS.forEach(day=>{
+    const day2 = state.focus[day]; if(!day2) return;
+    Object.keys(day2).forEach(slot=>{ if(day2[slot] && day2[slot].goal===goalId) delete day2[slot]; });
+  });
+  if(state.trees) delete state.trees[goalId];
+  (state.courses||[]).forEach(c=>{ if(c.goal===goalId) c.goal = null; });
+  (state.journal.entries||[]).forEach(e=>{ if(e.goal===goalId) e.goal = null; });
+  state.goals = state.goals.filter(g=>g.id!==goalId);
+}
+
 function renderDisciplines(){
   let html = state.goals.map(g=>{
     const lvl = levelFromXP(g.xp,100), into = xpIntoLevel(g.xp,100);
@@ -4040,6 +4060,7 @@ function renderDisciplines(){
       '<p class="disc-flavor">'+esc(g.flavor)+'</p>'+
       '<div class="disc-bar-row"><span>'+into+' / 100 xp</span><span>Lv.'+(lvl+1)+'</span></div>'+
       '<div class="disc-track"><i style="width:'+into+'%"></i></div>'+
+      '<button class="disc-del" data-action="delgoal" data-goal="'+g.id+'" title="Remove this quest line">'+icon('trash')+'</button>'+
       '<div class="disc-actions">'+
         '<button class="btn-ghost-sm" data-action="logxp" data-goal="'+g.id+'">Log progress</button>'+
         '<button class="btn-ghost-sm" data-action="roadmap" data-goal="'+g.id+'">Roadmap</button>'+
@@ -5469,6 +5490,21 @@ document.getElementById('weeklyList').addEventListener('click', e=>{
 });
 document.getElementById('discGrid').addEventListener('click', e=>{
   if(e.target.id==='addGoalBtn'){ openAddGoal(); return; }
+  const delBtn = e.target.closest('[data-action="delgoal"]');
+  if(delBtn){
+    const g = goalById(delBtn.dataset.goal); if(!g) return;
+    openConfirm({
+      title:'Remove "'+esc(g.name)+'"?',
+      body:'Deletes this quest line along with its own daily and weekly quests, and clears it from your timetable. Courses, journal entries and past log history just lose the tag — nothing else of yours is touched. This cannot be undone.',
+      confirmLabel:'Remove quest line',
+      onConfirm:()=>{
+        cascadeDeleteGoal(g.id);
+        saveState(); renderAll();
+        showToast({title:'Quest line removed', sub:g.name});
+      }
+    });
+    return;
+  }
   const logBtn = e.target.closest('[data-action="logxp"]');
   if(logBtn){ openLogXp(logBtn.dataset.goal); return; }
   const roadmapBtn = e.target.closest('[data-action="roadmap"]');
@@ -5899,10 +5935,30 @@ function makeCards(noteId, types){
     reps:0, lapses:0, step:null, lastReview:null
   }));
 }
+const FLASHCARD_CREATE_XP = 8;
+/* A note's language (e.g. de-DE) is matched against quest-line names/ids so
+ * creating a card pays into "German Fluency" or "English Mastery" without
+ * either side hardcoding the other. Falls back to a single generic
+ * "Language Learning" quest line if that is all a fresh install has, and
+ * grants nothing if neither exists rather than guessing. */
+const LANG_GOAL_HINTS = {
+  de:['german','deutsch'], en:['english','englisch'], fr:['french','franz'],
+  es:['spanish','spanisch'], it:['italian','italienisch'], nl:['dutch','niederl'],
+  pt:['portuguese','portugies'], ja:['japanese','japanisch'], ko:['korean','koreanisch'],
+  zh:['chinese','chinesisch'], vi:['vietnamese','vietnamesisch'], ru:['russian','russisch']
+};
+function resolveLangGoal(langCode){
+  const prefix = String(langCode||'').split('-')[0].toLowerCase();
+  const hints = LANG_GOAL_HINTS[prefix] || [];
+  const hay = (g)=> (g.id+' '+g.name).toLowerCase();
+  return state.goals.find(g=>hints.some(h=>hay(g).includes(h))) ||
+         state.goals.find(g=>hay(g).includes('language')) || null;
+}
+
 function addNote(data, types){
   const note = Object.assign({
     id:'nt'+Date.now()+Math.random().toString(36).slice(2,5),
-    created: Date.now(), tags: [], source:'', cefr:'', imageId:null
+    created: Date.now(), tags: [], source:'', cefr:'', imageId:null, translationVi:''
   }, data);
   srs().notes.push(note);
   const usable = types.filter(t=>{
@@ -6167,6 +6223,8 @@ function srsReveal(){
     '<div class="srs-answer">'+esc(card.type==='translation'||card.type==='typing'||card.type==='listening' ? note.word : note.translation)+'</div>'+
     (card.type==='recognition'||card.type==='cloze'||card.type==='production' ? '' :
       '<div class="srs-sub">'+esc(note.translation)+'</div>')+
+    (note.translationVi ? '<div class="srs-sub" style="color:var(--teal)">'+esc(note.translationVi)+
+      ' <span style="color:var(--text-faint);font-size:10px">(VI)</span></div>' : '')+
     ex +
     (note.imageId ? '<img class="srs-img" id="srsImg" alt="">' : '')+
     (tags.length ? '<div class="srs-tags">'+tags.map(t=>'<span class="srs-tag">'+esc(t)+'</span>').join('')+'</div>' : ''));
@@ -6314,7 +6372,7 @@ function openAddWord(noteId){
   const editing = noteId ? noteById(noteId) : null;
   const decks = srs().decks;
   if(!decks.length){ showToast({title:'Make a deck first'}); return; }
-  const n = editing || { deckId: decks[0].id, word:'', translation:'', example:'', exampleTr:'',
+  const n = editing || { deckId: decks[0].id, word:'', translation:'', example:'', exampleTr:'', translationVi:'',
                          lang: decks[0].lang, cefr:'', tags:[], source:'' };
   let types = editing
     ? Array.from(new Set(srs().cards.filter(c=>c.noteId===editing.id).map(c=>c.type)))
@@ -6339,6 +6397,8 @@ function openAddWord(noteId){
       '<input type="text" class="fld" id="wEx" value="'+esc(n.example||'')+'" placeholder="Sein Argument war überzeugend.">'+
       '<label>Example translation</label>'+
       '<input type="text" class="fld" id="wExTr" value="'+esc(n.exampleTr||'')+'" placeholder="His argument was convincing.">'+
+      '<label>Vietnamese translation / explanation <span style="color:var(--text-faint);text-transform:none">(optional)</span></label>'+
+      '<input type="text" class="fld" id="wTrVi" value="'+esc(n.translationVi||'')+'" placeholder="dùng khi tiếng Anh cũng không rõ nghĩa">'+
       '<div class="row2">'+
         '<div><label>CEFR level</label><select class="fld" id="wCefr"><option value="">—</option>'+
           CEFR.map(c=>'<option value="'+c+'"'+(n.cefr===c?' selected':'')+'>'+c+'</option>').join('')+'</select></div>'+
@@ -6402,6 +6462,7 @@ function openAddWord(noteId){
       '{"translation":"short English translation or definition",'+
       '"example":"one natural sentence in '+langName+' using the word, max 12 words",'+
       '"exampleTr":"English translation of that sentence",'+
+      '"translationVi":"short Vietnamese translation or explanation, natural phrasing — empty string if unsure",'+
       '"cefr":"one of A1 A2 B1 B2 C1 C2",'+
       '"tags":["2-4 short tags such as part of speech or register"]}\n'+
       'The example must sound like something a person would actually say.';
@@ -6414,6 +6475,7 @@ function openAddWord(noteId){
       if(j.translation) document.getElementById('wTr').value = j.translation;
       if(j.example) document.getElementById('wEx').value = j.example;
       if(j.exampleTr) document.getElementById('wExTr').value = j.exampleTr;
+      if(j.translationVi) document.getElementById('wTrVi').value = j.translationVi;
       if(j.cefr && CEFR.includes(j.cefr)) document.getElementById('wCefr').value = j.cefr;
       if(Array.isArray(j.tags)) document.getElementById('wTags').value = j.tags.join(', ');
       showToast({title:'Filled in', sub:'Check it before saving.'});
@@ -6434,11 +6496,13 @@ function openAddWord(noteId){
       word, translation: tr,
       example: document.getElementById('wEx').value.trim(),
       exampleTr: document.getElementById('wExTr').value.trim(),
+      translationVi: document.getElementById('wTrVi').value.trim(),
       cefr: document.getElementById('wCefr').value,
       source: document.getElementById('wSrc').value.trim(),
       tags: document.getElementById('wTags').value.split(',').map(x=>x.trim()).filter(Boolean),
       imageId: pendingImage
     };
+    let xpGoal = null;
     if(editing){
       Object.assign(editing, data);
       // keep the schedule of card types that survive; add any newly ticked ones
@@ -6450,11 +6514,18 @@ function openAddWord(noteId){
       if(missing.length) srs().cards.push(...makeCards(editing.id, missing));
     }else{
       srsPickedTypes = [...types];
-      addNote(data, types);
+      const newNote = addNote(data, types);
+      xpGoal = resolveLangGoal(newNote.lang);
+      if(xpGoal){
+        grant(FLASHCARD_CREATE_XP, xpGoal.id);
+        pushLog('New flashcard: <b>'+esc(newNote.word)+'</b>', '+'+FLASHCARD_CREATE_XP+'xp', 'complete');
+        checkAchievements();
+      }
     }
     m.classList.remove('modal-wide');
     closeModal(); saveState(); renderSrs(); renderAll();
-    showToast({title: editing?'Saved':'Added', sub: word});
+    showToast({title: editing?'Saved':'Added',
+      sub: word + (xpGoal ? ' · +'+FLASHCARD_CREATE_XP+'xp '+xpGoal.name : '')});
   }
 
   paint();
