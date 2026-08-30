@@ -148,6 +148,16 @@ controller and is called once per surface, so the canvas is written once.
 - Images go to IndexedDB (`questline-refs`), only geometry goes in `state` —
   a board of 40 references would blow past KV's limit many times over.
   Anything over 3000px or 5 MB is re-encoded to WebP once, on import.
+- Items carry `kind`: `'img'` or `'text'`. Notes are small enough to live in
+  `state`, so unlike the images they *do* sync between devices.
+- An open note blocks the rebuild (it would tear out the box being typed in),
+  so that guard self-heals: if the `.editing` element is gone, the id is
+  cleared rather than freezing the board forever. Ending an edit calls
+  `commitEdit()` directly from every path — blur alone is not dependable, a
+  window can lose focus without dispatching one.
+- `addFiles` re-resolves the board after each `await`. The other window can
+  swap `state` out mid-encode, and pushing into the board captured beforehand
+  puts the image into an orphan that vanishes at the next reload.
 - A drag writes straight to the DOM and only saves on pointerup, then marks
   the new geometry as already-drawn. Skipping that makes the app's own save
   bounce back through `renderAll()` as a full rebuild, mid-drag.
