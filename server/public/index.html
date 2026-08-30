@@ -1328,6 +1328,34 @@
     border-radius:2px; background:#000; box-shadow:0 2px 14px rgba(0,0,0,0.45);
   }
   .ref-item.sel img{outline:2px solid var(--gold); outline-offset:2px;}
+
+  /* Sticky notes. Their text is small enough to live in the synced state, so
+     unlike the images these do travel between devices. */
+  .ref-note{
+    width:100%; min-height:100%; box-sizing:border-box; padding:10px 11px;
+    font-family:var(--font-body); font-size:15px; line-height:1.45;
+    color:#17140c; background:#f3d97a; border-radius:3px;
+    box-shadow:0 2px 14px rgba(0,0,0,0.45); white-space:pre-wrap;
+    word-break:break-word; overflow:hidden; outline:none; cursor:inherit;
+  }
+  .ref-note:empty::before{content:'Double-click to write…'; opacity:0.45;}
+  .ref-item.sel .ref-note{outline:2px solid var(--gold); outline-offset:2px;}
+  /* While editing, the text must take the pointer instead of the drag handler. */
+  .ref-item.editing .ref-note{cursor:text; user-select:text; overflow:auto;}
+  .ref-item.editing{cursor:text;}
+  .ref-note-c1{background:#f3d97a;}                      /* amber  */
+  .ref-note-c2{background:#a8dca0; }                     /* green  */
+  .ref-note-c3{background:#9ecbe8;}                      /* blue   */
+  .ref-note-c4{background:#efa2a2;}                      /* red    */
+  .ref-note-c5{background:#e8e4da;}                      /* paper  */
+  .ref-color{
+    position:absolute; right:0; top:0; width:16px; height:16px; padding:0;
+    background:rgba(0,0,0,0.75); color:#fff; border:1px solid var(--border);
+    border-radius:2px; font-size:10px; line-height:14px; cursor:pointer;
+    transform:translate(50%,-50%) scale(var(--inv,1)); transform-origin:center;
+    opacity:0; transition:opacity .12s;
+  }
+  .ref-item:hover .ref-color, .ref-item.sel .ref-color{opacity:1;}
   /* Scaled against the zoom so the grab target stays the same size on screen
      however far in or out you are. */
   .ref-handle{
@@ -1802,6 +1830,7 @@
         <span class="ref-spacer"></span>
         <button class="btn-ghost-sm" id="refAdd">Add images</button>
         <input type="file" id="refFile" accept="image/*" multiple style="display:none">
+        <button class="btn-ghost-sm" id="refAddNote">Add note</button>
         <button class="btn-ghost-sm" id="refFit">Fit</button>
         <span class="ref-zoom" id="refZoom">100%</span>
       </div>
@@ -1810,7 +1839,7 @@
         <div class="ref-world" id="refWorld"></div>
         <div class="ref-empty" id="refEmpty">
           <div>Drop images here, paste with Ctrl+V, or use “Add images”.</div>
-          <div class="ref-hint">Drag to move · corner handle to resize · scroll to zoom · drag the background to pan · Delete removes the selected image</div>
+          <div class="ref-hint">Drag to move · corner handle to resize · scroll to zoom · drag the background to pan<br>Double-click the empty board for a note (or press N) · double-click a note to edit it · Delete removes what's selected</div>
         </div>
       </div>
       <div class="ref-hint">Images are kept on this device only — they never go to the server.</div>
@@ -1955,6 +1984,7 @@
     <span class="refs-title">REFS</span>
     <select class="fld ref-boardsel" id="refsWinBoardSel" style="margin:0; padding:2px 6px; font-size:11px; max-width:130px"></select>
     <button class="refs-btn" id="refsWinAdd" title="Add images">+</button>
+    <button class="refs-btn" id="refsWinNote" title="Add a note">Note</button>
     <button class="refs-btn" id="refsWinFit" title="Fit all">Fit</button>
     <input type="file" id="refsWinFile" accept="image/*" multiple style="display:none">
     <span class="ref-spacer"></span>
@@ -2548,7 +2578,11 @@ function migrate(s){
   if(!s.timeline || !Array.isArray(s.timeline.events)) s.timeline = defaultTimeline();
   if(!s.timeline.start) s.timeline.start = todayStr();
   if(!s.refs || !Array.isArray(s.refs.boards) || !s.refs.boards.length) s.refs = defaultRefs();
-  s.refs.boards.forEach(b=>{ if(!Array.isArray(b.items)) b.items = []; });
+  s.refs.boards.forEach(b=>{
+    if(!Array.isArray(b.items)) b.items = [];
+    // Boards made before notes existed hold images only.
+    b.items.forEach(i=>{ if(!i.kind) i.kind = 'img'; });
+  });
   if(!s.refs.boards.some(b=>b.id===s.refs.active)) s.refs.active = s.refs.boards[0].id;
   if(!Array.isArray(s.courses)) s.courses = [];
   s.courses.forEach(c=>{ if(!c.items) c.items = {}; });
@@ -2908,6 +2942,10 @@ function setTab(name){
     if(typeof captureCourseProgress==='function') captureCourseProgress();
     const cv = document.getElementById('courseVideo');
     if(cv){ try{ cv.pause(); }catch(e){} }
+  }
+  // A half-written note must not be lost by clicking another tab.
+  if(state.activeTab==='refs' && name!=='refs' && typeof refTabSurface!=='undefined' && refTabSurface){
+    refTabSurface.commitEdit();
   }
   state.activeTab = name;
   document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active', t.dataset.tab===name));
@@ -8419,6 +8457,7 @@ function makeRefSurface(ids){
   let urls = [];               // object URLs to release on the next rebuild
   let act = null;              // the interaction in progress
   let selId = null;
+  let editingId = null;        // the note currently being typed into
   let fitPending = true;       // fit once, the first time a board is drawn
 
   const clamp = (v,a,b)=>Math.max(a, Math.min(b, v));
@@ -8439,6 +8478,13 @@ function makeRefSurface(ids){
   async function build(){
     const b = refBoard();
     const next = boardSig(b);
+    // Rebuilding mid-edit would tear out the box being typed into — but only
+    // skip if that box is genuinely still there. A stale id left behind by a
+    // note that vanished would otherwise freeze the board for good.
+    if(editingId){
+      if(world.querySelector('.ref-item[data-id="'+editingId+'"].editing')) return;
+      editingId = null;
+    }
     if(next === sig) return;               // nothing changed — don't churn the DOM
     sig = next;
     urls.forEach(u=>URL.revokeObjectURL(u)); urls = [];
@@ -8449,15 +8495,29 @@ function makeRefSurface(ids){
       el.dataset.id = it.id;
       el.style.left = it.x+'px'; el.style.top = it.y+'px';
       el.style.width = it.w+'px'; el.style.zIndex = String(it.z||1);
-      const img = document.createElement('img');
-      img.alt = ''; img.draggable = false;
-      const blob = await refGet(it.imgId);
-      if(blob){ const u = URL.createObjectURL(blob); urls.push(u); img.src = u; }
+
+      if(it.kind === 'text'){
+        // A note needs a real height, unlike an image which derives one.
+        el.style.height = it.h+'px';
+        const note = document.createElement('div');
+        note.className = 'ref-note ref-note-c'+(it.color||1);
+        note.textContent = it.text || '';
+        const col = document.createElement('button');
+        col.className = 'ref-color'; col.type = 'button'; col.textContent = '◑'; col.title = 'Change colour';
+        el.appendChild(note); el.appendChild(col);
+      }else{
+        const img = document.createElement('img');
+        img.alt = ''; img.draggable = false;
+        const blob = await refGet(it.imgId);
+        if(blob){ const u = URL.createObjectURL(blob); urls.push(u); img.src = u; }
+        el.appendChild(img);
+      }
+
       const del = document.createElement('button');
       del.className = 'ref-del'; del.type = 'button'; del.textContent = '×'; del.title = 'Remove';
       const h = document.createElement('div');
       h.className = 'ref-handle'; h.title = 'Resize';
-      el.appendChild(img); el.appendChild(del); el.appendChild(h);
+      el.appendChild(del); el.appendChild(h);
       world.appendChild(el);
     }
     if(empty) empty.style.display = (b && b.items.length) ? 'none' : '';
@@ -8490,12 +8550,11 @@ function makeRefSurface(ids){
   }
 
   async function addFiles(files, at){
-    const b = refBoard(); if(!b) return;
+    if(!refBoard()) return;
     const list = Array.from(files||[]).filter(f=>f && f.type && f.type.startsWith('image/'));
     if(!list.length) return;
     const r = stage.getBoundingClientRect();
     const centre = at || toWorld(r.left + r.width/2, r.top + r.height/2);
-    let z = b.items.reduce((m,i)=>Math.max(m, i.z||0), 0);
     let placed = 0, failed = 0;
     for(const f of list){
       const prepped = await refPrepImage(f);
@@ -8503,6 +8562,11 @@ function makeRefSurface(ids){
       const imgId = 'ri'+Date.now()+'_'+Math.random().toString(36).slice(2,7);
       try{ await refPut(imgId, prepped.blob); }
       catch(e){ failed++; continue; }
+      // Re-resolve the board on every pass. Encoding and storing are awaited,
+      // and a write from the other window can swap `state` out underneath us —
+      // pushing into a board captured before the await would be pushing into
+      // an orphan, and the image would vanish at the next reload.
+      const b = refBoard(); if(!b) break;
       // Land at a readable size rather than 4000px wide, and cascade so a
       // multi-file drop doesn't stack every image on one spot.
       const s = Math.min(1, 420/Math.max(prepped.w, prepped.h));
@@ -8510,8 +8574,9 @@ function makeRefSurface(ids){
       const off = placed*26;
       b.items.push({
         id:'rt'+Date.now()+'_'+Math.random().toString(36).slice(2,7),
-        imgId, x: Math.round(centre.x - w/2 + off), y: Math.round(centre.y - h/2 + off),
-        w, h, z: ++z
+        kind:'img', imgId,
+        x: Math.round(centre.x - w/2 + off), y: Math.round(centre.y - h/2 + off),
+        w, h, z: b.items.reduce((m,i)=>Math.max(m, i.z||0), 0) + 1
       });
       placed++;
     }
@@ -8525,11 +8590,93 @@ function makeRefSurface(ids){
     const i = b.items.findIndex(x=>x.id===id);
     if(i < 0) return;
     const gone = b.items.splice(i,1)[0];
-    // Drop the blob too, unless another item still points at it.
-    const stillUsed = state.refs.boards.some(bd=>bd.items.some(x=>x.imgId===gone.imgId));
-    if(!stillUsed) refDelete(gone.imgId);
+    if(gone.kind !== 'text'){
+      // Drop the blob too, unless another item still points at it.
+      const stillUsed = state.refs.boards.some(bd=>bd.items.some(x=>x.imgId===gone.imgId));
+      if(!stillUsed) refDelete(gone.imgId);
+    }
     if(selId === id) selId = null;
+    if(editingId === id) editingId = null;
     saveState(); refRenderAll();
+  }
+
+  /* ---- notes ----
+     Text is small enough to sit in the synced state alongside the geometry,
+     so unlike the images a note does follow you to another device. */
+  function addNote(at){
+    const b = refBoard(); if(!b) return null;
+    const r = stage.getBoundingClientRect();
+    const c = at || toWorld(r.left + r.width/2, r.top + r.height/2);
+    const w = 260, h = 160;
+    const z = b.items.reduce((m,i)=>Math.max(m, i.z||0), 0) + 1;
+    const it = {
+      id:'rt'+Date.now()+'_'+Math.random().toString(36).slice(2,7),
+      kind:'text', text:'', color:1,
+      x: Math.round(c.x - w/2), y: Math.round(c.y - h/2), w, h, z
+    };
+    b.items.push(it);
+    saveState(); refRenderAll();
+    // Drop straight into typing — that is why the note was made.
+    startEdit(it.id);
+    return it;
+  }
+
+  function startEdit(id){
+    const b = refBoard(); if(!b) return;
+    const it = b.items.find(x=>x.id===id);
+    if(!it || it.kind !== 'text') return;
+    const el = world.querySelector('.ref-item[data-id="'+id+'"]');
+    if(!el) return;
+    const note = el.querySelector('.ref-note');
+    if(!note) return;
+    editingId = id;
+    el.classList.add('editing');
+    note.setAttribute('contenteditable', 'plaintext-only');
+    note.focus();
+    // Put the caret at the end rather than wherever the click landed.
+    const sel = window.getSelection();
+    const rng = document.createRange();
+    rng.selectNodeContents(note); rng.collapse(false);
+    sel.removeAllRanges(); sel.addRange(rng);
+    note.addEventListener('blur', ()=>commitEdit(id), { once:true });
+  }
+
+  /* Safe to call more than once: the first call clears editingId and the rest
+     fall straight out. Blur alone is not enough to rely on — the window can
+     lose focus in ways that never dispatch one — so every path that ends an
+     edit calls this directly. */
+  function commitEdit(id){
+    if(!editingId || (id && editingId !== id)) return;
+    id = editingId;
+    const b = refBoard();
+    const it = b && b.items.find(x=>x.id===id);
+    const el = world.querySelector('.ref-item[data-id="'+id+'"]');
+    const note = el && el.querySelector('.ref-note');
+    editingId = null;
+    if(el) el.classList.remove('editing');
+    if(note) note.removeAttribute('contenteditable');
+    if(!it || !note) return;
+    const text = note.innerText.replace(/ /g, ' ').trimEnd();
+    if(text === (it.text || '')) return;
+    it.text = text;
+    // Record it as drawn before saving, or our own write comes straight back
+    // through renderAll() as a rebuild.
+    markDrawn();
+    saveState();
+    refSurfaces.forEach(s=>{ if(s.surface !== api) s.surface.refresh(); });
+  }
+
+  const REF_NOTE_COLORS = 5;
+  function cycleColor(id){
+    const b = refBoard(); if(!b) return;
+    const it = b.items.find(x=>x.id===id);
+    if(!it || it.kind !== 'text') return;
+    it.color = ((it.color || 1) % REF_NOTE_COLORS) + 1;
+    const note = world.querySelector('.ref-item[data-id="'+id+'"] .ref-note');
+    if(note) note.className = 'ref-note ref-note-c'+it.color;
+    markDrawn();
+    saveState();
+    refSurfaces.forEach(s=>{ if(s.surface !== api) s.surface.refresh(); });
   }
 
   /* ---- interaction ---- */
@@ -8540,8 +8687,20 @@ function makeRefSurface(ids){
     const delBtn = e.target.closest('.ref-del');
     if(delBtn){ e.preventDefault(); removeItem(delBtn.parentElement.dataset.id); return; }
 
+    const colBtn = e.target.closest('.ref-color');
+    if(colBtn){ e.preventDefault(); cycleColor(colBtn.parentElement.dataset.id); return; }
+
     const handle = e.target.closest('.ref-handle');
     const hit = e.target.closest('.ref-item');
+
+    // A note being typed into keeps the pointer: clicking inside it should
+    // place the caret, not start dragging the note around.
+    if(hit && hit.classList.contains('editing') && !handle) return;
+    if(editingId && (!hit || hit.dataset.id !== editingId)){
+      const note = world.querySelector('.ref-item[data-id="'+editingId+'"] .ref-note');
+      commitEdit(editingId);
+      if(note) note.blur();
+    }
 
     // Middle button always pans, whatever sits under it.
     if(hit && e.button === 0){
@@ -8553,7 +8712,7 @@ function makeRefSurface(ids){
       if((it.z||0) < top){ it.z = top+1; hit.style.zIndex = String(it.z); }
       const w0 = toWorld(e.clientX, e.clientY);
       act = handle
-        ? { kind:'resize', it, el:hit, startW:it.w, startH:it.h, ox:w0.x }
+        ? { kind:'resize', it, el:hit, startW:it.w, startH:it.h, ox:w0.x, oy:w0.y }
         : { kind:'move',   it, el:hit, dx:w0.x - it.x, dy:w0.y - it.y };
     }else{
       setSelected(null);
@@ -8579,11 +8738,19 @@ function makeRefSurface(ids){
       act.el.style.left = act.it.x+'px';
       act.el.style.top  = act.it.y+'px';
     }else if(act.kind === 'resize'){
-      const ratio = act.startH / act.startW;
-      const nw = Math.max(40, Math.round(act.startW + (w.x - act.ox)));
-      act.it.w = nw;
-      act.it.h = Math.round(nw * ratio);
-      act.el.style.width = nw+'px';
+      if(act.it.kind === 'text'){
+        // A note has no aspect ratio worth keeping — size it freely.
+        act.it.w = Math.max(90, Math.round(act.startW + (w.x - act.ox)));
+        act.it.h = Math.max(56, Math.round(act.startH + (w.y - act.oy)));
+        act.el.style.width  = act.it.w+'px';
+        act.el.style.height = act.it.h+'px';
+      }else{
+        const ratio = act.startH / act.startW;
+        const nw = Math.max(40, Math.round(act.startW + (w.x - act.ox)));
+        act.it.w = nw;
+        act.it.h = Math.round(nw * ratio);
+        act.el.style.width = nw+'px';
+      }
     }
   });
 
@@ -8616,6 +8783,31 @@ function makeRefSurface(ids){
     applyTransform();
   }, { passive:false });
 
+  // Double-click a note to type in it; double-click empty board to make one.
+  stage.addEventListener('dblclick', (e)=>{
+    const hit = e.target.closest('.ref-item');
+    if(hit){
+      const b = refBoard();
+      const it = b && b.items.find(x=>x.id===hit.dataset.id);
+      if(it && it.kind === 'text'){ e.preventDefault(); startEdit(it.id); }
+      return;
+    }
+    e.preventDefault();
+    addNote(toWorld(e.clientX, e.clientY));
+  });
+
+  // Escape finishes the note rather than leaving it in edit mode.
+  stage.addEventListener('keydown', (e)=>{
+    if(e.key === 'Escape' && editingId){
+      e.preventDefault(); e.stopPropagation();
+      const note = world.querySelector('.ref-item[data-id="'+editingId+'"] .ref-note');
+      commitEdit(editingId);
+      if(note) note.blur();
+    }
+  });
+  // Leaving the tab or closing the window must not lose an open note.
+  window.addEventListener('beforeunload', ()=>commitEdit(null));
+
   stage.addEventListener('dragover', (e)=>{ e.preventDefault(); stage.classList.add('dropping'); });
   stage.addEventListener('dragleave', ()=>stage.classList.remove('dropping'));
   stage.addEventListener('drop', (e)=>{
@@ -8629,9 +8821,12 @@ function makeRefSurface(ids){
     refresh: build,
     fit,
     addFiles,
-    deleteSelected(){ if(selId) removeItem(selId); },
+    addNote,
+    deleteSelected(){ if(selId && !editingId) removeItem(selId); },
     hasSelection(){ return !!selId; },
+    isEditing(){ return !!editingId; },
     resetFit(){ fitPending = true; },
+    commitEdit(){ commitEdit(null); },
     stage
   };
   refSurfaces.push({ surface: api });
@@ -8685,6 +8880,7 @@ if(refsWindowMode){
 
   document.getElementById('refsWinBoardSel').addEventListener('change', e=>refSwitchBoard(e.target.value));
   document.getElementById('refsWinFit').addEventListener('click', ()=>refWinSurface.fit());
+  document.getElementById('refsWinNote').addEventListener('click', ()=>refWinSurface.addNote());
   document.getElementById('refsWinAdd').addEventListener('click', ()=>document.getElementById('refsWinFile').click());
   document.getElementById('refsWinFile').addEventListener('change', e=>{
     refWinSurface.addFiles(e.target.files); e.target.value = '';
@@ -8712,6 +8908,7 @@ if(refsWindowMode){
 
   document.getElementById('refBoardSel').addEventListener('change', e=>refSwitchBoard(e.target.value));
   document.getElementById('refFit').addEventListener('click', ()=>refTabSurface.fit());
+  document.getElementById('refAddNote').addEventListener('click', ()=>refTabSurface.addNote());
   document.getElementById('refAdd').addEventListener('click', ()=>document.getElementById('refFile').click());
   document.getElementById('refFile').addEventListener('change', e=>{
     refTabSurface.addFiles(e.target.files); e.target.value = '';
@@ -8783,8 +8980,11 @@ document.addEventListener('keydown', e=>{
   const t = e.target;
   if(t && (t.tagName==='INPUT' || t.tagName==='TEXTAREA' || t.tagName==='SELECT' || t.isContentEditable)) return;
   if(document.getElementById('modalVeil').classList.contains('open')) return;
+  // While a note is open, "f" is a letter and Delete belongs to the text.
+  if(s.isEditing()) return;
   if((e.key==='Delete' || e.key==='Backspace') && s.hasSelection()){ e.preventDefault(); s.deleteSelected(); }
   else if(e.key==='f' || e.key==='F'){ e.preventDefault(); s.fit(); }
+  else if(e.key==='n' || e.key==='N'){ e.preventDefault(); s.addNote(); }
 });
 
 /* ============ COURSES ============ */
