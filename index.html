@@ -1475,6 +1475,17 @@
   .set-tab:hover{color:var(--text);}
   .set-tab.active{color:var(--gold); border-color:var(--gold); box-shadow:0 0 0 1px var(--gold-glow);}
   .set-body{max-width:1180px; margin:0 auto; padding:22px 26px 60px; border-top:1px solid var(--border-soft);}
+/* ---- Maths, rendered as native MathML (no library, no CDN) ---- */
+  math{font-size:1.05em;}
+  .srs-math{margin:10px 0 4px; font-size:26px; color:var(--text); line-height:1.5; overflow-x:auto; max-width:100%;}
+  .srs-answer.small{font-size:19px; line-height:1.5;}
+  .math-preview{min-height:44px; padding:10px 12px; margin:-4px 0 8px;
+    border:1px dashed var(--border); border-radius:var(--radius-s); background:var(--bg-2);
+    font-size:20px; color:var(--text); overflow-x:auto;}
+  .math-empty{font-size:11.5px; color:var(--text-faint); font-family:var(--font-body);}
+  .math-raw{font-family:var(--font-mono); font-size:0.9em; color:var(--danger);}
+  #wTr textarea, textarea#wTr{font-family:var(--font-mono); font-size:12.5px; resize:vertical;}
+
 /* ---- Klausur dates (Tasks tab strip) ---- */
   .exam-strip{display:flex; gap:10px; flex-wrap:wrap; margin:0 0 14px;}
   .exam-chip{display:flex; align-items:center; gap:10px; padding:8px 13px; border:1px solid var(--border);
@@ -2710,6 +2721,8 @@ function migrate(s){
   if(!s.srs || !Array.isArray(s.srs.decks)) s.srs = defaultSrs();
   ['notes','cards','reviews','decks'].forEach(k=>{ if(!Array.isArray(s.srs[k])) s.srs[k] = []; });
   s.srs.notes.forEach(n=>{ if(n.translationVi===undefined) n.translationVi = ''; });
+  // Every note written before there was more than one kind is vocabulary.
+  s.srs.notes.forEach(n=>{ if(!n.kind) n.kind = 'vocab'; });
   if(!s.srs.daily || typeof s.srs.daily !== 'object') s.srs.daily = {};
   if(!s.srs.config) s.srs.config = defaultSrs().config;
   if(!s.journal || !Array.isArray(s.journal.entries)) s.journal = { entries:[], lastXpDay:null };
@@ -2747,8 +2760,8 @@ function migrate(s){
     if(!aiKey && s.ai.apiKey){ aiKey = String(s.ai.apiKey); saveAiKey(); }
     delete s.ai.apiKey;
   }
-  if(!s.timeline || !Array.isArray(s.timeline.events)) s.timeline = defaultTimeline();
-  // Events written before Klausuren existed are all plain milestones.
+  // Events written before Klausuren existed are all plain milestones. The
+  // timeline itself is already guaranteed above.
   s.timeline.events.forEach(e=>{ if(e.kind!=='exam') e.kind = 'milestone'; });
   if(!s.grades) s.grades = defaultGrades();
   else{
@@ -7122,14 +7135,240 @@ function fmtWait(ms){
  *   AI     - writes content; never touches scheduling
  * Progress and content sync; images stay on the device like everywhere else. */
 
+/* ============ MATHS: LaTeX -> MathML ============
+ * ROADMAP.md said "KaTeX from cdnjs". It cannot be: the CSP allows scripts from
+ * self and YouTube only, and widening it to a CDN would mean formula cards stop
+ * rendering on a train — for an app whose AI runs locally so it works offline,
+ * that is the wrong trade. Vendoring KaTeX means ~300 KB of JS plus a megabyte
+ * of fonts and the end of "one file, no build step".
+ *
+ * Chromium has shipped MathML Core since 109, and this Electron is on 152, so
+ * the browser already does the layout. What was missing was a way to type it:
+ * nobody writes <msubsup> by hand. So this converts the LaTeX subset an Abitur
+ * student actually uses into MathML, in about two hundred lines, with no
+ * dependency and nothing to load.
+ *
+ * Unknown commands render as their own literal text rather than throwing —
+ * a flashcard with one odd macro should still show the rest of the formula.
+ */
+const TEX_GREEK = {
+  alpha:'α', beta:'β', gamma:'γ', delta:'δ', epsilon:'ε', varepsilon:'ε', zeta:'ζ',
+  eta:'η', theta:'θ', vartheta:'ϑ', iota:'ι', kappa:'κ', lambda:'λ', mu:'μ', nu:'ν',
+  xi:'ξ', pi:'π', rho:'ρ', sigma:'σ', tau:'τ', upsilon:'υ', phi:'φ', varphi:'φ',
+  chi:'χ', psi:'ψ', omega:'ω',
+  Gamma:'Γ', Delta:'Δ', Theta:'Θ', Lambda:'Λ', Xi:'Ξ', Pi:'Π', Sigma:'Σ',
+  Upsilon:'Υ', Phi:'Φ', Psi:'Ψ', Omega:'Ω'
+};
+const TEX_OPS = {
+  cdot:'⋅', times:'×', div:'÷', pm:'±', mp:'∓', ast:'∗', star:'⋆',
+  leq:'≤', le:'≤', geq:'≥', ge:'≥', neq:'≠', ne:'≠', approx:'≈', equiv:'≡',
+  sim:'∼', propto:'∝', ll:'≪', gg:'≫',
+  to:'→', rightarrow:'→', leftarrow:'←', Rightarrow:'⇒', Leftarrow:'⇐',
+  leftrightarrow:'↔', Leftrightarrow:'⇔', mapsto:'↦',
+  infty:'∞', partial:'∂', nabla:'∇', forall:'∀', exists:'∃', emptyset:'∅',
+  in:'∈', notin:'∉', subset:'⊂', subseteq:'⊆', cup:'∪', cap:'∩',
+  land:'∧', lor:'∨', neg:'¬', angle:'∠', perp:'⊥', parallel:'∥',
+  degree:'°', circ:'∘', dots:'…', ldots:'…', cdots:'⋯', prime:'′',
+  Re:'ℜ', Im:'ℑ', hbar:'ℏ', ell:'ℓ',
+  mathbb_R:'ℝ', mathbb_N:'ℕ', mathbb_Z:'ℤ', mathbb_Q:'ℚ', mathbb_C:'ℂ'
+};
+const TEX_BIG = { sum:'∑', prod:'∏', coprod:'∐', bigcup:'⋃', bigcap:'⋂', lim:'lim' };
+const TEX_INT = { int:'∫', iint:'∬', iiint:'∭', oint:'∮' };
+const TEX_FUNCS = ['sin','cos','tan','cot','sec','csc','arcsin','arccos','arctan',
+  'sinh','cosh','tanh','log','ln','lg','exp','det','dim','ker','deg','gcd','max','min','sup','inf'];
+const TEX_ACCENTS = { vec:'→', hat:'^', bar:'‾', overline:'‾', tilde:'~', dot:'˙', ddot:'¨' };
+
+function texEsc(s){
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+function texTokenize(src){
+  const out = [];
+  const re = /\\[a-zA-Z]+|\\[{}\\,;: ]|\d+(?:[.,]\d+)?|[a-zA-Z]|\s+|[\s\S]/g;
+  let m;
+  while((m = re.exec(src)) !== null){
+    if(/^\s+$/.test(m[0])) continue;
+    out.push(m[0]);
+  }
+  return out;
+}
+
+/* One atom, plus whatever sub/superscripts are attached to it. Returns the
+   MathML string and the index just past what it consumed. */
+function texAtom(toks, i){
+  const t = toks[i];
+  if(t === undefined) return { html:'', i:i+1 };
+
+  // { ... }
+  if(t === '{'){
+    const g = texGroup(toks, i+1, '}');
+    return { html:'<mrow>'+g.html+'</mrow>', i:g.i };
+  }
+  if(t === '}') return { html:'', i:i+1 };
+
+  if(t[0] === '\\'){
+    const cmd = t.slice(1);
+
+    if(cmd === 'frac' || cmd === 'dfrac' || cmd === 'tfrac'){
+      const a = texAtom(toks, i+1), b = texAtom(toks, a.i);
+      return { html:'<mfrac>'+(a.html||'<mi></mi>')+(b.html||'<mi></mi>')+'</mfrac>', i:b.i };
+    }
+    if(cmd === 'sqrt'){
+      let j = i+1, index = null;
+      if(toks[j] === '['){
+        const g = texGroup(toks, j+1, ']');
+        index = g.html; j = g.i;
+      }
+      const a = texAtom(toks, j);
+      return index
+        ? { html:'<mroot>'+a.html+'<mrow>'+index+'</mrow></mroot>', i:a.i }
+        : { html:'<msqrt>'+a.html+'</msqrt>', i:a.i };
+    }
+    if(cmd === 'text' || cmd === 'mathrm' || cmd === 'mathbf' || cmd === 'operatorname'){
+      // Raw text: take the braces literally rather than parsing inside them.
+      let j = i+1, depth = 0, buf = '';
+      if(toks[j] === '{'){
+        depth = 1; j++;
+        while(j < toks.length && depth > 0){
+          if(toks[j] === '{') depth++;
+          else if(toks[j] === '}'){ depth--; if(!depth){ j++; break; } }
+          buf += toks[j]; j++;
+        }
+      }else{ buf = toks[j] || ''; j++; }
+      const tag = cmd === 'mathbf' ? '<mi mathvariant="bold">' : cmd === 'text' ? '<mtext>' : '<mi mathvariant="normal">';
+      const end = cmd === 'text' ? '</mtext>' : '</mi>';
+      return { html: tag + texEsc(buf) + end, i:j };
+    }
+    if(cmd === 'mathbb'){
+      const a = texAtom(toks, i+1);
+      const letter = (a.html.match(/>([A-Z])</) || [])[1];
+      return { html: '<mi>'+(TEX_OPS['mathbb_'+letter] || texEsc(letter||'')) +'</mi>', i:a.i };
+    }
+    if(TEX_ACCENTS[cmd]){
+      const a = texAtom(toks, i+1);
+      return { html:'<mover accent="true">'+a.html+'<mo>'+TEX_ACCENTS[cmd]+'</mo></mover>', i:a.i };
+    }
+    if(TEX_GREEK[cmd]) return { html:'<mi>'+TEX_GREEK[cmd]+'</mi>', i:i+1 };
+    if(TEX_FUNCS.includes(cmd)) return { html:'<mi mathvariant="normal">'+cmd+'</mi>', i:i+1 };
+    if(TEX_BIG[cmd] || TEX_INT[cmd]){
+      // Limits go under and over a sum, but beside an integral — the usual
+      // typographic convention, and what makes these read right at a glance.
+      const sym = TEX_BIG[cmd] || TEX_INT[cmd];
+      const under = !!TEX_BIG[cmd];
+      const glyph = cmd === 'lim' ? '<mi mathvariant="normal">lim</mi>' : '<mo largeop="true">'+sym+'</mo>';
+      let j = i+1, sub = null, sup = null;
+      for(let k=0;k<2;k++){
+        if(toks[j] === '_'){ const a = texAtom(toks, j+1); sub = a.html; j = a.i; }
+        else if(toks[j] === '^'){ const a = texAtom(toks, j+1); sup = a.html; j = a.i; }
+      }
+      if(sub && sup) return { html:(under?'<munderover>':'<msubsup>')+glyph+sub+sup+(under?'</munderover>':'</msubsup>'), i:j };
+      if(sub) return { html:(under?'<munder>':'<msub>')+glyph+sub+(under?'</munder>':'</msub>'), i:j };
+      if(sup) return { html:(under?'<mover>':'<msup>')+glyph+sup+(under?'</mover>':'</msup>'), i:j };
+      return { html:glyph, i:j };
+    }
+    if(cmd === 'left' || cmd === 'right'){
+      const d = toks[i+1] || '';
+      if(d === '.') return { html:'', i:i+2 };
+      return { html:'<mo stretchy="true">'+texEsc(d)+'</mo>', i:i+2 };
+    }
+    if(cmd === 'quad')  return { html:'<mspace width="1em"/>', i:i+1 };
+    if(cmd === 'qquad') return { html:'<mspace width="2em"/>', i:i+1 };
+    if(cmd === ',' || cmd === ';' || cmd === ':' || cmd === ' ')
+      return { html:'<mspace width="0.22em"/>', i:i+1 };
+    if(cmd === '\\') return { html:'<mspace linebreak="newline"/>', i:i+1 };
+    if(TEX_OPS[cmd]) return { html:'<mo>'+TEX_OPS[cmd]+'</mo>', i:i+1 };
+    if(cmd === '{' || cmd === '}') return { html:'<mo>'+cmd+'</mo>', i:i+1 };
+    // Unknown: show it rather than swallowing the rest of the formula.
+    return { html:'<mtext>'+texEsc(t)+'</mtext>', i:i+1 };
+  }
+
+  if(/^\d/.test(t)) return { html:'<mn>'+texEsc(t.replace(',', '.'))+'</mn>', i:i+1 };
+  if(/^[a-zA-Z]$/.test(t)) return { html:'<mi>'+t+'</mi>', i:i+1 };
+  return { html:'<mo>'+texEsc(t)+'</mo>', i:i+1 };
+}
+
+function texGroup(toks, i, stop){
+  let html = '';
+  while(i < toks.length && toks[i] !== stop){
+    let a = texAtom(toks, i);
+    i = a.i;
+    // Scripts bind to the atom just produced, in either order.
+    let sub = null, sup = null;
+    for(let k=0;k<2;k++){
+      if(toks[i] === '_' && sub === null){ const x = texAtom(toks, i+1); sub = x.html; i = x.i; }
+      else if(toks[i] === '^' && sup === null){ const x = texAtom(toks, i+1); sup = x.html; i = x.i; }
+      else break;
+    }
+    if(sub !== null && sup !== null) html += '<msubsup>'+a.html+sub+sup+'</msubsup>';
+    else if(sub !== null) html += '<msub>'+a.html+sub+'</msub>';
+    else if(sup !== null) html += '<msup>'+a.html+sup+'</msup>';
+    else html += a.html;
+  }
+  return { html, i: i + (toks[i] === stop ? 1 : 0) };
+}
+
+/* The whole point of the file. `display` gives a block formula its full height
+   for fractions and limits; inline keeps it on the text baseline. */
+function mathML(latex, display){
+  const src = String(latex == null ? '' : latex).trim();
+  if(!src) return '';
+  try{
+    const g = texGroup(texTokenize(src), 0, null);
+    return '<math'+(display ? ' display="block"' : '')+'>'+
+      (display ? '<mrow>'+g.html+'</mrow>' : g.html)+'</math>';
+  }catch(e){
+    return '<span class="math-raw">'+esc(src)+'</span>';
+  }
+}
+
+/* Prose with maths in it: $...$ inline, $$...$$ as its own line. Everything
+   outside the delimiters is escaped as normal text, so a definition can read
+   "the derivative $f'(x)$ measures..." without any of it being markup. */
+function mathText(str){
+  const s = String(str == null ? '' : str);
+  let out = '', i = 0;
+  const re = /\$\$([\s\S]+?)\$\$|\$([^$\n]+?)\$/g;
+  let m;
+  while((m = re.exec(s)) !== null){
+    out += esc(s.slice(i, m.index));
+    out += m[1] != null ? mathML(m[1], true) : mathML(m[2], false);
+    i = m.index + m[0].length;
+  }
+  out += esc(s.slice(i));
+  return out;
+}
+
+/* A note is one of three kinds. The kind decides which fields the editor shows
+   and which exercise types apply to it; nothing below the note layer knows or
+   cares — the FSRS scheduler was always subject-agnostic, and stays untouched. */
+const NOTE_KINDS = [
+  { id:'vocab',      name:'Vocabulary', hint:'a word and what it means' },
+  { id:'formula',    name:'Formula',    hint:'a named formula, written in LaTeX' },
+  { id:'definition', name:'Definition', hint:'a term and what it means, for Physik and Informatik' }
+];
 const CARD_TYPES = [
   { id:'recognition', name:'Recognition', hint:'see the word, recall the meaning' },
   { id:'translation', name:'Translation', hint:'see the meaning, recall the word' },
   { id:'cloze',       name:'Fill the gap', hint:'the word missing from its sentence', needsExample:true },
   { id:'typing',      name:'Typing',      hint:'spell it from the meaning' },
   { id:'listening',   name:'Listening',   hint:'hear it, name it' },
-  { id:'production',  name:'Sentence',    hint:'use it in a sentence of your own', needsExample:true }
+  { id:'production',  name:'Sentence',    hint:'use it in a sentence of your own', needsExample:true },
+  // Only offered for the kind they belong to, so a vocabulary note never
+  // sprouts a "state the formula" card and vice versa.
+  { id:'formula',     name:'Write it',    hint:'see the name, write the formula',  kind:'formula' },
+  { id:'formulaRead', name:'Read it',     hint:'see the formula, name it and say what it is for', kind:'formula' },
+  { id:'definition',  name:'Define it',   hint:'see the term, state the definition', kind:'definition' },
+  { id:'definitionRev', name:'Name it',   hint:'see the definition, name the term', kind:'definition' }
 ];
+const noteKind = (n)=> (n && n.kind) || 'vocab';
+function typesForKind(kind){
+  return CARD_TYPES.filter(t=> t.kind ? t.kind === kind : kind === 'vocab');
+}
+// What a fresh note of each kind starts with ticked.
+const DEFAULT_TYPES_FOR_KIND = {
+  vocab: ['recognition','translation','cloze','typing'],
+  formula: ['formula','formulaRead'],
+  definition: ['definition','definitionRev']
+};
 const CEFR = ['A1','A2','B1','B2','C1','C2'];
 /* Same reason as QUIZ_SCHEMA: handed to the provider so a local model is
    constrained to this shape rather than asked nicely for it. */
@@ -7208,7 +7447,7 @@ function resolveLangGoal(langCode){
 function addNote(data, types){
   const note = Object.assign({
     id:'nt'+Date.now()+Math.random().toString(36).slice(2,5),
-    created: Date.now(), tags: [], source:'', cefr:'', imageId:null, translationVi:''
+    created: Date.now(), tags: [], source:'', cefr:'', imageId:null, translationVi:'', kind:'vocab'
   }, data);
   srs().notes.push(note);
   const usable = types.filter(t=>{
@@ -7424,6 +7663,20 @@ function srsRenderCard(){
     front = '<div class="srs-prompt small">'+esc(note.word)+'</div>'+
       '<div class="srs-sub">Write a sentence of your own using this word.</div>'+
       '<textarea class="srs-produce" id="srsProduce" placeholder="Your sentence…"></textarea>';
+  }else if(card.type==='formula'){
+    front = '<div class="srs-prompt">'+esc(note.word)+'</div>'+
+      '<div class="srs-sub">Write it out. Reveal to check.</div>';
+  }else if(card.type==='formulaRead'){
+    // The formula itself is the prompt — which is the direction that catches
+    // you recognising a shape without knowing what it is for.
+    front = '<div class="srs-math">'+mathML(note.translation, true)+'</div>'+
+      '<div class="srs-sub">What is this, and when do you use it?</div>';
+  }else if(card.type==='definition'){
+    front = '<div class="srs-prompt">'+esc(note.word)+'</div>'+
+      '<div class="srs-sub">State the definition.</div>';
+  }else if(card.type==='definitionRev'){
+    front = '<div class="srs-prompt small">'+mathText(note.translation)+'</div>'+
+      '<div class="srs-sub">Which term is this?</div>';
   }
 
   stage.innerHTML = '<div class="srs-kind">'+esc(typeDef.name.toUpperCase())+'</div>'+front+
@@ -7464,23 +7717,47 @@ function srsReveal(){
     : '';
   const tags = [];
   if(note.cefr) tags.push(note.cefr);
+  if(note.subject) tags.push(note.subject);
   (note.tags||[]).forEach(t=>tags.push(t));
   if(note.source) tags.push(note.source);
+
+  const kind = noteKind(note);
+  let answer;
+  if(kind === 'formula'){
+    // The formula is the answer on the way in, the name on the way back.
+    answer = card.type === 'formulaRead'
+      ? '<div class="srs-answer">'+esc(note.word)+'</div>'
+      : '<div class="srs-math">'+mathML(note.translation, true)+'</div>';
+  }else if(kind === 'definition'){
+    answer = card.type === 'definitionRev'
+      ? '<div class="srs-answer">'+esc(note.word)+'</div>'
+      : '<div class="srs-answer small">'+mathText(note.translation)+'</div>';
+  }else{
+    answer = '<div class="srs-answer">'+
+      esc(card.type==='translation'||card.type==='typing'||card.type==='listening' ? note.word : note.translation)+'</div>'+
+      (card.type==='recognition'||card.type==='cloze'||card.type==='production' ? '' :
+        '<div class="srs-sub">'+esc(note.translation)+'</div>');
+  }
+  // "When it applies" and "what the symbols mean" are the halves that turn a
+  // remembered formula into a usable one, so they show on the back.
+  const context = kind === 'vocab' ? ex :
+    (note.example ? '<div class="srs-ex">'+mathText(note.example)+'</div>' : '')+
+    (note.exampleTr ? '<div class="srs-sub">'+mathText(note.exampleTr)+'</div>' : '');
 
   stage.insertAdjacentHTML('beforeend',
     '<div class="srs-hr"></div>'+
     (typedRight===false ? '<div class="srs-sub" style="color:var(--danger)">You wrote something else</div>' : '')+
-    '<div class="srs-answer">'+esc(card.type==='translation'||card.type==='typing'||card.type==='listening' ? note.word : note.translation)+'</div>'+
-    (card.type==='recognition'||card.type==='cloze'||card.type==='production' ? '' :
-      '<div class="srs-sub">'+esc(note.translation)+'</div>')+
+    answer +
     (note.translationVi ? '<div class="srs-sub" style="color:var(--teal)">'+esc(note.translationVi)+
       ' <span style="color:var(--text-faint);font-size:10px">(VI)</span></div>' : '')+
-    ex +
+    context +
     (note.imageId ? '<img class="srs-img" id="srsImg" alt="">' : '')+
     (tags.length ? '<div class="srs-tags">'+tags.map(t=>'<span class="srs-tag">'+esc(t)+'</span>').join('')+'</div>' : ''));
 
   if(note.imageId) shotGet(note.imageId).then(b=>{ const el=document.getElementById('srsImg'); if(el&&b) el.src = URL.createObjectURL(b); });
-  if(card.type!=='listening') speak(note.word, lang);
+  // Reading "backslash frac" aloud helps nobody, and a Physik term is not a
+  // pronunciation drill either.
+  if(card.type!=='listening' && kind==='vocab') speak(note.word, lang);
 
   // Tutor actions. Local by default, so asking is free and private.
   const wrote = (document.getElementById('srsProduce')||{}).value || '';
@@ -7623,43 +7900,73 @@ function openAddWord(noteId){
   const decks = srs().decks;
   if(!decks.length){ showToast({title:'Make a deck first'}); return; }
   const n = editing || { deckId: decks[0].id, word:'', translation:'', example:'', exampleTr:'', translationVi:'',
-                         lang: decks[0].lang, cefr:'', tags:[], source:'' };
+                         lang: decks[0].lang, cefr:'', tags:[], source:'', kind:'vocab' };
+  let kind = noteKind(n);
   let types = editing
     ? Array.from(new Set(srs().cards.filter(c=>c.noteId===editing.id).map(c=>c.type)))
-    : [...srsPickedTypes];
+    : (kind === 'vocab' ? [...srsPickedTypes] : DEFAULT_TYPES_FOR_KIND[kind].slice());
   let pendingImage = editing ? editing.imageId : null;
+
+  const LABELS = {
+    vocab: { title:'word', word:'Word or phrase', wordPh:'überzeugend',
+             tr:'Translation / definition', trPh:'convincing, persuasive',
+             ex:'Example sentence', exPh:'Sein Argument war überzeugend.',
+             exTr:'Example translation', exTrPh:'His argument was convincing.' },
+    formula: { title:'formula', word:'Name of the formula', wordPh:'Mitternachtsformel',
+             tr:'The formula, in LaTeX', trPh:'x = \\frac{-b \\pm \\sqrt{b^2-4ac}}{2a}',
+             ex:'When it applies', exPh:'Any quadratic ax² + bx + c = 0 with a ≠ 0.',
+             exTr:'What the symbols mean', exTrPh:'a, b, c are the coefficients; the discriminant is b²−4ac.' },
+    definition: { title:'definition', word:'Term', wordPh:'Impuls',
+             tr:'Definition', trPh:'Produkt aus Masse und Geschwindigkeit, $p = m v$',
+             ex:'Example or where it matters', exPh:'Impulserhaltung beim elastischen Stoß.',
+             exTr:'Anything worth remembering alongside', exTrPh:'Vector quantity — direction counts.' }
+  };
 
   const m = document.getElementById('modalBody');
   m.classList.add('modal-wide');
   const paint = ()=>{
-    m.innerHTML = '<h3>'+(editing?'Edit word':'Add word')+'</h3>'+
+    const L = LABELS[kind];
+    m.innerHTML = '<h3>'+(editing?'Edit ':'Add ')+esc(L.title)+'</h3>'+
+      '<div class="srs-typechips" id="wKinds" style="margin-bottom:14px">'+NOTE_KINDS.map(k=>
+        '<button type="button" class="srs-typechip'+(k.id===kind?' on':'')+'" data-k="'+k.id+'" title="'+esc(k.hint)+'">'+
+          esc(k.name)+'</button>').join('')+'</div>'+
       '<div class="row2">'+
         '<div><label>Deck</label><select class="fld" id="wDeck">'+decks.map(d=>
           '<option value="'+d.id+'"'+(n.deckId===d.id?' selected':'')+'>'+esc(d.name)+'</option>').join('')+'</select></div>'+
         '<div><label>Language</label><select class="fld" id="wLang">'+LANGS.map(l=>
           '<option value="'+l.code+'"'+((n.lang||'de-DE')===l.code?' selected':'')+'>'+esc(l.name)+'</option>').join('')+'</select></div>'+
       '</div>'+
-      '<label>Word or phrase</label>'+
-      '<input type="text" class="fld" id="wWord" value="'+esc(n.word)+'" placeholder="überzeugend">'+
-      '<label>Translation / definition</label>'+
-      '<input type="text" class="fld" id="wTr" value="'+esc(n.translation)+'" placeholder="convincing, persuasive">'+
-      '<label>Example sentence</label>'+
-      '<input type="text" class="fld" id="wEx" value="'+esc(n.example||'')+'" placeholder="Sein Argument war überzeugend.">'+
-      '<label>Example translation</label>'+
-      '<input type="text" class="fld" id="wExTr" value="'+esc(n.exampleTr||'')+'" placeholder="His argument was convincing.">'+
-      '<label>Vietnamese translation / explanation <span style="color:var(--text-faint);text-transform:none">(optional)</span></label>'+
-      '<input type="text" class="fld" id="wTrVi" value="'+esc(n.translationVi||'')+'" placeholder="dùng khi tiếng Anh cũng không rõ nghĩa">'+
+      '<label>'+esc(L.word)+'</label>'+
+      '<input type="text" class="fld" id="wWord" value="'+esc(n.word)+'" placeholder="'+esc(L.wordPh)+'">'+
+      '<label>'+esc(L.tr)+'</label>'+
+      (kind==='formula'
+        ? '<textarea class="fld" id="wTr" rows="2" spellcheck="false" placeholder="'+esc(L.trPh)+'">'+esc(n.translation)+'</textarea>'+
+          '<div class="math-preview" id="wMathPrev"></div>'+
+          '<div class="hint">LaTeX. \\frac \\sqrt \\int \\sum \\lim, ^ and _, Greek by name (\\lambda), '+
+            '\\vec and \\text all work. Rendered natively — nothing is downloaded.</div>'
+        : '<input type="text" class="fld" id="wTr" value="'+esc(n.translation)+'" placeholder="'+esc(L.trPh)+'">')+
+      '<label>'+esc(L.ex)+'</label>'+
+      '<input type="text" class="fld" id="wEx" value="'+esc(n.example||'')+'" placeholder="'+esc(L.exPh)+'">'+
+      '<label>'+esc(L.exTr)+'</label>'+
+      '<input type="text" class="fld" id="wExTr" value="'+esc(n.exampleTr||'')+'" placeholder="'+esc(L.exTrPh)+'">'+
+      (kind==='vocab'
+        ? '<label>Vietnamese translation / explanation <span style="color:var(--text-faint);text-transform:none">(optional)</span></label>'+
+          '<input type="text" class="fld" id="wTrVi" value="'+esc(n.translationVi||'')+'" placeholder="dùng khi tiếng Anh cũng không rõ nghĩa">'
+        : '')+
       '<div class="row2">'+
-        '<div><label>CEFR level</label><select class="fld" id="wCefr"><option value="">—</option>'+
-          CEFR.map(c=>'<option value="'+c+'"'+(n.cefr===c?' selected':'')+'>'+c+'</option>').join('')+'</select></div>'+
+        (kind==='vocab'
+          ? '<div><label>CEFR level</label><select class="fld" id="wCefr"><option value="">—</option>'+
+            CEFR.map(c=>'<option value="'+c+'"'+(n.cefr===c?' selected':'')+'>'+c+'</option>').join('')+'</select></div>'
+          : '<div><label>Subject</label><input type="text" class="fld" id="wSubj" value="'+esc(n.subject||'')+'" placeholder="Physik, Mathe, Informatik…"></div>')+
         '<div><label>Source</label><input type="text" class="fld" id="wSrc" value="'+esc(n.source||'')+'" placeholder="book, film, class…"></div>'+
       '</div>'+
       '<label>Tags</label>'+
       '<input type="text" class="fld" id="wTags" value="'+esc((n.tags||[]).join(', '))+'" placeholder="adjective, formal">'+
       '<label>Exercise types</label>'+
-      '<div class="srs-typechips" id="wTypes">'+CARD_TYPES.map(t=>
+      '<div class="srs-typechips" id="wTypes">'+typesForKind(kind).map(t=>
         '<button type="button" class="srs-typechip'+(types.includes(t.id)?' on':'')+'" data-t="'+t.id+'" title="'+esc(t.hint)+'">'+esc(t.name)+'</button>').join('')+'</div>'+
-      '<div class="hint">One word, several ways of being tested — each becomes its own card with its own schedule. Gap-fill and Sentence need an example sentence.</div>'+
+      '<div class="hint">One note, several ways of being tested — each becomes its own card with its own schedule. '+
+        (kind==='vocab' ? 'Gap-fill and Sentence need an example sentence.' : 'Both directions are worth having: recall it, and recognise it.')+'</div>'+
       '<div class="jr-imgs" id="wImgWrap" style="margin-top:12px"></div>'+
       '<div class="actions">'+
         '<button class="btn-text" id="mCancel">Cancel</button>'+
@@ -7670,6 +7977,25 @@ function openAddWord(noteId){
       '</div>';
 
     document.getElementById('mCancel').addEventListener('click', ()=>{ m.classList.remove('modal-wide'); closeModal(); });
+    document.getElementById('wKinds').addEventListener('click', e=>{
+      const b = e.target.closest('[data-k]'); if(!b || b.dataset.k === kind) return;
+      // Carry over anything still valid; otherwise take the new kind's defaults.
+      const valid = typesForKind(b.dataset.k).map(t=>t.id);
+      kind = b.dataset.k;
+      const kept = types.filter(t=>valid.includes(t));
+      types = kept.length ? kept : DEFAULT_TYPES_FOR_KIND[kind].slice();
+      paint();
+    });
+    const trBox = document.getElementById('wTr');
+    if(kind === 'formula' && trBox){
+      const prev = ()=>{
+        const el = document.getElementById('wMathPrev'); if(!el) return;
+        const v = trBox.value.trim();
+        el.innerHTML = v ? mathML(v, true) : '<span class="math-empty">the rendered formula appears here</span>';
+      };
+      trBox.addEventListener('input', prev);
+      prev();
+    }
     document.getElementById('wTypes').addEventListener('click', e=>{
       const b = e.target.closest('[data-t]'); if(!b) return;
       const t = b.dataset.t;
@@ -7738,17 +8064,21 @@ function openAddWord(noteId){
   function save(){
     const word = document.getElementById('wWord').value.trim();
     const tr = document.getElementById('wTr').value.trim();
-    if(!word || !tr){ showToast({title:'Word and translation are both needed'}); return; }
+    const L = LABELS[kind];
+    if(!word || !tr){ showToast({title:esc(L.word)+' and '+esc(L.tr)+' are both needed'}); return; }
     if(!types.length){ showToast({title:'Pick at least one exercise type'}); return; }
+    const val = (id)=>{ const el = document.getElementById(id); return el ? el.value.trim() : ''; };
     const data = {
       deckId: document.getElementById('wDeck').value,
       lang: document.getElementById('wLang').value,
+      kind,
       word, translation: tr,
-      example: document.getElementById('wEx').value.trim(),
-      exampleTr: document.getElementById('wExTr').value.trim(),
-      translationVi: document.getElementById('wTrVi').value.trim(),
-      cefr: document.getElementById('wCefr').value,
-      source: document.getElementById('wSrc').value.trim(),
+      example: val('wEx'),
+      exampleTr: val('wExTr'),
+      translationVi: val('wTrVi'),
+      cefr: val('wCefr'),
+      subject: val('wSubj'),
+      source: val('wSrc'),
       tags: document.getElementById('wTags').value.split(',').map(x=>x.trim()).filter(Boolean),
       imageId: pendingImage
     };
@@ -7763,9 +8093,11 @@ function openAddWord(noteId){
       const missing = types.filter(t=>!have.some(c=>c.type===t));
       if(missing.length) srs().cards.push(...makeCards(editing.id, missing));
     }else{
-      srsPickedTypes = [...types];
+      if(kind === 'vocab') srsPickedTypes = [...types];
       const newNote = addNote(data, types);
-      xpGoal = resolveLangGoal(newNote.lang);
+      xpGoal = kind === 'vocab'
+        ? resolveLangGoal(newNote.lang)
+        : (state.goals.find(g=>g.id==='school') || null);
       if(xpGoal){
         grant(FLASHCARD_CREATE_XP, xpGoal.id);
         pushLog('New flashcard: <b>'+esc(newNote.word)+'</b>', '+'+FLASHCARD_CREATE_XP+'xp', 'complete');

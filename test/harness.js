@@ -407,6 +407,51 @@ async function run() {
     ollamaCalls.length + ' passes, midpoint seen: ' + ollamaCalls.some((c) => c.prompt.includes('MIDPOINTMARKER')));
   stubOllama.close();
 
+  /* ---- 23-25. formula cards, rendered as native MathML ---- */
+  await js(`(()=>{ const s = JSON.parse(localStorage.getItem('questline_state_v2'));
+    const deck = s.srs.decks[0];
+    s.srs.notes.push({ id:'nt_formula', deckId:deck.id, kind:'formula', lang:'de-DE',
+      word:'Mitternachtsformel', translation:'x = \\\\frac{-b \\\\pm \\\\sqrt{b^2-4ac}}{2a}',
+      example:'Any quadratic with a != 0.',
+      exampleTr:'The discriminant $b^2-4ac$ decides how many roots.',
+      subject:'Mathe', tags:[], source:'', cefr:'', imageId:null, translationVi:'', created:Date.now() });
+    s.srs.notes.push({ id:'nt_broken', deckId:deck.id, kind:'formula', lang:'de-DE',
+      word:'Nonsense', translation:'\\\\notarealcommand{x} + 1',
+      example:'', exampleTr:'', subject:'', tags:[], source:'', cefr:'', imageId:null,
+      translationVi:'', created:Date.now() });
+    s.srs.cards = [
+      { id:'cd_f1', noteId:'nt_formula', type:'formula',     state:'new', due:Date.now()-1000,
+        stability:null, difficulty:null, reps:0, lapses:0, step:null, lastReview:null },
+      { id:'cd_f2', noteId:'nt_broken',  type:'formulaRead', state:'new', due:Date.now()-1000,
+        stability:null, difficulty:null, reps:0, lapses:0, step:null, lastReview:null }
+    ];
+    s.activeTab = 'cards';
+    localStorage.setItem('questline_state_v2', JSON.stringify(s)); })()`);
+  await reload();
+  await click('[data-deck]');
+  await wait(500);
+
+  const faces = [];
+  for (let i = 0; i < 2; i++) {
+    faces.push(await js("(document.getElementById('srsStage')||{}).innerHTML || ''"));
+    await js("(()=>{ const b=document.getElementById('srsShow'); if(b) b.click(); })()");
+    await wait(350);
+    faces.push(await js("(document.getElementById('srsStage')||{}).innerHTML || ''"));
+    await js("(()=>{ const b=document.querySelector('.srs-btn[data-g=\"3\"]'); if(b) b.click(); })()");
+    await wait(450);
+  }
+  const seenFaces = faces.join('\n');
+  check('23 a formula card renders as MathML, both sides',
+    /Mitternachtsformel/.test(seenFaces) && seenFaces.includes('<mfrac>') && seenFaces.includes('<msqrt>'),
+    'no mfrac/msqrt in any face');
+  // Prose fields accept $...$ so a definition can carry maths mid-sentence.
+  check('24 inline $...$ in the notes field renders too',
+    /discriminant[\s\S]{0,240}<math/.test(seenFaces), 'inline maths did not render');
+  // A single odd macro must not cost you the rest of the formula.
+  check('25 an unknown LaTeX command degrades to text instead of throwing',
+    seenFaces.includes('notarealcommand') || seenFaces.includes('\\notarealcommand'),
+    'the broken formula produced nothing');
+
   const afterGrades = await save();
   check('16 grades never touch XP, gold or the log',
     afterGrades.player.xp === xpBeforeGrades &&
