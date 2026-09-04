@@ -62,48 +62,67 @@ decides Stuttgart and the app still cannot display it.
 
 ---
 
-## Phase 1 — The Abitur block (Sep–Nov 2026, ~22-28h)
+## Phase 1 — The Abitur block ✅ done 2026-09-05
 
 Everything here has to pay for itself before summer. No architecture work.
 
-- [ ] **Grade tracker + Schnitt projection.** New tab or a section under
-      Timetable. Subjects come from the WebUntis sync that already runs. Enter
-      Klausur points per subject; show the projected Abitur average and which
-      subject returns the most average per additional point. This is the number
-      that decides Stuttgart and the app currently can't display it —
-      grep the repo for `Klausur`/`Note`/`Punkte` and you get zero hits.
-- [ ] **Formula + definition card types.** Add to `CARD_TYPES`. KaTeX from
-      cdnjs for rendering. **No changes to the FSRS scheduler** — it is already
-      subject-agnostic; only the note/card layer is locked to vocabulary
-      (`cefr`, `lang`, `translationVi`, `speak()`, `resolveLangGoal`).
-- [ ] **Image-occlusion cards.** Rectangles drawn over a stored image, each one
-      a card. Reuse the existing IndexedDB blob store (`shotDb` / `refDb`
-      pattern). Highest-value study feature on this list for Physik diagrams and
-      Mathe graphs.
-- [ ] **Klausur dates as timeline events.** Extend `defaultTimeline()` events
-      with a `kind:'exam'`. Add a "Physik Klausur in 9 days" strip to the Tasks
-      tab next to `renderTodayStrip()`. Generate revision quests backwards from
-      the date, placed into free periods the timetable already knows about.
-- [ ] **Seed the Seminarfacharbeit as a roadmap.** Teilarbeit 4 — binomial
-      option pricing (CRR) and finite differences. Hard deadline, sequential
-      dependencies, a real definition-of-done: exactly what the milestone-gate
-      machinery was built for. New file in `data/roadmaps/`.
-- [ ] **Raise the transcript limits — they were sized for 4K-context models.**
-      The local path (`aiQuizFromTranscript`) caps at **24,000 chars**, chat at
-      **20,000** (`CHAT_TRANSCRIPT_LIMIT`), the cloud path at 48,000 — and all
-      three *cut the middle out*: `head 60% + "…middle trimmed…" + tail 40%`.
-      On a two-hour Blender tutorial that discards exactly the part where the
-      technique is taught, and the quiz gets generated from the intro and the
-      outro. A 12B-class local model today has a 128K–256K context window, so
-      these can go up 10-20x. Make the limit derive from the model's context
-      (query `/api/show`) rather than a hardcoded constant, and if a transcript
-      still overflows, chunk-and-merge instead of deleting the middle.
-- [ ] **Show the encrypted blob size next to the sync badge.** Five lines in
-      `pushState()`. The whole state is re-encrypted and re-uploaded on every
-      save (1.5s debounce) and only `log` (200) and `reviews` (4000) are capped
-      — `journal.entries`, `srs.notes`, `srs.cards`, `focusSessions`, `videos`
-      and `courses` grow forever. Nothing breaks today; this is the early
-      warning.
+- [x] **Grade tracker + Schnitt projection.** A section under Timetable, not a
+      ninth tab. Subjects pull from the WebUntis sync. Klausur points per
+      Halbjahr in, projected Abitur average out, via the KMK block scheme:
+      Block I = (P/S)×40 with eA doubled, Block II = five Prüfungen ×4,
+      N = 17/3 − E/180. E1 being a *ratio* is what makes it honest from the
+      first Klausur — half the Halbjahre entered gives the same projection as
+      all of them at the same level. The bar chart under the table prices one
+      extra Notenpunkt per subject by re-running the whole projection, so it
+      accounts for open Halbjahre and Prüfungsfach status rather than applying a
+      rule of thumb. Weights live in `ABI_RULES`; another Bundesland is a
+      settings change. **No XP anywhere**, with a test enforcing it.
+- [x] **Formula + definition card types.** Note kinds (`vocab` / `formula` /
+      `definition` / `occlusion`) drive the editor and the exercise types;
+      the FSRS scheduler was untouched, as required.
+      **Not KaTeX.** The CSP allows scripts from self and YouTube only, and
+      widening it to a CDN would break formula cards offline — wrong trade for
+      an app whose AI runs locally so it works on a train. Vendoring KaTeX costs
+      ~300 KB plus a megabyte of fonts and ends "one file, no build step".
+      Chromium has shipped MathML Core since 109 (this Electron is on 152), so
+      the browser already does the layout; what was missing was a way to type
+      it. There is now a ~200-line LaTeX→MathML converter covering \frac \sqrt
+      \int \sum \lim, scripts either order, Greek, accents, \text, \left…\right,
+      \mathbb and the function names, with 25 unit tests. Unknown commands
+      degrade to their own text instead of throwing.
+- [x] **Image-occlusion cards.** Drag rectangles over a stored image, one card
+      per rectangle, each on its own schedule. Rectangles normalised 0..1;
+      image in `shotDb`, so it stays device-local and out of the synced blob.
+      Front covers everything and marks one box — covering only the target
+      would let the neighbouring labels give it away.
+- [x] **Klausur dates as timeline events.** `kind:'exam'` plus a `subjectId`
+      into the grade table. Countdown strip on Tasks. "Plan revision" writes
+      dailies backwards at expanding intervals (1, 2, 4, 7, 11, 16, 22 days
+      before), each pinned with `plannedForDate` and titled with free time the
+      timetable actually knows about.
+- [x] **Seminarfacharbeit seeded.** `data/roadmaps/seminarfacharbeit-optionspreise.json`
+      — eight sequential gated milestones, Sep 2026 to the Kolloquium in
+      Mar 2027, with definitions-of-done that are checkable rather than
+      aspirational.
+- [x] **Transcript limits derive from the model.** `/api/show` reports the real
+      window; **and `num_ctx` is now sent**, which was the half that mattered —
+      Ollama otherwise caps at its own small default and drops the *front* of
+      the prompt, where the transcript is. Over budget, the video is chunked and
+      merged with each pass told which part it has, and past the pass ceiling
+      the passes spread evenly rather than starting from the front. Chat keeps
+      the opening plus the sections whose words match the question. The cloud
+      48,000 path turned out to be unreachable (`api.aiGenerate` has no
+      callers); raised and labelled rather than left as a trap.
+- [x] **Encrypted blob size sits next to the sync badge**, amber past 20% of
+      Cloudflare KV's 25 MB ceiling and red past 80%.
+
+Two bugs surfaced by writing the tests, both pre-existing:
+`id="goGen"` existed twice (`#summaryBox` and `#quizBox` both render it), so
+one click ran the whole AI generation **twice**; and `save()` in the note editor
+read `#wTr` directly, which crashes for any kind that does not render it.
+
+**Next: Phase 2 (Dec 2026).** Deliberately not before December — the charts
+would be too empty to say anything and you'd tune them against noise.
 
 ---
 

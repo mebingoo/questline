@@ -77,6 +77,58 @@ curl -sL https://github.com/mebingoo/questline/releases/latest/download/latest.y
 - Small test fixtures hide real bugs (a 3-second video seeks from memory and
   never exposes broken range requests; use something ~100 MB).
 
+## School: grades, Klausuren, Abitur
+
+`state.grades` holds subjects, Klausur points per Halbjahr, and which
+Prüfungsfach each subject is. The projection is the KMK block scheme, and the
+weights are all in `ABI_RULES` so another Bundesland is a settings change:
+
+- **Block I** every Halbjahresergebnis, eA counted twice. `E1 = (P/S) × 40`.
+  It being a ratio is the whole point — a projection from two Halbjahre is as
+  honest as one from eight, instead of treating the empty ones as zeros.
+- **Block II** the five Abiturprüfungen, × 4.
+- `N = 17/3 − E/180`, clamped to 1.0–4.0.
+
+The marginal table re-runs the entire projection with one subject a point
+higher, rather than applying "eA counts double" as a rule of thumb — that way
+it prices in how many Halbjahre are still open and whether the subject is a
+Prüfungsfach.
+
+**Never award XP for grades.** It is in ROADMAP.md's "explicitly not doing" and
+there is a harness assertion enforcing it: turning a bad grade into a punishment
+from the app is how you stop opening it in the week you need it. Revision
+*quests* do earn XP — the rule is about results, not about work.
+
+Klausuren are timeline events with `kind:'exam'` and a `subjectId`, so they
+share the bar at the top of every tab rather than needing a calendar. "Plan
+revision" writes dailies backwards at expanding intervals, pinned to dates with
+`plannedForDate`.
+
+## Cards: kinds, maths, occlusion
+
+A note has a `kind` — `vocab`, `formula`, `definition`, `occlusion` — and the
+kind decides which fields the editor shows and which `CARD_TYPES` apply. The
+FSRS scheduler knows nothing about any of it and never needs to.
+
+**Maths is MathML, not KaTeX.** The CSP allows scripts from self and YouTube
+only; a CDN would break formula cards offline, and vendoring KaTeX is ~300 KB
+of JS plus a megabyte of fonts. Chromium has done MathML Core since 109, so
+`mathML(latex, display)` converts the LaTeX subset an Abitur student writes and
+hands the layout to the browser. `mathText(str)` renders `$...$` and `$$...$$`
+inside prose and escapes everything else. An unknown command becomes its own
+literal text rather than throwing — one odd macro should cost that macro, not
+the rest of the formula.
+
+**Occlusion** is one card per rectangle, not one per type — `makeCards()` takes
+the masks for that reason, and cards carry a `maskId`. Rectangles are stored
+normalised 0..1 so the editor, the card and the phone agree. The image lives in
+`shotDb` with the note screenshots; only the four numbers per rectangle sync.
+
+Each kind renders a different subset of the editor's fields, so **every field
+read in `save()` goes through the optional `val()` helper**. Reaching for
+`getElementById('wTr').value` directly crashed the whole save for occlusion
+notes, silently, because that form has no such field.
+
 ## AI
 
 `main.js` holds a provider layer — `AI_PROVIDERS` with `complete` / `models` /
@@ -99,6 +151,22 @@ Prompts live in the renderer, not in `main.js`, so every AI feature works
 through whichever provider is selected. Provider choice, Ollama URL and model
 are device-local (`questline_aicfg_v1`) — an address that means something on
 this PC means nothing on the phone, which can only reach cloud providers.
+
+**How much transcript fits is asked of the model, not hardcoded.**
+`/api/show` reports the window under an architecture-prefixed key
+(`llama.context_length`, `qwen3.context_length`), found by suffix. Then —
+this is the half that actually matters — **every request carries `num_ctx`**.
+Ollama otherwise caps the window at its own small default however capable the
+model is, and drops what does not fit from the *front*, which is where the
+transcript is. A 128K model without `num_ctx` is a spec sheet.
+
+Over budget, the transcript is chunked and the results merged: each pass is
+told which part of the video it has, and questions are merged in timestamp
+order. A chunked pass reserves room for three questions rather than the whole
+quiz, which is what keeps the chunk count sane. Past the pass ceiling the
+passes spread evenly across the video — taking the first N would just move the
+old "deleted the middle" bug to the end. Chat cannot merge answers, so it keeps
+the opening plus the sections whose words overlap the question.
 
 ## Learn videos — downloaded, not embedded
 
