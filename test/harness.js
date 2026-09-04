@@ -252,6 +252,48 @@ async function run() {
   const t1 = await js("document.getElementById('timerVal').textContent");
   check('12 a running timer still ticks once a second', t0 !== t1, 'stuck at ' + t1);
   await click('#tcStop');
+
+  /* ---- 13-16. the Abitur projection ----
+   * Hand-checkable on purpose. Three eA subjects at 12 and three gA at 9, all
+   * four Halbjahre, all five Prüfungsfächer assigned:
+   *   Block I   P = 12*2*4*3 + 9*1*4*3 = 396, S = 2*4*3 + 1*4*3 = 36
+   *             P/S = 11 -> 11 * 40 = 440
+   *   Block II  (12+12+12+9+9) * 4 = 216
+   *   E = 656   N = 17/3 - 656/180 = 2.02 -> 2,0
+   */
+  // Read here, not earlier: the migration and restore assertions above replace
+  // the whole save, so any older figure is a different state's XP.
+  const xpBeforeGrades = (await save()).player.xp;
+  await js(`(()=>{ const s = JSON.parse(localStorage.getItem('questline_state_v2'));
+    const mk = (n,l,e)=>({id:'s_'+n, name:n, level:l, exam:e});
+    s.grades = { subjects:[mk('MA','eA',1),mk('PH','eA',2),mk('EN','eA',3),mk('EK','gA',4),mk('IF','gA',5),mk('DE','gA',null)],
+      terms:['12.1','12.2','13.1','13.2'], marks:{}, exams:{}, oralWeight:50, open:null };
+    const vals = {MA:12, PH:12, EN:12, EK:9, IF:9, DE:9};
+    Object.keys(vals).forEach(n=>{ s.grades.marks['s_'+n] = {};
+      s.grades.terms.forEach(t=>{ s.grades.marks['s_'+n][t] = {klausuren:[{id:'k'+n+t, title:'K', points:vals[n]}], oral:null}; }); });
+    s.activeTab = 'timetable';
+    localStorage.setItem('questline_state_v2', JSON.stringify(s)); })()`);
+  await reload();
+  const abi = await js("document.getElementById('gradeHead').textContent.replace(/\\s+/g,' ')");
+  check('13 Block I is (P/S) x 40', abi.includes('440'), abi.slice(0, 160));
+  check('14 Block II is the five Prüfungen x 4', abi.includes('216'), abi.slice(0, 160));
+  check('15 the projected Abitur average', abi.includes('2,0') && abi.includes('656'), abi.slice(0, 160));
+
+  // Drop half the Halbjahre: P/S is a ratio, so the projection must not move.
+  await js(`(()=>{ const s = JSON.parse(localStorage.getItem('questline_state_v2'));
+    Object.keys(s.grades.marks).forEach(id=>{ delete s.grades.marks[id]['13.1']; delete s.grades.marks[id]['13.2']; });
+    localStorage.setItem('questline_state_v2', JSON.stringify(s)); })()`);
+  await reload();
+  const abi2 = await js("document.getElementById('gradeHead').textContent.replace(/\\s+/g,' ')");
+  check('15b half the data gives the same projection (P/S normalises)',
+    abi2.includes('440') && abi2.includes('656'), abi2.slice(0, 160));
+
+  // "Never award XP for grades" is a rule in ROADMAP.md, so it gets a test.
+  const afterGrades = await save();
+  check('16 grades never touch XP, gold or the log',
+    afterGrades.player.xp === xpBeforeGrades &&
+    !afterGrades.log.some((l) => /klausur|abitur|notenpunkt/i.test(l.text)),
+    'xp went ' + xpBeforeGrades + ' -> ' + afterGrades.player.xp);
 }
 
 app.whenReady().then(async () => {

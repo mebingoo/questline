@@ -1472,6 +1472,67 @@
   .set-tab:hover{color:var(--text);}
   .set-tab.active{color:var(--gold); border-color:var(--gold); box-shadow:0 0 0 1px var(--gold-glow);}
   .set-body{max-width:1180px; margin:0 auto; padding:22px 26px 60px; border-top:1px solid var(--border-soft);}
+/* ---- Grades / Abitur projection (Timetable tab) ---- */
+  .gr-hero{display:flex; align-items:center; gap:28px; flex-wrap:wrap; padding:18px 20px; border:1px solid var(--border);
+    border-radius:var(--radius-m); background:var(--surface);}
+  .gr-hero-main{display:flex; align-items:center; gap:12px;}
+  .gr-hero-num{font-family:var(--font-display); font-size:44px; line-height:1; color:var(--gold); text-shadow:0 0 18px var(--gold-glow);}
+  .gr-hero-lbl{font-size:11px; letter-spacing:0.08em; text-transform:uppercase; color:var(--text-faint); line-height:1.4;}
+  .gr-hero-blocks{display:flex; gap:26px; flex-wrap:wrap;}
+  .gr-hero-blocks > div{display:flex; flex-direction:column; gap:2px;}
+  .gr-hero-blocks b{font-family:var(--font-mono); font-size:19px; color:var(--text);}
+  .gr-hero-blocks span{font-size:11px; color:var(--text-faint);}
+  .gr-hero-note{font-size:12.5px; color:var(--text-dim); line-height:1.6; max-width:60ch;}
+  .gr-warn{flex-basis:100%; font-size:11.5px; color:var(--danger); line-height:1.6;}
+
+  .gr-scroll{overflow-x:auto; margin-top:16px; padding-bottom:4px;}
+  /* Fixed tracks and justify-content:start, because an `auto` track stretches to
+     eat the leftover width and pushes the grades to the far side of the screen. */
+  .gr-table{display:grid; grid-template-columns:minmax(110px,210px) 54px repeat(var(--terms),52px) 52px 56px 26px;
+    gap:6px 10px; align-items:center; justify-content:start; min-width:max-content;}
+  .gr-th{font-size:10.5px; letter-spacing:0.08em; text-transform:uppercase; color:var(--text-faint); padding-bottom:4px;}
+  .gr-table .gr-name{font-size:13px; color:var(--text); cursor:pointer; display:flex; align-items:center; gap:7px; min-width:0;}
+  .gr-table .gr-name:hover{color:var(--gold);}
+  .gr-pf{font-family:var(--font-mono); font-size:9.5px; padding:1px 4px; border:1px solid var(--gold-soft); color:var(--gold); border-radius:var(--radius-s);}
+  .gr-lvl{font-family:var(--font-mono); font-size:11px; padding:3px 7px; background:none; cursor:pointer;
+    border:1px solid var(--border); color:var(--text-faint); border-radius:var(--radius-s);}
+  .gr-lvl.ea{border-color:var(--teal); color:var(--teal);}
+  .gr-cell{width:100%; min-width:40px; font-family:var(--font-mono); font-size:13px; padding:5px 4px; cursor:pointer;
+    background:var(--bg-2); border:1px solid var(--border); color:var(--text-dim); border-radius:var(--radius-s); position:relative;}
+  .gr-cell:hover{border-color:var(--gold-soft);}
+  .gr-cell i{position:absolute; top:-3px; right:-3px; font-style:normal; font-size:8.5px; line-height:1;
+    background:var(--border); color:var(--text-dim); padding:1px 3px; border-radius:var(--radius-s);}
+  .gr-cell.gr-muted{opacity:0.45;}
+  .gr-avg{font-family:var(--font-mono); font-size:12.5px; color:var(--text-dim); text-align:center;}
+  .np-a{color:var(--success); border-color:color-mix(in srgb, var(--success) 45%, var(--border));}
+  .np-b{color:var(--teal);}
+  .np-c{color:var(--text);}
+  .np-d{color:var(--gold);}
+  .np-e{color:var(--danger); border-color:color-mix(in srgb, var(--danger) 45%, var(--border));}
+  .gr-x{background:none; border:none; color:var(--text-faint); font-size:16px; line-height:1; cursor:pointer; padding:2px 5px;}
+  .gr-x:hover{color:var(--danger);}
+
+  .gr-marg{margin-top:20px;}
+  .gr-marg-title{font-size:10.5px; letter-spacing:0.08em; text-transform:uppercase; color:var(--text-faint); margin-bottom:9px;}
+  .gr-marg-row{display:flex; align-items:center; gap:11px; padding:4px 0;}
+  .gr-marg-name{flex:0 0 190px; font-size:12.5px; color:var(--text); display:flex; align-items:center; gap:6px;}
+  .gr-marg-name i{font-style:normal; font-family:var(--font-mono); font-size:9.5px; color:var(--text-faint); border:1px solid var(--border); padding:1px 4px;}
+  .gr-marg-track{flex:1; height:5px; background:var(--border-soft); border-radius:var(--radius-s); overflow:hidden;}
+  .gr-marg-track i{display:block; height:100%; background:var(--gold); box-shadow:0 0 8px var(--gold-glow);}
+  .gr-marg-val{font-family:var(--font-mono); font-size:12px; color:var(--gold); flex:0 0 54px; text-align:right;}
+
+  .gr-klist{margin-bottom:12px;}
+  .gr-krow{display:flex; align-items:center; gap:10px; padding:6px 0; border-bottom:1px solid var(--border-soft);}
+  .gr-ktitle{flex:1; font-size:12.5px; color:var(--text);}
+  .gr-kpts{font-family:var(--font-mono); font-size:13px; min-width:26px; text-align:right;}
+  .gr-knote{font-family:var(--font-mono); font-size:11px; color:var(--text-faint); min-width:32px; text-align:right;}
+  .gr-kadd{display:flex; gap:8px; align-items:flex-start; margin-bottom:14px;}
+  .gr-kadd .fld{margin-bottom:0;}
+  @media (max-width:760px){
+    .gr-hero-num{font-size:34px;}
+    .gr-marg-name{flex:0 0 120px;}
+    .gr-table{font-size:12px;}
+  }
   .set-panel-title{font-family:var(--font-display); font-size:13px; letter-spacing:0.05em; color:var(--text); margin:0 0 22px;}
 
   .set-group{margin-bottom:30px;}
@@ -1714,6 +1775,36 @@
       <p style="font-size:11.5px; color:var(--text-faint); margin-top:12px; line-height:1.6;">
         Click any slot to edit it. School lessons come from WebUntis (or you type them in);
         study blocks are where you plan a grand goal &mdash; the Tasks tab filters to whatever you put on today.
+      </p>
+    </section>
+
+    <!-- ============ GRADES ============
+         Klausur points in, projected Abitur out. No XP anywhere in here, on
+         purpose: turning a bad grade into a punishment from the app is how you
+         stop opening it in the exact week you need it. -->
+    <section>
+      <div class="section-head">
+        <h2>Abitur Projection</h2>
+        <div class="section-sub">
+          <span>Notenpunkte 0&ndash;15 &middot; Block I &times;40, Block II &times;4</span>
+          <button class="ghost-btn" id="grFromUntis">Subjects from timetable</button>
+        </div>
+      </div>
+      <div id="gradeHead"></div>
+      <div id="gradeBody"></div>
+      <div class="gr-marg" id="gradeMarginal"></div>
+      <div class="addbar" style="margin-top:18px;">
+        <input type="text" class="fld" id="grNewSubject" placeholder="Add a subject &mdash; e.g. Mathematik">
+        <label style="display:flex; align-items:center; gap:8px; font-size:11.5px; color:var(--text-faint); flex:0 0 auto;">
+          m&uuml;ndlich
+          <input type="number" class="fld" id="grOralWeight" min="0" max="100" style="width:70px" title="How much the m&uuml;ndliche Note counts toward a Halbjahr, in percent"> %
+        </label>
+        <button class="btn-primary" id="grAddSubject">Add subject</button>
+      </div>
+      <p style="font-size:11.5px; color:var(--text-faint); margin-top:12px; line-height:1.6;">
+        Block I normalises over however many Halbjahre are entered, so the projection is honest
+        from the first Klausur rather than pretending the empty ones are zeros. The bar chart prices
+        one extra Notenpunkt in each subject &mdash; eA counts twice, and a Pr&uuml;fungsfach counts four times again.
       </p>
     </section>
   </div>
@@ -2411,6 +2502,24 @@ function syncOverdueStatus(g){
     if(m.status==='active' && m.deadline && daysBetween(todayStr(), m.deadline) < 0) m.status = 'overdue';
   });
 }
+/* The Abitur block scheme, and the shape grades are stored in. Up here rather
+   than with the rest of the grades code because freshState() and migrate() both
+   reach for defaultGrades() while the page is still parsing. */
+const ABI_RULES = { blockIScale: 40, examFactor: 4, examCount: 5, maxPoints: 900, passPoints: 300 };
+const NP_MAX = 15;
+const ABI_TERMS = ['12.1', '12.2', '13.1', '13.2'];
+
+function defaultGrades(){
+  return {
+    subjects: [],          // {id, name, level:'eA'|'gA', exam:null|1..5, oralWeight:null}
+    terms: ABI_TERMS.slice(),
+    marks: {},             // subjectId -> term -> {klausuren:[{id,title,points}], oral:null}
+    exams: {},             // subjectId -> projected Abiturprüfung points
+    oralWeight: 50,        // how much the mündliche Note counts toward a Halbjahr, in %
+    open: null             // which subject row is expanded
+  };
+}
+
 function freshState(){
   const now = Date.now();
   return {
@@ -2432,6 +2541,7 @@ function freshState(){
     trees: {},
     timeline: defaultTimeline(),
     journal: { entries:[], lastXpDay:null },
+    grades: defaultGrades(),
     refs: defaultRefs(),
     srs: defaultSrs(),
     focusSessions: [], questFavorites: [],
@@ -2607,6 +2717,19 @@ function migrate(s){
     // Legacy saves synced the AI key inside the state blob. Move it device-local once.
     if(!aiKey && s.ai.apiKey){ aiKey = String(s.ai.apiKey); saveAiKey(); }
     delete s.ai.apiKey;
+  }
+  if(!s.grades) s.grades = defaultGrades();
+  else{
+    const gd = defaultGrades();
+    s.grades = Object.assign(gd, s.grades);
+    if(!Array.isArray(s.grades.subjects)) s.grades.subjects = [];
+    if(!Array.isArray(s.grades.terms) || !s.grades.terms.length) s.grades.terms = gd.terms;
+    if(!s.grades.marks || typeof s.grades.marks !== 'object') s.grades.marks = {};
+    if(!s.grades.exams || typeof s.grades.exams !== 'object') s.grades.exams = {};
+    s.grades.subjects.forEach(x=>{
+      if(x.level!=='eA' && x.level!=='gA') x.level = 'gA';
+      if(x.exam!=null && !(x.exam>=1 && x.exam<=5)) x.exam = null;
+    });
   }
   if(!s.activeTab) s.activeTab = 'overview';
   if(typeof s.showAllQuests !== 'boolean') s.showAllQuests = false;
@@ -5028,6 +5151,7 @@ function renderAll(){
   renderRadar();
   renderTodayStrip();
   renderTimetable();
+  if(typeof renderGrades==='function') renderGrades();
   renderDailies();
   renderWeeklies();
   renderDisciplines();
@@ -10045,6 +10169,396 @@ function renderAppearanceTab(host){
   });
   sel.addEventListener('change', e=>stage({font: e.target.value}));
 }
+
+/* ============ GRADES: KLAUSUREN AND THE ABITUR PROJECTION ============
+ * The one number that decides Stuttgart, and the app could not display it.
+ *
+ * Deliberately no XP anywhere in here. Turning a bad grade into a punishment
+ * from the app is how you stop opening it in the exact week you need it.
+ *
+ * The arithmetic is the KMK block scheme, which Niedersachsen uses:
+ *
+ *   Block I   every Halbjahresergebnis, eA subjects counted twice.
+ *             E1 = (P / S) x 40, so it normalises to 600 no matter how many
+ *             results exist yet — which is exactly what makes a projection
+ *             from half a year of data honest rather than pessimistic.
+ *   Block II  the five Abiturprüfungen, x 4. Max 300.
+ *   N         = 17/3 - E/180, clamped to 1.0 - 4.0.
+ *
+ * The weights live in ABI_RULES so a different Bundesland is a settings change
+ * rather than a rewrite.
+ */
+function grades(){
+  if(!state.grades) state.grades = defaultGrades();
+  return state.grades;
+}
+function gradeSubject(id){ return grades().subjects.find(s=>s.id===id) || null; }
+function markCell(subjectId, term){
+  const g = grades();
+  if(!g.marks[subjectId]) g.marks[subjectId] = {};
+  if(!g.marks[subjectId][term]) g.marks[subjectId][term] = { klausuren:[], oral:null };
+  return g.marks[subjectId][term];
+}
+
+/* One Halbjahr, in Notenpunkte. Klausuren average against the mündliche Note at
+   whatever split the school uses; either half alone is the result on its own. */
+function termResult(subjectId, term){
+  const g = grades();
+  const cell = (g.marks[subjectId]||{})[term];
+  if(!cell) return null;
+  const ks = (cell.klausuren||[]).filter(k=>k.points!=null);
+  const written = ks.length ? ks.reduce((a,k)=>a+k.points,0)/ks.length : null;
+  const oral = cell.oral!=null ? cell.oral : null;
+  if(written==null && oral==null) return null;
+  if(written==null) return Math.round(oral);
+  if(oral==null) return Math.round(written);
+  const w = Math.max(0, Math.min(100, g.oralWeight==null ? 50 : g.oralWeight))/100;
+  return Math.round(written*(1-w) + oral*w);
+}
+function subjectResults(subjectId){
+  return grades().terms.map(t=>termResult(subjectId, t)).filter(v=>v!=null);
+}
+function subjectAvg(subjectId){
+  const r = subjectResults(subjectId);
+  return r.length ? r.reduce((a,b)=>a+b,0)/r.length : null;
+}
+/* Projected Abiturprüfung: whatever was typed in, else the subject's own record,
+   because the best available guess at how an exam goes is how the year went. */
+function examPoints(subjectId){
+  const g = grades();
+  if(g.exams[subjectId]!=null) return g.exams[subjectId];
+  const avg = subjectAvg(subjectId);
+  return avg==null ? null : Math.round(avg);
+}
+
+/* The whole projection in one pass. `bump` adds points to one subject so the
+   marginal-value table can ask "and if this one went up?" without duplicating
+   any of the arithmetic. */
+function abiProjection(bump){
+  const g = grades();
+  const lift = v => bump ? Math.max(0, Math.min(NP_MAX, v + bump.delta)) : v;
+  let P = 0, S = 0, counted = 0;
+  g.subjects.forEach(s=>{
+    const weight = s.level==='eA' ? 2 : 1;
+    g.terms.forEach(t=>{
+      let r = termResult(s.id, t);
+      if(r==null) return;
+      if(bump && bump.subjectId===s.id) r = lift(r);
+      P += r*weight; S += weight; counted++;
+    });
+  });
+  const examSubjects = g.subjects.filter(s=>s.exam);
+  let E2 = 0, examsKnown = 0;
+  examSubjects.forEach(s=>{
+    let p = examPoints(s.id);
+    if(p==null) return;
+    if(bump && bump.subjectId===s.id) p = lift(p);
+    E2 += p*ABI_RULES.examFactor; examsKnown++;
+  });
+
+  const E1 = S ? (P/S)*ABI_RULES.blockIScale : null;
+  const total = E1==null ? null : Math.round(E1) + E2;
+  // 17/3 - E/180 is the official conversion; outside 300-900 it stops meaning
+  // anything, so it is clamped rather than extrapolated.
+  const grade = total==null ? null : Math.max(1.0, Math.min(4.0, 17/3 - total/180));
+  return {
+    blockI: E1==null ? null : Math.round(E1),
+    blockII: E2,
+    total, grade, counted,
+    examsAssigned: examSubjects.length,
+    examsKnown,
+    complete: counted>0 && examSubjects.length===ABI_RULES.examCount && examsKnown===ABI_RULES.examCount
+  };
+}
+
+/* Which subject returns the most average per additional point. One point better
+   everywhere in that subject — Halbjahre and its exam — because that is the
+   decision actually on offer, and it prices in both how many Halbjahre are
+   still open and whether the subject is a Prüfungsfach. */
+function abiMarginal(){
+  const base = abiProjection();
+  if(base.grade==null) return [];
+  return grades().subjects.map(s=>{
+    const lifted = abiProjection({subjectId:s.id, delta:1});
+    return {
+      id:s.id, name:s.name, level:s.level, exam:s.exam,
+      gain: base.grade - lifted.grade,        // positive = the average improves
+      results: subjectResults(s.id).length
+    };
+  }).filter(x=>x.results>0 || x.exam).sort((a,b)=>b.gain-a.gain);
+}
+
+function npClass(p){
+  if(p==null) return '';
+  if(p>=13) return 'np-a';
+  if(p>=10) return 'np-b';
+  if(p>=7)  return 'np-c';
+  if(p>=5)  return 'np-d';
+  return 'np-e';
+}
+function npLabel(p){ return p==null ? '–' : String(p); }
+// Notenpunkte to the 1-6 note they stand for, which is how a Klausur comes back.
+function npToNote(p){
+  if(p==null) return '';
+  const n = (17 - p)/3;
+  return n.toFixed(1).replace('.', ',');
+}
+
+/* Subjects come from the timetable that already syncs, so the list fills itself
+   in rather than being typed twice. */
+function untisSubjects(){
+  const seen = new Set();
+  DAYS.forEach(d=>{
+    (state.school[d]||[]).forEach(l=>{ if(l.subject) seen.add(l.subject.toUpperCase()); });
+  });
+  return [...seen].sort();
+}
+function importUntisSubjects(){
+  const g = grades();
+  const have = new Set(g.subjects.map(s=>s.name.toUpperCase()));
+  let added = 0;
+  untisSubjects().forEach(name=>{
+    if(have.has(name)) return;
+    g.subjects.push({ id:'sub'+Date.now().toString(36)+Math.random().toString(36).slice(2,6), name, level:'gA', exam:null });
+    added++;
+  });
+  return added;
+}
+
+/* ---------------- render ---------------- */
+function renderGrades(){
+  const host = document.getElementById('gradeBody');
+  if(!host) return;
+  const g = grades();
+  const proj = abiProjection();
+
+  document.getElementById('gradeHead').innerHTML = gradeHeadHtml(proj);
+  const ow = document.getElementById('grOralWeight');
+  // Not while it is being typed in — reassigning would fight the caret.
+  if(ow && document.activeElement !== ow) ow.value = g.oralWeight==null ? 50 : g.oralWeight;
+
+  if(g.subjects.length===0){
+    host.innerHTML = '<div class="empty-row">No subjects yet. Pull them from the timetable, or add one below.</div>';
+  }else{
+    const cols = g.terms.map(t=>'<div class="gr-th">'+esc(t)+'</div>').join('');
+    let html = '<div class="gr-scroll"><div class="gr-table" style="--terms:'+g.terms.length+'">'+
+      '<div class="gr-th gr-name">Subject</div><div class="gr-th">Level</div>'+cols+
+      '<div class="gr-th">Ø</div><div class="gr-th">Abi</div><div class="gr-th"></div>';
+    g.subjects.forEach(s=>{
+      const avg = subjectAvg(s.id);
+      const ep = s.exam ? examPoints(s.id) : null;
+      html += '<div class="gr-name" data-action="grename" data-id="'+s.id+'" title="Rename">'+esc(s.name)+
+          (s.exam ? '<span class="gr-pf">P'+s.exam+'</span>' : '')+'</div>'+
+        '<div><button class="gr-lvl'+(s.level==='eA'?' ea':'')+'" data-action="grlevel" data-id="'+s.id+'">'+esc(s.level)+'</button></div>';
+      g.terms.forEach(t=>{
+        const r = termResult(s.id, t);
+        const n = ((g.marks[s.id]||{})[t]||{}).klausuren||[];
+        html += '<div><button class="gr-cell '+npClass(r)+'" data-action="grcell" data-id="'+s.id+'" data-term="'+esc(t)+'">'+
+          npLabel(r)+(n.length?'<i>'+n.length+'</i>':'')+'</button></div>';
+      });
+      html += '<div class="gr-avg">'+(avg==null?'–':avg.toFixed(1))+'</div>'+
+        '<div><button class="gr-cell '+(s.exam?npClass(ep):'')+(s.exam?'':' gr-muted')+'" data-action="grexam" data-id="'+s.id+'">'+
+          (s.exam ? npLabel(ep) : '–')+'</button></div>'+
+        '<div><button class="gr-x" data-action="grdel" data-id="'+s.id+'" aria-label="Remove subject">&times;</button></div>';
+    });
+    html += '</div></div>';
+    host.innerHTML = html;
+  }
+
+  const marg = document.getElementById('gradeMarginal');
+  const rows = abiMarginal().filter(m=>m.gain>0.0005).slice(0,6);
+  marg.innerHTML = rows.length
+    ? '<div class="gr-marg-title">One point better here moves the average by</div>'+
+      rows.map(m=>{
+        const pct = Math.round(m.gain / rows[0].gain * 100);
+        return '<div class="gr-marg-row"><span class="gr-marg-name">'+esc(m.name)+
+          (m.level==='eA'?'<i>eA</i>':'')+(m.exam?'<i>P'+m.exam+'</i>':'')+'</span>'+
+          '<div class="gr-marg-track"><i style="width:'+pct+'%"></i></div>'+
+          '<span class="gr-marg-val">&minus;'+m.gain.toFixed(2)+'</span></div>';
+      }).join('')
+    : '';
+}
+
+function gradeHeadHtml(p){
+  if(p.grade==null){
+    return '<div class="gr-hero"><div class="gr-hero-note">Enter a Klausur to see the projection. '+
+      'Block I normalises over whatever is entered, so it is honest from the first grade on.</div></div>';
+  }
+  const warn = [];
+  if(p.examsAssigned !== ABI_RULES.examCount)
+    warn.push('Assign '+ABI_RULES.examCount+' Prüfungsfächer &mdash; '+p.examsAssigned+' set. Block II is short until then.');
+  if(p.total < ABI_RULES.passPoints)
+    warn.push('Below '+ABI_RULES.passPoints+' points, which is the pass mark.');
+  return '<div class="gr-hero">'+
+    '<div class="gr-hero-main"><div class="gr-hero-num">'+p.grade.toFixed(1).replace('.',',')+'</div>'+
+      '<div class="gr-hero-lbl">projected<br>Abitur</div></div>'+
+    '<div class="gr-hero-blocks">'+
+      '<div><b>'+p.total+'</b><span>of '+ABI_RULES.maxPoints+' points</span></div>'+
+      '<div><b>'+p.blockI+'</b><span>Block I &middot; '+p.counted+' Halbjahre</span></div>'+
+      '<div><b>'+p.blockII+'</b><span>Block II &middot; '+p.examsKnown+'/'+ABI_RULES.examCount+' Prüfungen</span></div>'+
+    '</div>'+
+    (warn.length ? '<div class="gr-warn">'+warn.join('<br>')+'</div>' : '')+
+  '</div>';
+}
+
+/* ---------------- the Klausur editor ---------------- */
+function openKlausuren(subjectId, term){
+  const s = gradeSubject(subjectId); if(!s) return;
+  const g = grades();
+  const m = document.getElementById('modalBody');
+  const render = ()=>{
+    const cell = markCell(subjectId, term);
+    const result = termResult(subjectId, term);
+    m.innerHTML = '<h3>'+esc(s.name)+' &middot; '+esc(term)+'</h3>'+
+      '<p>Notenpunkte, 0&ndash;15. The Halbjahr counts '+(s.level==='eA'?'<b>twice</b> (eA)':'once (gA)')+' in Block I.</p>'+
+      '<div class="gr-klist">'+
+        ((cell.klausuren||[]).length
+          ? cell.klausuren.map(k=>'<div class="gr-krow" data-k="'+k.id+'">'+
+              '<span class="gr-ktitle">'+esc(k.title||'Klausur')+'</span>'+
+              '<span class="gr-kpts '+npClass(k.points)+'">'+npLabel(k.points)+'</span>'+
+              '<span class="gr-knote">'+npToNote(k.points)+'</span>'+
+              '<button class="gr-x" data-action="kdel" aria-label="Delete">&times;</button></div>').join('')
+          : '<div class="empty-row" style="padding:8px 4px">No Klausuren yet.</div>')+
+      '</div>'+
+      '<div class="gr-kadd">'+
+        '<input type="text" class="fld" id="kTitle" placeholder="e.g. 1. Klausur" style="flex:1">'+
+        '<input type="number" class="fld" id="kPts" min="0" max="15" placeholder="NP" style="flex:0 0 84px">'+
+        '<button class="btn-primary" id="kAdd">Add</button>'+
+      '</div>'+
+      '<label>Mündliche Note (Notenpunkte, optional)</label>'+
+      '<input type="number" class="fld" id="kOral" min="0" max="15" value="'+(cell.oral==null?'':cell.oral)+'" placeholder="leave empty if not known">'+
+      '<p style="font-size:11.5px;color:var(--text-faint);margin:2px 0 12px">'+
+        'Weighted '+(100-(g.oralWeight==null?50:g.oralWeight))+'% schriftlich / '+(g.oralWeight==null?50:g.oralWeight)+'% mündlich. '+
+        'Halbjahresergebnis: <b>'+npLabel(result)+'</b>'+(result!=null?' ('+npToNote(result)+')':'')+'</p>'+
+      '<div class="actions"><button class="btn-text" id="mCancel">Close</button></div>';
+
+    document.getElementById('mCancel').addEventListener('click', closeModal);
+    document.getElementById('kAdd').addEventListener('click', ()=>{
+      const pts = parseInt(document.getElementById('kPts').value, 10);
+      if(!(pts>=0 && pts<=NP_MAX)){ showToast({title:'Notenpunkte are 0 to 15'}); return; }
+      cell.klausuren.push({
+        id:'kl'+Date.now().toString(36)+Math.random().toString(36).slice(2,5),
+        title: document.getElementById('kTitle').value.trim() || (cell.klausuren.length+1)+'. Klausur',
+        points: pts
+      });
+      saveState(); renderGrades(); render();
+    });
+    document.getElementById('kOral').addEventListener('change', e=>{
+      const v = e.target.value.trim();
+      const n = parseInt(v, 10);
+      cell.oral = v==='' ? null : Math.max(0, Math.min(NP_MAX, isNaN(n)?0:n));
+      saveState(); renderGrades(); render();
+    });
+    m.querySelectorAll('[data-action="kdel"]').forEach(btn=>{
+      btn.addEventListener('click', ()=>{
+        const id = btn.closest('.gr-krow').dataset.k;
+        cell.klausuren = cell.klausuren.filter(k=>k.id!==id);
+        saveState(); renderGrades(); render();
+      });
+    });
+  };
+  render();
+  document.getElementById('modalVeil').classList.add('open');
+}
+
+/* Which Prüfungsfach a subject is, and the points expected from it. Both live
+   in one small dialog because they are the same decision. */
+function openExamSlot(subjectId){
+  const s = gradeSubject(subjectId); if(!s) return;
+  const g = grades();
+  const m = document.getElementById('modalBody');
+  const taken = {};
+  g.subjects.forEach(x=>{ if(x.exam && x.id!==s.id) taken[x.exam] = x.name; });
+  m.innerHTML = '<h3>'+esc(s.name)+' &middot; Abiturprüfung</h3>'+
+    '<p>P1&ndash;P3 are written on erhöhtem Niveau, P4 written and P5 mündlich. Each counts four times.</p>'+
+    '<label>Prüfungsfach</label>'+
+    '<select class="fld" id="exSlot"><option value="">&mdash; not a Prüfungsfach &mdash;</option>'+
+      [1,2,3,4,5].map(n=>'<option value="'+n+'"'+(s.exam===n?' selected':'')+(taken[n]?' disabled':'')+'>P'+n+
+        (taken[n]?' — taken by '+esc(taken[n]):'')+'</option>').join('')+
+    '</select>'+
+    '<label>Expected result in Notenpunkte</label>'+
+    '<input type="number" class="fld" id="exPts" min="0" max="15" value="'+(g.exams[s.id]==null?'':g.exams[s.id])+'" '+
+      'placeholder="'+(subjectAvg(s.id)==null?'no data yet':'defaults to the subject average, '+Math.round(subjectAvg(s.id)))+'">'+
+    '<p style="font-size:11.5px;color:var(--text-faint);margin:2px 0 12px">Left empty, this follows the subject average as it moves.</p>'+
+    '<div class="actions"><button class="btn-text" id="mCancel">Cancel</button><button class="btn-primary" id="exSave">Save</button></div>';
+  document.getElementById('mCancel').addEventListener('click', closeModal);
+  document.getElementById('exSave').addEventListener('click', ()=>{
+    const slot = document.getElementById('exSlot').value;
+    s.exam = slot ? parseInt(slot,10) : null;
+    const v = document.getElementById('exPts').value.trim();
+    if(v===''){ delete g.exams[s.id]; }
+    else g.exams[s.id] = Math.max(0, Math.min(NP_MAX, parseInt(v,10)||0));
+    closeModal(); saveState(); renderGrades();
+  });
+  document.getElementById('modalVeil').classList.add('open');
+}
+
+/* ---------------- wiring ---------------- */
+document.getElementById('gradeBody').addEventListener('click', e=>{
+  const btn = e.target.closest('[data-action]'); if(!btn) return;
+  const id = btn.dataset.id;
+  const act = btn.dataset.action;
+  if(act==='grcell')  return openKlausuren(id, btn.dataset.term);
+  if(act==='grexam')  return openExamSlot(id);
+  if(act==='grlevel'){
+    const s = gradeSubject(id); if(!s) return;
+    s.level = s.level==='eA' ? 'gA' : 'eA';
+    saveState(); renderGrades(); return;
+  }
+  if(act==='grename'){
+    const s = gradeSubject(id); if(!s) return;
+    const m = document.getElementById('modalBody');
+    m.innerHTML = '<h3>Rename subject</h3><label>Name</label>'+
+      '<input type="text" class="fld" id="grName" value="'+esc(s.name)+'">'+
+      '<div class="actions"><button class="btn-text" id="mCancel">Cancel</button><button class="btn-primary" id="grSave">Save</button></div>';
+    document.getElementById('mCancel').addEventListener('click', closeModal);
+    document.getElementById('grSave').addEventListener('click', ()=>{
+      const v = document.getElementById('grName').value.trim();
+      if(v) s.name = v;
+      closeModal(); saveState(); renderGrades();
+    });
+    document.getElementById('modalVeil').classList.add('open');
+    return;
+  }
+  if(act==='grdel'){
+    const s = gradeSubject(id); if(!s) return;
+    openConfirm({
+      title:'Remove '+esc(s.name)+'?',
+      body:'Its Klausuren go with it. Nothing else is affected.',
+      confirmLabel:'Remove',
+      onConfirm:()=>{
+        const g = grades();
+        g.subjects = g.subjects.filter(x=>x.id!==id);
+        delete g.marks[id]; delete g.exams[id];
+        saveState(); renderGrades();
+      }
+    });
+  }
+});
+document.getElementById('grAddSubject').addEventListener('click', ()=>{
+  const inp = document.getElementById('grNewSubject');
+  const name = inp.value.trim();
+  if(!name) return;
+  grades().subjects.push({
+    id:'sub'+Date.now().toString(36)+Math.random().toString(36).slice(2,6),
+    name, level:'gA', exam:null
+  });
+  inp.value = '';
+  saveState(); renderGrades();
+});
+document.getElementById('grNewSubject').addEventListener('keydown', e=>{
+  if(e.key==='Enter') document.getElementById('grAddSubject').click();
+});
+document.getElementById('grFromUntis').addEventListener('click', ()=>{
+  const n = importUntisSubjects();
+  saveState(); renderGrades();
+  showToast(n ? {title:'Added '+n+' subject'+(n===1?'':'s'), sub:'From the synced timetable.'}
+              : {title:'Nothing new', sub:'Every timetable subject is already listed.'});
+});
+document.getElementById('grOralWeight').addEventListener('change', e=>{
+  grades().oralWeight = Math.max(0, Math.min(100, parseInt(e.target.value,10)||0));
+  saveState(); renderGrades();
+});
 
 /* ============ BACKUP: EXPORT / IMPORT EVERYTHING ============
  * The app auto-updates, which means it ships new migrate() code straight to
