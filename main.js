@@ -588,6 +588,105 @@ function createWindow() {
 }
 
 /* ------------------------------------------------------------------ *
+ * Backups
+ *
+ * The app updates itself, which means it ships new migrate() code
+ * straight to the only machine holding the only copy of the data. This
+ * is the undo button for that.
+ *
+ * The renderer builds the snapshot — `state` and all four IndexedDB
+ * blob stores live there and are unreachable from this process. This
+ * side only picks a file and writes the bytes.
+ * ------------------------------------------------------------------ */
+const BACKUP_RE = /^questline-backup-.*\.json$/;
+
+// Nothing the renderer sends becomes a path: both separators and the rest of
+// the Windows-illegal set are flattened before it is joined to the folder.
+function safeFileName(name) {
+  return String(name || 'questline-backup.json').replace(/[\\/:*?"<>|]/g, '-').slice(0, 140);
+}
+
+// Auto-backups go next to the videos, because that is the folder chosen for
+// having room on it. Without one they fall back to userData.
+function autoBackupDir(preferred) {
+  let base;
+  if (preferred && fs.existsSync(preferred)) base = path.join(preferred, 'Questline Backups');
+  else base = path.join(app.getPath('userData'), 'backups');
+  fs.mkdirSync(base, { recursive: true });
+  return base;
+}
+
+// The point is the most recent few, not a museum — these files are large.
+function pruneBackups(dir, keep) {
+  try {
+    fs.readdirSync(dir)
+      .filter((f) => BACKUP_RE.test(f))
+      .map((f) => ({ f, t: fs.statSync(path.join(dir, f)).mtimeMs }))
+      .sort((a, b) => b.t - a.t)
+      .slice(Math.max(1, keep || 5))
+      .forEach((x) => { try { fs.unlinkSync(path.join(dir, x.f)); } catch (e) { /* non-fatal */ } });
+  } catch (e) { /* non-fatal */ }
+}
+
+ipcMain.handle('app-version', () => app.getVersion());
+
+ipcMain.handle('backup-save', async (event, { name, text }) => {
+  const r = await dialog.showSaveDialog({
+    title: 'Save Questline backup',
+    defaultPath: path.join(app.getPath('downloads'), safeFileName(name)),
+    filters: [{ name: 'Questline backup', extensions: ['json'] }]
+  });
+  if (r.canceled || !r.filePath) return { ok: false, canceled: true };
+  try { fs.writeFileSync(r.filePath, text); return { ok: true, path: r.filePath }; }
+  catch (e) { return { ok: false, error: e.message }; }
+});
+
+ipcMain.handle('backup-open', async () => {
+  const r = await dialog.showOpenDialog({
+    title: 'Restore a Questline backup',
+    properties: ['openFile'],
+    filters: [{ name: 'Questline backup', extensions: ['json'] }]
+  });
+  if (r.canceled || !r.filePaths.length) return { ok: false, canceled: true };
+  try { return { ok: true, path: r.filePaths[0], text: fs.readFileSync(r.filePaths[0], 'utf8') }; }
+  catch (e) { return { ok: false, error: e.message }; }
+});
+
+// Resolved by the next backup-auto-write, so the updater can wait for the
+// snapshot it asked for instead of racing the restart against it.
+let pendingSnapshot = null;
+function settleSnapshot() { if (pendingSnapshot) { const f = pendingSnapshot; pendingSnapshot = null; f(); } }
+
+ipcMain.handle('backup-auto-write', (event, { name, text, dir, keep }) => {
+  try {
+    const target = autoBackupDir(dir);
+    const out = path.join(target, safeFileName(name));
+    fs.writeFileSync(out, text);
+    pruneBackups(target, keep || 5);
+    return { ok: true, path: out };
+  } catch (e) {
+    return { ok: false, error: e.message };
+  } finally {
+    settleSnapshot();
+  }
+});
+
+// The renderer reports a snapshot it decided not to take (nothing to back up,
+// or it failed) so the updater is never left waiting on the timeout.
+ipcMain.handle('backup-auto-skip', () => { settleSnapshot(); return true; });
+
+/* The last moment the *old* code still owns the data. Bounded, because an
+   update must not be blockable by a renderer that never answers. */
+function snapshotBeforeUpdate(version) {
+  if (!mainWin || mainWin.isDestroyed()) return Promise.resolve();
+  return new Promise((resolve) => {
+    const timer = setTimeout(() => { pendingSnapshot = null; resolve(); }, 90000);
+    pendingSnapshot = () => { clearTimeout(timer); resolve(); };
+    mainWin.webContents.send('backup-request', { reason: 'update', version: version || '' });
+  });
+}
+
+/* ------------------------------------------------------------------ *
  * Pinned widget — a second, always-on-top, frameless window that loads
  * the same index.html (with ?widget=1) so it shares the app's own
  * localStorage save. Position/size and a couple of prefs persist to
@@ -818,7 +917,10 @@ function setupAutoUpdate() {
   // installer.
   autoUpdater.setFeedURL({ provider: 'github', owner: 'mebingoo', repo: 'questline' });
 
-  autoUpdater.on('update-downloaded', (info) => {
+  autoUpdater.on('update-downloaded', async (info) => {
+    // Snapshot first: the update replaces migrate() on the only machine that
+    // holds the data, so the pre-update save is worth having on disk.
+    await snapshotBeforeUpdate(info && info.version);
     dialog.showMessageBox({
       type: 'info',
       title: 'Update ready',

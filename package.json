@@ -9,7 +9,8 @@
   "scripts": {
     "start": "electron .",
     "dist": "electron-builder",
-    "release": "electron-builder --publish always"
+    "release": "electron-builder --publish always",
+    "test": "electron test/harness.js"
   },
   "build": {
     "appId": "com.phuc.questline",

@@ -67,6 +67,23 @@ contextBridge.exposeInMainWorld('refsCtl', {
   minimize: () => ipcRenderer.invoke('refs-minimize')
 });
 
+// Export / import everything. The renderer builds the snapshot (state and the
+// IndexedDB stores are only reachable there); this side picks the file and
+// writes the bytes. onRequest is how the updater asks for one before it
+// restarts the app.
+contextBridge.exposeInMainWorld('backup', {
+  version: () => ipcRenderer.invoke('app-version'),
+  save: (name, text) => ipcRenderer.invoke('backup-save', { name, text }),
+  open: () => ipcRenderer.invoke('backup-open'),
+  auto: (opts) => ipcRenderer.invoke('backup-auto-write', opts),
+  skip: () => ipcRenderer.invoke('backup-auto-skip'),
+  onRequest: (cb) => {
+    const fn = (_e, data) => { try { cb(data); } catch (err) {} };
+    ipcRenderer.on('backup-request', fn);
+    return () => ipcRenderer.removeListener('backup-request', fn);
+  }
+});
+
 // Read-only: lists/loads the roadmap.json files bundled under data/roadmaps.
 contextBridge.exposeInMainWorld('roadmaps', {
   listSeeds: () => ipcRenderer.invoke('roadmap-list-seeds'),

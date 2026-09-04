@@ -6,22 +6,29 @@ timetable, and an AI quiz builder for downloaded YouTube tutorials.
 
 Single user (Phuc). Not a product — optimise for his workflow, not generality.
 
+**Read `ROADMAP.md` before proposing work.** It holds the current phase, what
+is deliberately deferred, and what is explicitly not being built. Phase 0 comes
+before any new feature.
+
 ## Layout
 
 | Path | What it is |
 |---|---|
-| `index.html` | **The entire app** — UI, CSS and logic in one file, ~6300 lines. Vanilla JS, no framework, no build step. |
+| `index.html` | **The entire app** — UI, CSS and logic in one file, ~10,500 lines. Vanilla JS, no framework, no build step. |
 | `main.js` | Electron main process: windows, WebUntis/YouTube/AI proxies, course-media protocol, auto-update. |
 | `preload.js` | The only bridge between page and Node. Everything exposed is explicit. |
 | `server/src/worker.js` | Cloudflare Worker: serves the phone PWA, holds synced state in KV, proxies WebUntis/YouTube/AI. |
-| `server/public/` | **Generated.** Copy of `index.html` + roadmap seeds. Never edit by hand — `npm run predeploy` writes it. |
+| `server/public/` | **Generated and gitignored.** Copy of `index.html` + roadmap seeds, written by `npm run predeploy` at deploy time. Never edit by hand, never commit it — 24 committed copies of a 520 KB file were half the repo. |
 | `data/roadmaps/*.json` | Roadmap seeds. `*-tree.json` are skill trees (schemaVersion 2, a node graph); the others are linear milestone lists (v1). |
+| `test/harness.js` | The test suite (`npm test`). Boots the real app on a temp `userData` and drives the DOM. |
 | `dist/` | Build output, gitignored. |
+| `ROADMAP.md` | Phased plan + priorities. Check the current phase before starting anything. |
 
 ## Commands
 
 ```bash
 npm start                  # run the desktop app
+npm test                   # boot it under Electron and drive the real DOM
 npm run dist               # build the Windows installer into dist/
 cd server && npm run deploy  # push worker + PWA (predeploy syncs public/ first)
 ```
@@ -54,18 +61,21 @@ curl -sL https://github.com/mebingoo/questline/releases/latest/download/latest.y
 - Modals render into `#modalBody`; settings tabs render into a host element
   passed as an argument. Full-screen overlays (settings, skill tree) are their
   own `*-veil` elements.
-- There is no test suite. Verify by driving the real app with Electron and
-  `webContents.executeJavaScript` — see the pattern in past commits. Small test
-  fixtures hide real bugs (a 3-second video seeks from memory and never exposes
-  broken range requests; use something ~100 MB).
-- A test harness `require`s `main.js` for the real IPC, then drives the window
-  returned by `BrowserWindow.getAllWindows()[0]`. Two things it must do:
+- `npm test` runs `test/harness.js`: it `require`s `main.js` for the real IPC,
+  then drives the window returned by `BrowserWindow.getAllWindows()[0]`. Add to
+  it rather than writing a second one. Two rules it exists to encode:
   - **`app.setPath('userData', <temp>)` before requiring `main.js`.** Otherwise
     the test writes into the real library, and stale state from the last run
     makes the next one lie.
   - **Drive the DOM, not the closure.** Everything is inside one IIFE, so
     `state` and every function are unreachable; click real elements and read
     results back from `localStorage.getItem('questline_state_v2')`.
+- The harness stubs `dialog.showSaveDialog`/`showOpenDialog` before requiring
+  `main.js`, which is what makes the backup round trip testable end to end.
+  `main.js` destructures `dialog` from `electron` but the object is shared, so
+  patching methods on it works.
+- Small test fixtures hide real bugs (a 3-second video seeks from memory and
+  never exposes broken range requests; use something ~100 MB).
 
 ## AI
 
@@ -177,6 +187,31 @@ are deliberately **not** in it:
 Sync is end-to-end encrypted (AES-GCM, key derived from the sync token via
 PBKDF2). The server only ever sees ciphertext. If a blob won't decrypt the app
 keeps local data and re-uploads rather than wiping anything.
+
+## Backups
+
+The app auto-updates, so it ships new `migrate()` code straight to the only
+machine holding the only copy of the data. Settings → Advanced → Export writes
+one JSON with `state` plus every IndexedDB store, base64'd; Restore reads it
+back and reloads. The harness proves the round trip, because an export nobody
+has restored is not a backup.
+
+- The renderer builds the snapshot — `state` and the four blob stores are only
+  reachable there. `main.js` just picks the file and writes bytes.
+- **Credentials are deliberately not in it** (WebUntis password, AI key, sync
+  token), for the same reason they are not in `state`. Restore therefore
+  `Object.assign`s over the current config and leaves this device's secrets
+  alone.
+- Two automatic snapshots, both silent, both into `<video library>/Questline
+  Backups/` (or userData when no library folder is set), keeping the newest 5:
+  when `update-downloaded` fires — the updater *waits* for it, so the renderer
+  must always answer, hence `backup.skip()` on failure — and at boot when the
+  running version differs from `questline_lastver_v1`. The boot one backs up
+  `bootRawSave`, the save exactly as it sat on disk **before** `migrate()` ran,
+  which is the only copy worth having at that moment.
+- A restore sets `questline_restored_v1`, and boot force-**pushes** instead of
+  pulling. Pulling first would hand the server's newer copy straight back and
+  quietly undo the restore.
 
 ## Not in the repo
 

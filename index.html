@@ -2631,6 +2631,11 @@ function loadState(){
     return freshState();
   }
 }
+/* The save exactly as it sits on disk, before migrate() has touched it. Kept
+   for the auto-backup taken when the app notices it has updated itself: what
+   is worth having at that moment is the copy the *old* code wrote. */
+let bootRawSave = null;
+try{ bootRawSave = localStorage.getItem(STORAGE_KEY) || localStorage.getItem(LEGACY_KEY) || null; }catch(e){}
 let state = loadState();
 const isWidget = new URLSearchParams(location.search).get('widget')==='1';
 // The main window and the pinned widget are two separate renderer processes
@@ -2974,6 +2979,14 @@ function renderBarFallback(){
 function renderRadar(){
   const n = state.goals.length;
   const size = 300, cx = size/2, cy = size/2, maxR = 104, rings = 4, capLevel = 10;
+  // Read the palette rather than hardcoding it: a bright background flips the
+  // whole theme, and a baked-in near-black grid line is invisible on it.
+  const cs = getComputedStyle(document.documentElement);
+  const cvar = (name, fallback)=> (cs.getPropertyValue(name).trim() || fallback);
+  const cGrid   = cvar('--border',   '#262638'),
+        cLabel  = cvar('--text-dim', '#8b93b0'),
+        cBg     = cvar('--bg',       '#050507'),
+        cAccent = cvar('--gold',     '#ff2ea6');
   if(n < 3){ document.getElementById('radarWrap').innerHTML = '<div class="empty-row">Add at least 3 quest lines to see your build.</div>'; document.getElementById('legendList').innerHTML=''; return; }
   if(levelFromXP(state.player.xp,150) < 5){ renderBarFallback(); return; }
   let svg = '<svg width="'+size+'" height="'+size+'" viewBox="0 0 '+size+' '+size+'" style="overflow:visible">';
@@ -2983,11 +2996,11 @@ function renderRadar(){
       const a = -Math.PI/2 + i*(2*Math.PI/n);
       pts.push((cx+rad*Math.cos(a)).toFixed(1)+','+(cy+rad*Math.sin(a)).toFixed(1));
     }
-    svg += '<polygon points="'+pts.join(' ')+'" fill="none" stroke="#262638" stroke-width="1"/>';
+    svg += '<polygon points="'+pts.join(' ')+'" fill="none" stroke="'+cGrid+'" stroke-width="1"/>';
   }
   for(let i=0;i<n;i++){
     const a = -Math.PI/2 + i*(2*Math.PI/n);
-    svg += '<line x1="'+cx+'" y1="'+cy+'" x2="'+(cx+maxR*Math.cos(a)).toFixed(1)+'" y2="'+(cy+maxR*Math.sin(a)).toFixed(1)+'" stroke="#262638" stroke-width="1"/>';
+    svg += '<line x1="'+cx+'" y1="'+cy+'" x2="'+(cx+maxR*Math.cos(a)).toFixed(1)+'" y2="'+(cy+maxR*Math.sin(a)).toFixed(1)+'" stroke="'+cGrid+'" stroke-width="1"/>';
   }
   const pts=[];
   state.goals.forEach((g,i)=>{
@@ -2996,13 +3009,13 @@ function renderRadar(){
     const rad = maxR*(lvl/capLevel);
     pts.push({x:cx+rad*Math.cos(a), y:cy+rad*Math.sin(a), color:g.color});
   });
-  svg += '<polygon points="'+pts.map(p=>p.x.toFixed(1)+','+p.y.toFixed(1)).join(' ')+'" fill="rgba(255,46,166,0.16)" stroke="#ff2ea6" stroke-width="1.6"/>';
-  pts.forEach(p=>{ svg += '<circle cx="'+p.x.toFixed(1)+'" cy="'+p.y.toFixed(1)+'" r="3.4" fill="'+p.color+'" stroke="#050507" stroke-width="1.4"/>'; });
+  svg += '<polygon points="'+pts.map(p=>p.x.toFixed(1)+','+p.y.toFixed(1)).join(' ')+'" fill="'+cAccent+'" fill-opacity="0.16" stroke="'+cAccent+'" stroke-width="1.6"/>';
+  pts.forEach(p=>{ svg += '<circle cx="'+p.x.toFixed(1)+'" cy="'+p.y.toFixed(1)+'" r="3.4" fill="'+p.color+'" stroke="'+cBg+'" stroke-width="1.4"/>'; });
   state.goals.forEach((g,i)=>{
     const a = -Math.PI/2 + i*(2*Math.PI/n);
     const lx = cx+(maxR+22)*Math.cos(a), ly = cy+(maxR+22)*Math.sin(a);
     const anchor = Math.cos(a) > 0.3 ? 'start' : Math.cos(a) < -0.3 ? 'end' : 'middle';
-    svg += '<text x="'+lx.toFixed(1)+'" y="'+ly.toFixed(1)+'" text-anchor="'+anchor+'" font-size="9.5" fill="#8b93b0" font-family="Rajdhani, sans-serif" dominant-baseline="middle">'+esc(g.name.split(' ')[0])+'</text>';
+    svg += '<text x="'+lx.toFixed(1)+'" y="'+ly.toFixed(1)+'" text-anchor="'+anchor+'" font-size="9.5" fill="'+cLabel+'" font-family="Rajdhani, sans-serif" dominant-baseline="middle">'+esc(g.name.split(' ')[0])+'</text>';
   });
   svg += '</svg>';
   document.getElementById('radarWrap').innerHTML = svg;
@@ -4955,6 +4968,10 @@ function renderLog(){
 /* ============ PINNED WIDGET (separate always-on-top window) ============ */
 let widgetSize = 'normal';
 function renderWidgetUI(){
+  // #widgetUI is in the shared DOM and merely display:none in the main window,
+  // so the element check alone never fires there — and this used to rebuild a
+  // hidden subtree once a second, forever. Only the widget window draws it.
+  if(!isWidget) return;
   const el = document.getElementById('widgetUI'); if(!el) return;
   const today = todayStr();
   const todaysDailies = state.dailies.filter(q=>!q.plannedForDate || q.plannedForDate===today);
@@ -5963,16 +5980,24 @@ function timerTick(){
   renderTimerPill();
   renderWidgetUI();
 }
-setInterval(timerTick, 1000);
+/* An idle app has no reason to wake up once a second. The interval is
+   reconciled from renderTimerPill() rather than from start/stop/pause/resume,
+   because a timer started in the *other* window arrives here as a storage
+   event — never as a call to startTimer(). */
+let timerInterval = null;
+function startTimerTick(){ if(!timerInterval) timerInterval = setInterval(timerTick, 1000); }
+function stopTimerTick(){ if(timerInterval){ clearInterval(timerInterval); timerInterval = null; } }
 function renderTimerPill(){
-  const pill = document.getElementById('timerPill'); if(!pill) return;
   const t = state.activeTimer;
+  if(t && !t.paused) startTimerTick(); else stopTimerTick();
+  const pill = document.getElementById('timerPill'); if(!pill) return;
   pill.classList.toggle('running', !!t && !t.paused);
   if(!t){ document.getElementById('timerVal').textContent = 'Start'; return; }
   const elapsed = timerElapsedSec(t);
   const remaining = t.plannedSec!=null ? t.plannedSec - elapsed : null;
   document.getElementById('timerVal').textContent = remaining!=null ? fmtMMSS(Math.max(0,remaining)) : fmtMMSS(elapsed);
 }
+renderTimerPill();      // pick the tick back up if the app was closed mid-session
 function focusWeekSummary(goalId){
   const wk = isoWeekKey();
   const sec = state.focusSessions
@@ -10021,13 +10046,313 @@ function renderAppearanceTab(host){
   sel.addEventListener('change', e=>stage({font: e.target.value}));
 }
 
+/* ============ BACKUP: EXPORT / IMPORT EVERYTHING ============
+ * The app auto-updates, which means it ships new migrate() code straight to
+ * the only machine holding the only copy of the data. This is the undo button
+ * for that, and it is why Phase 0 exists.
+ *
+ * One file carries `state` plus all four device-local blob stores — gate
+ * proofs, reference images, note screenshots, background media — base64'd,
+ * plus the device-local prefs that are not secrets.
+ *
+ * Deliberately NOT in it: the WebUntis password, the AI key and the sync
+ * token. A backup file gets copied onto a USB stick and mailed to yourself;
+ * credentials do not belong in one, and nothing here needs them to restore.
+ */
+const BACKUP_FORMAT = 1;
+const RESTORE_FLAG  = 'questline_restored_v1';
+const APPVER_KEY    = 'questline_lastver_v1';
+let appVersion = 'dev';
+
+// Built as a function, not a const array, so it always reflects the four
+// stores as they are actually named at the top of each feature.
+function backupStores(){
+  return [
+    { db:PROOF_DB, store:PROOF_STORE },
+    { db:REF_DB,   store:REF_STORE   },
+    { db:SHOT_DB,  store:SHOT_STORE  },
+    { db:BG_DB,    store:BG_STORE    }
+  ];
+}
+
+function idbOpenStore(name, store){
+  return new Promise((res, rej)=>{
+    const r = indexedDB.open(name, 1);
+    r.onupgradeneeded = ()=>{ if(!r.result.objectStoreNames.contains(store)) r.result.createObjectStore(store); };
+    r.onsuccess = ()=>res(r.result);
+    r.onerror = ()=>rej(r.error);
+  });
+}
+async function idbEntries(name, store){
+  let db;
+  try{ db = await idbOpenStore(name, store); }catch(e){ return []; }
+  return await new Promise(res=>{
+    try{
+      const tx = db.transaction(store, 'readonly'), os = tx.objectStore(store);
+      const kq = os.getAllKeys(), vq = os.getAll();
+      tx.oncomplete = ()=>{
+        const keys = kq.result||[], vals = vq.result||[];
+        res(keys.map((k,i)=>({ key:k, value:vals[i] })));
+      };
+      tx.onerror = ()=>res([]);
+    }catch(e){ res([]); }
+  });
+}
+async function idbReplaceAll(name, store, entries){
+  const db = await idbOpenStore(name, store);
+  return await new Promise((res, rej)=>{
+    const tx = db.transaction(store, 'readwrite'), os = tx.objectStore(store);
+    os.clear();
+    entries.forEach(e=>{ try{ os.put(e.value, e.key); }catch(err){} });
+    tx.oncomplete = ()=>res(true);
+    tx.onerror = ()=>rej(tx.error);
+  });
+}
+
+/* A store holds Blobs (proofs, refs, shots) or a small record wrapping one
+   (background media). Walking the value rather than special-casing each store
+   means a fifth store would need no new packing code. */
+function b64FromBytes(bytes){
+  let s = '';
+  const CHUNK = 0x8000;      // apply() over the whole array would blow the stack
+  for(let i=0;i<bytes.length;i+=CHUNK) s += String.fromCharCode.apply(null, bytes.subarray(i, i+CHUNK));
+  return btoa(s);
+}
+async function packVal(v){
+  if(v instanceof Blob){
+    const bytes = new Uint8Array(await v.arrayBuffer());
+    return { __blob:1, type:v.type||'', name:(v.name||''), size:bytes.length, data:b64FromBytes(bytes) };
+  }
+  if(Array.isArray(v)){ const out=[]; for(const x of v) out.push(await packVal(x)); return out; }
+  if(v && typeof v==='object'){
+    const out = {};
+    for(const k of Object.keys(v)) out[k] = await packVal(v[k]);
+    return out;
+  }
+  return v;
+}
+function unpackVal(v){
+  if(Array.isArray(v)) return v.map(unpackVal);
+  if(v && typeof v==='object'){
+    if(v.__blob===1){
+      const blob = new Blob([fromB64(v.data)], { type:v.type||'application/octet-stream' });
+      return v.name ? new File([blob], v.name, { type:v.type||'' }) : blob;
+    }
+    const out = {};
+    for(const k of Object.keys(v)) out[k] = unpackVal(v[k]);
+    return out;
+  }
+  return v;
+}
+
+function backupFileName(tag){
+  const d = new Date(), p = n=>String(n).padStart(2,'0');
+  return 'questline-backup-'+d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate())+
+         '-'+p(d.getHours())+p(d.getMinutes())+(tag?'-'+String(tag).replace(/[^\w.-]/g,''):'')+'.json';
+}
+function fmtBytes(n){
+  if(n < 1024) return n+' B';
+  if(n < 1024*1024) return Math.round(n/1024)+' KB';
+  return (n/1024/1024).toFixed(1)+' MB';
+}
+
+/* rawStateJson lets the version-change snapshot back up the save exactly as it
+   sat on disk *before* migrate() touched it — which is the whole point of
+   taking one when the app has just updated itself. */
+async function buildBackup(rawStateJson){
+  const stores = {};
+  for(const s of backupStores()){
+    const packed = [];
+    for(const e of await idbEntries(s.db, s.store)) packed.push({ key:e.key, value: await packVal(e.value) });
+    stores[s.db+'/'+s.store] = packed;
+  }
+  let stateObj = state;
+  if(rawStateJson){ try{ stateObj = JSON.parse(rawStateJson); }catch(e){} }
+  return {
+    app:'questline', format:BACKUP_FORMAT, appVersion,
+    takenAt: new Date().toISOString(),
+    state: stateObj,
+    local: {
+      vidlib: { folder: vidLib.folder||null, langs: (vidLib.langs||[]).slice() },
+      aicfg:  { provider:aiCfg.provider, ollamaUrl:aiCfg.ollamaUrl, model:aiCfg.model, keepAlive:aiCfg.keepAlive },
+      untis:  { server:untisCfg.server, school:untisCfg.school, user:untisCfg.user, autoSync:untisCfg.autoSync!==false },
+      syncUrl: syncCfg.url || ''
+    },
+    stores
+  };
+}
+
+function backupSummary(d){
+  if(!d || d.app!=='questline' || !d.state || !d.state.player) return '<b>This does not look like a Questline backup.</b>';
+  const s = d.state;
+  const blobs = Object.keys(d.stores||{}).reduce((a,k)=>a+((d.stores[k]||[]).length),0);
+  const when = d.takenAt ? new Date(d.takenAt).toLocaleString() : 'unknown date';
+  return '<b>'+esc(when)+'</b> &middot; Questline '+esc(String(d.appVersion||'?'))+'<br>'+
+    'Level '+levelFromXP(s.player.xp||0,150)+' &middot; '+(s.player.streak||0)+'-day streak &middot; '+
+    (s.player.gold||0)+' gold<br>'+
+    (s.goals||[]).length+' quest lines &middot; '+(s.dailies||[]).length+' dailies &middot; '+
+    (((s.srs||{}).cards)||[]).length+' cards &middot; '+blobs+' stored files';
+}
+
+function validateBackup(d){
+  if(!d || d.app!=='questline' || !d.state || !d.state.player) throw new Error('That file is not a Questline backup.');
+  if((d.format||0) > BACKUP_FORMAT) throw new Error('That backup came from a newer version of Questline.');
+  return d;
+}
+
+async function restoreBackup(d){
+  validateBackup(d);
+  // State first. If a blob store fails halfway through, the quests and progress
+  // are already safe on disk — those are the part that cannot be re-made.
+  const st = d.state;
+  st.updatedAt = Date.now();          // the restored copy is now the newest one
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(st));
+
+  const byKey = {};
+  backupStores().forEach(s=>{ byKey[s.db+'/'+s.store] = s; });
+  for(const k of Object.keys(d.stores||{})){
+    const s = byKey[k]; if(!s) continue;
+    const entries = (d.stores[k]||[]).map(e=>({ key:e.key, value:unpackVal(e.value) }));
+    try{ await idbReplaceAll(s.db, s.store, entries); }
+    catch(e){ console.warn('Questline: could not restore '+k, e); }
+  }
+
+  // Device-local prefs. The backup carries no secrets, so assigning over the
+  // current config leaves this device's password/key/token exactly as they are.
+  const L = d.local || {};
+  if(L.vidlib){ vidLib   = Object.assign(defaultVidLib(), vidLib, L.vidlib); saveVidLib(); }
+  if(L.aicfg){  aiCfg    = Object.assign(defaultAiCfg(),  aiCfg,  L.aicfg);  saveAiCfg();  }
+  if(L.untis){  untisCfg = Object.assign(untisCfg, L.untis);                 saveUntisCfg(); }
+  if(L.syncUrl && !syncCfg.url){ syncCfg.url = L.syncUrl; saveSyncCfg(); }
+
+  // Read at boot: a restore makes this device the source of truth, so it force-
+  // pushes rather than pulling the server's newer copy straight back over it.
+  try{ localStorage.setItem(RESTORE_FLAG, '1'); }catch(e){}
+}
+
+async function exportBackup(status){
+  status('Collecting…');
+  const text = JSON.stringify(await buildBackup());
+  const name = backupFileName();
+  status('Writing '+fmtBytes(text.length)+'…');
+  if(window.backup && window.backup.save){
+    const r = await window.backup.save(name, text);
+    if(r && r.canceled) return null;
+    if(!r || !r.ok) throw new Error((r && r.error) || 'Could not write the file.');
+    return { path:r.path, size:text.length };
+  }
+  // Phone / browser: hand it to the download manager instead.
+  const url = URL.createObjectURL(new Blob([text], {type:'application/json'}));
+  const a = document.createElement('a');
+  a.href = url; a.download = name; a.click();
+  setTimeout(()=>URL.revokeObjectURL(url), 10000);
+  return { path:name, size:text.length };
+}
+
+async function pickBackupFile(){
+  if(window.backup && window.backup.open){
+    const r = await window.backup.open();
+    if(r && r.canceled) return null;
+    if(!r || !r.ok) throw new Error((r && r.error) || 'Could not read that file.');
+    return { text:r.text, name:r.path };
+  }
+  return await new Promise(res=>{
+    const inp = document.createElement('input');
+    inp.type = 'file'; inp.accept = 'application/json,.json';
+    inp.addEventListener('change', async ()=>{
+      const f = inp.files && inp.files[0];
+      if(!f) return res(null);
+      res({ text: await f.text(), name: f.name });
+    });
+    inp.addEventListener('cancel', ()=>res(null));
+    inp.click();
+  });
+}
+
+async function importBackup(status){
+  status('Choose a file…');
+  const picked = await pickBackupFile();
+  if(!picked) return null;
+  status('Reading…');
+  let d;
+  try{ d = JSON.parse(picked.text); }catch(e){ throw new Error('That file is not valid JSON.'); }
+  validateBackup(d);
+  openConfirm({
+    title:'Restore this backup?',
+    body:'This replaces everything on this device — quests, progress, notes, reference boards, screenshots. '+
+         'It cannot be undone, so export the current state first if you might want it.<br><br>'+backupSummary(d),
+    confirmLabel:'Restore and reload',
+    onConfirm: async ()=>{
+      try{ await restoreBackup(d); location.reload(); }
+      catch(err){ showToast({title:'Restore failed', sub:String((err && err.message) || err)}); }
+    }
+  });
+  return true;
+}
+
+/* Silent snapshot into the video-library folder — chosen for having room on
+   it — or userData when there is none. No dialog: the point of these is that
+   they happen without anyone deciding to. */
+async function writeAutoBackup(tag, rawStateJson){
+  if(!(window.backup && window.backup.auto)) return null;
+  const text = JSON.stringify(await buildBackup(rawStateJson));
+  const r = await window.backup.auto({ name: backupFileName(tag), text, dir: vidLib.folder || null, keep: 5 });
+  return (r && r.ok) ? r : null;
+}
+
 function renderAdvancedTab(host){
   host.innerHTML = '<div class="set-panel-title">Advanced</div><div id="setHost"></div>'+
+    '<div class="set-sub"><div class="set-row"><div class="set-row-main">'+
+      '<div class="t">Backup everything</div>'+
+      '<div class="d">One file with the whole save: quests, progress, journal, cards, timetable, '+
+        'reference boards, note screenshots, gate proofs and the background. '+
+        'Passwords, the AI key and the sync token are deliberately left out. '+
+        'A snapshot is also taken on its own whenever the app updates itself.</div>'+
+      '<div class="d" id="bkStatus"></div>'+
+    '</div><div class="set-row-ctl">'+
+      '<button class="btn-text" id="bkImport">Restore\u2026</button>'+
+      '<button class="btn-primary" id="bkExport">Export</button>'+
+    '</div></div></div>'+
     '<div class="set-sub"><div class="set-row"><div class="set-row-main">'+
       '<div class="t">Reset all progress</div>'+
       '<div class="d">Clears your levels, streak, gold, quests, timetable and achievements, and restores the defaults. This cannot be undone.</div>'+
     '</div><div class="set-row-ctl"><button class="btn-danger" id="setReset">Reset everything</button></div></div></div>';
   openWidgetSettings(document.getElementById('setHost'));
+
+  const bkStatus = (msg, bad)=>{
+    const el = document.getElementById('bkStatus'); if(!el) return;
+    el.textContent = msg || '';
+    el.style.color = msg ? (bad ? 'var(--danger)' : 'var(--teal)') : '';
+  };
+  const runBackup = async (btnId, fn)=>{
+    const btn = document.getElementById(btnId); if(!btn || btn.disabled) return;
+    const label = btn.textContent;
+    document.getElementById('bkExport').disabled = true;
+    document.getElementById('bkImport').disabled = true;
+    btn.textContent = 'Working\u2026';
+    try{ await fn(); }
+    catch(err){ bkStatus(String((err && err.message) || err), true); }
+    // The tab can be gone by now — a restore reloads the whole page.
+    const back = document.getElementById(btnId);
+    if(back){
+      back.textContent = label;
+      document.getElementById('bkExport').disabled = false;
+      document.getElementById('bkImport').disabled = false;
+    }
+  };
+  document.getElementById('bkExport').addEventListener('click', ()=>runBackup('bkExport', async ()=>{
+    const r = await exportBackup(bkStatus);
+    if(!r){ bkStatus(''); return; }
+    bkStatus('Saved \u00b7 '+fmtBytes(r.size));
+    showToast({title:'Backup saved', sub:r.path});
+  }));
+  // Nothing to report either way: a cancel leaves the panel as it was, and a
+  // real restore reloads the page out from under it.
+  document.getElementById('bkImport').addEventListener('click', ()=>runBackup('bkImport', async ()=>{
+    await importBackup(bkStatus);
+    bkStatus('');
+  }));
+
   document.getElementById('setReset').addEventListener('click', ()=>{
     openConfirm({
       title:'Reset all progress?',
@@ -10077,14 +10402,43 @@ if(dlAvailable() && vidLib.folder){
     }
   }).catch(()=>{});
 }
+/* Auto-backup. Only the main window does this: the widget and the floating
+   board share the same save and would write the same file three times over. */
+if(!isWidget && !refsWindowMode && window.backup && window.backup.version){
+  window.backup.version().then(v=>{
+    appVersion = v || appVersion;
+    let last = null;
+    try{ last = localStorage.getItem(APPVER_KEY); }catch(e){}
+    try{ localStorage.setItem(APPVER_KEY, appVersion); }catch(e){}
+    // Nothing to protect on a first run, and no reason to write on every launch.
+    if(last && last !== appVersion) writeAutoBackup('from-'+last, bootRawSave).catch(()=>{});
+  }).catch(()=>{});
+
+  // The updater asks for one before it restarts — the last moment the old code
+  // still owns the data. It waits for the answer, so always give it one.
+  if(window.backup.onRequest) window.backup.onRequest(async info=>{
+    let done = null;
+    try{ done = await writeAutoBackup('pre-'+((info && info.version) || 'update')); }catch(e){}
+    if(!done && window.backup.skip) window.backup.skip();
+  });
+}
+
 setTab(state.activeTab || 'overview');
 renderAll();
 saveState(false);
 
+let justRestored = false;
+try{
+  justRestored = localStorage.getItem(RESTORE_FLAG)==='1';
+  if(justRestored) localStorage.removeItem(RESTORE_FLAG);
+}catch(e){}
+
 if(syncOn()){
   setSyncBadge('syncing…');
   document.getElementById('saveNote').textContent = 'Synced across your devices';
-  pullState(true).then(()=>autoSync());
+  // Pulling first after a restore would hand the server's newer copy straight
+  // back and quietly undo it, so the restored save is pushed instead.
+  (justRestored ? pushState(true) : pullState(true)).then(()=>autoSync());
   // Catch changes made on the other device while this one sat open.
   document.addEventListener('visibilitychange', ()=>{ if(!document.hidden) pullState(true); });
   setInterval(()=>{ if(!document.hidden) pullState(true); }, 120000);
