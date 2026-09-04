@@ -289,6 +289,34 @@ async function run() {
     abi2.includes('440') && abi2.includes('656'), abi2.slice(0, 160));
 
   // "Never award XP for grades" is a rule in ROADMAP.md, so it gets a test.
+  /* ---- 17-19. Klausur dates and the revision they generate ---- */
+  const in9 = await js(`(()=>{ const d=new Date(); d.setDate(d.getDate()+9);
+    return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); })()`);
+  await js(`(()=>{ const s = JSON.parse(localStorage.getItem('questline_state_v2'));
+    s.school = {mon:[],tue:[],wed:[],thu:[],fri:[],sat:[],sun:[]};
+    ['mon','tue','wed','thu','fri'].forEach(d=>[[1,'MA'],[2,'PH'],[5,'EN'],[6,'DE']]
+      .forEach(([p,sub])=>s.school[d].push({p, subject:sub, teacher:'', room:'', cancelled:false})));
+    s.timeline.events.push({ id:'tl_test_klausur', title:'Physik Klausur', date:${JSON.stringify(in9)},
+      color:'#ff5c7a', kind:'exam', subjectId:'s_PH' });
+    s.activeTab = 'tasks';
+    localStorage.setItem('questline_state_v2', JSON.stringify(s)); })()`);
+  await reload();
+  const strip = await js("document.getElementById('examStrip').textContent.replace(/\\s+/g,' ').trim()");
+  check('17 a Klausur counts down on the Tasks strip', /Physik Klausur\s*in 9 days/.test(strip), strip);
+
+  await click('#examStrip [data-exam]');
+  await wait(400);
+  const planned = (await save()).dailies.filter((q) => q.examId === 'tl_test_klausur');
+  const revDates = planned.map((q) => q.plannedForDate).sort();
+  const revGaps = revDates.slice(1).map((d, i) => Math.round((new Date(d) - new Date(revDates[i])) / 86400000));
+  check('18 revision is planned backwards into free time the timetable knows',
+    planned.length > 1 && planned.every((q) => q.plannedForDate && q.plannedForDate <= in9) &&
+    planned.every((q) => /free period \d|evening, from|after \d|no school/.test(q.title)),
+    JSON.stringify(planned.map((q) => q.plannedForDate + ' ' + q.title)));
+  // Expanding intervals, so the gaps shrink as the exam approaches.
+  check('19 the sessions tighten as the Klausur approaches',
+    revGaps.length > 1 && revGaps.every((g, i) => i === 0 || g <= revGaps[i - 1]), JSON.stringify(revGaps));
+
   const afterGrades = await save();
   check('16 grades never touch XP, gold or the log',
     afterGrades.player.xp === xpBeforeGrades &&

@@ -1472,7 +1472,21 @@
   .set-tab:hover{color:var(--text);}
   .set-tab.active{color:var(--gold); border-color:var(--gold); box-shadow:0 0 0 1px var(--gold-glow);}
   .set-body{max-width:1180px; margin:0 auto; padding:22px 26px 60px; border-top:1px solid var(--border-soft);}
-/* ---- Grades / Abitur projection (Timetable tab) ---- */
+/* ---- Klausur dates (Tasks tab strip) ---- */
+  .exam-strip{display:flex; gap:10px; flex-wrap:wrap; margin:0 0 14px;}
+  .exam-chip{display:flex; align-items:center; gap:10px; padding:8px 13px; border:1px solid var(--border);
+    border-left:3px solid var(--markcolor); border-radius:var(--radius-s); background:var(--surface);}
+  .exam-chip.soon{border-color:var(--danger); box-shadow:0 0 14px color-mix(in srgb, var(--danger) 22%, transparent);}
+  .exam-dot{width:7px; height:7px; border-radius:50%; background:var(--markcolor); flex:none;}
+  .exam-name{font-size:12.5px; color:var(--text);}
+  .exam-when{font-family:var(--font-mono); font-size:11.5px; color:var(--text-dim);}
+  .exam-chip.soon .exam-when{color:var(--danger);}
+  .exam-plan{background:none; border:1px solid var(--border); color:var(--text-faint); cursor:pointer;
+    font-size:10.5px; letter-spacing:0.04em; text-transform:uppercase; padding:3px 8px; border-radius:var(--radius-s);
+    font-family:inherit;}
+  .exam-plan:hover{border-color:var(--gold-soft); color:var(--gold);}
+
+  /* ---- Grades / Abitur projection (Timetable tab) ---- */
   .gr-hero{display:flex; align-items:center; gap:28px; flex-wrap:wrap; padding:18px 20px; border:1px solid var(--border);
     border-radius:var(--radius-m); background:var(--surface);}
   .gr-hero-main{display:flex; align-items:center; gap:12px;}
@@ -1686,6 +1700,10 @@
       </div>
       <div class="focus-chips" id="focusChips"></div>
     </div>
+
+    <!-- Klausuren inside the horizon, and the button that turns one into a
+         schedule of revision sessions. -->
+    <div class="exam-strip" id="examStrip"></div>
 
     <div id="planNudge"></div>
 
@@ -2718,6 +2736,9 @@ function migrate(s){
     if(!aiKey && s.ai.apiKey){ aiKey = String(s.ai.apiKey); saveAiKey(); }
     delete s.ai.apiKey;
   }
+  if(!s.timeline || !Array.isArray(s.timeline.events)) s.timeline = defaultTimeline();
+  // Events written before Klausuren existed are all plain milestones.
+  s.timeline.events.forEach(e=>{ if(e.kind!=='exam') e.kind = 'milestone'; });
   if(!s.grades) s.grades = defaultGrades();
   else{
     const gd = defaultGrades();
@@ -5150,6 +5171,7 @@ function renderAll(){
   if(typeof renderCourseLibrary==='function' && !activeCourseId) renderCourseLibrary();
   renderRadar();
   renderTodayStrip();
+  if(typeof renderExamStrip==='function') renderExamStrip();
   renderTimetable();
   if(typeof renderGrades==='function') renderGrades();
   renderDailies();
@@ -6602,6 +6624,13 @@ document.getElementById('focusToggle').addEventListener('click', ()=>{
   state.showAllQuests = !state.showAllQuests;
   renderAll(); saveState();
 });
+document.getElementById('examStrip').addEventListener('click', e=>{
+  const b = e.target.closest('[data-exam]'); if(!b) return;
+  const n = planRevision(b.dataset.exam);
+  showToast(n
+    ? {title:n+' revision session'+(n===1?'':'s')+' planned', sub:'Each one appears on its own day, in the free time the timetable knows about.'}
+    : {title:'No room left', sub:'That Klausur is too close to plan backwards from.'});
+});
 document.getElementById('batchLogBtn').addEventListener('click', openBatchLog);
 document.getElementById('planTomorrowBtn').addEventListener('click', openPlanTomorrow);
 /* ---------- Sync settings ---------- */
@@ -8053,9 +8082,9 @@ function defaultTimeline(){
   return {
     start: todayStr(),
     events: [
-      { id:'tl_abi',  title:'Abitur',              date:abitur,               color:'#c9a227', note:'The exam that ends school.' },
-      { id:'tl_uni',  title:'University starts',   date:shiftMonths(abitur,3),color:'#5b87c7', note:'First Wintersemester after the Abitur.' },
-      { id:'tl_job',  title:'Job market',          date:jobMarket,            color:'#ff2ea6', note:'7 Wintersemester later. From here the clock is someone else\u2019s.' }
+      { id:'tl_abi',  title:'Abitur',              date:abitur,               color:'#c9a227', kind:'milestone', note:'The exam that ends school.' },
+      { id:'tl_uni',  title:'University starts',   date:shiftMonths(abitur,3),color:'#5b87c7', kind:'milestone', note:'First Wintersemester after the Abitur.' },
+      { id:'tl_job',  title:'Job market',          date:jobMarket,            color:'#ff2ea6', kind:'milestone', note:'7 Wintersemester later. From here the clock is someone else\u2019s.' }
     ]
   };
 }
@@ -8214,17 +8243,22 @@ function openTimelineManager(){
       const p = timeParts(now, tlDate(e));
       return '<div class="tl-row'+(p?'':' done')+'" style="--markcolor:'+(e.color||'#8b93b0')+'">'+
         '<span class="tl-dot"></span>'+
-        '<span class="tl-rname">'+esc(e.title)+'</span>'+
+        '<span class="tl-rname">'+esc(e.title)+(isExam(e)?' <i style="font-style:normal;color:var(--text-faint);font-size:10px">KLAUSUR</i>':'')+'</span>'+
         '<span class="tl-rdate">'+esc(e.date)+'</span>'+
         '<span class="tl-rleft">'+coarse(p)+'</span>'+
         '<button data-del="'+esc(e.id)+'" title="Remove">'+icon('trash')+'</button>'+
       '</div>';
     }).join('') : '<div class="empty-row">Nothing yet.</div>')+'</div>'+
-    '<label style="margin-top:16px">Add a milestone</label>'+
+    '<label style="margin-top:16px">Add a milestone or Klausur</label>'+
     '<div class="row2">'+
       '<div><input type="text" class="fld" id="tlNewName" placeholder="e.g. Driving licence"></div>'+
       '<div><input type="date" class="fld" id="tlNewDate"></div>'+
     '</div>'+
+    '<select class="fld" id="tlNewSubject"><option value="">Milestone &mdash; not tied to a subject</option>'+
+      grades().subjects.map(x=>'<option value="'+esc(x.id)+'">Klausur &middot; '+esc(x.name)+'</option>').join('')+
+    '</select>'+
+    '<div class="hint">Pick a subject and it becomes a Klausur: it shows on the Tasks tab as it approaches, '+
+      'and can plan revision sessions backwards from the date.</div>'+
     '<div class="actions"><button class="btn-text" id="mCancel">Close</button><button class="btn-primary" id="tlAdd">Add milestone</button></div>';
   document.getElementById('modalVeil').classList.add('open');
   document.getElementById('mCancel').addEventListener('click', closeModal);
@@ -8239,14 +8273,21 @@ function openTimelineManager(){
     const date = document.getElementById('tlNewDate').value;
     if(!name || !date){ showToast({title:'Name and date are both needed'}); return; }
     if(!state.timeline) state.timeline = defaultTimeline();
-    state.timeline.events.push({ id:'tl'+Date.now(), title:name, date:date, color:'#14e6ff' });
-    saveState(); renderTimeline(); openTimelineManager();
-    showToast({title:'Milestone added', sub:name});
+    const subjectId = document.getElementById('tlNewSubject').value || null;
+    state.timeline.events.push({
+      id:'tl'+Date.now(), title:name, date:date,
+      color: subjectId ? '#ff5c7a' : '#14e6ff',
+      kind: subjectId ? 'exam' : 'milestone',
+      subjectId
+    });
+    saveState(); renderAll(); openTimelineManager();
+    showToast({title:(subjectId?'Klausur added':'Milestone added'), sub:name});
   });
   document.getElementById('tlList').addEventListener('click', e=>{
     const b = e.target.closest('[data-del]'); if(!b) return;
     state.timeline.events = state.timeline.events.filter(x=>x.id!==b.dataset.del);
-    saveState(); renderTimeline(); openTimelineManager();
+    state.dailies = state.dailies.filter(q=>q.examId!==b.dataset.del);
+    saveState(); renderAll(); openTimelineManager();
   });
 }
 document.getElementById('tlBar').addEventListener('click', openTimelineManager);
@@ -10168,6 +10209,118 @@ function renderAppearanceTab(host){
     });
   });
   sel.addEventListener('change', e=>stage({font: e.target.value}));
+}
+
+/* ============ KLAUSUR DATES ============
+ * A Klausur is a milestone with a subject attached, so it lives in the same
+ * timeline as everything else rather than in a calendar of its own — the bar
+ * at the top of every tab already exists to say what is coming.
+ *
+ * Events carry kind:'exam' and a subjectId into the grade table. Everything
+ * that walks the timeline treats them as ordinary events; only the strip on
+ * the Tasks tab and the revision planner look at the kind.
+ */
+const REVISION_OFFSETS = [1, 2, 4, 7, 11, 16, 22];   // days before, expanding
+const EXAM_HORIZON_DAYS = 45;
+
+function isExam(e){ return e && e.kind === 'exam'; }
+function daysUntil(dateStr){
+  const d = new Date(dateStr+'T00:00:00');
+  const now = new Date(); now.setHours(0,0,0,0);
+  return Math.round((d - now)/86400000);
+}
+function dateStrPlus(days){
+  const d = new Date(); d.setHours(0,0,0,0); d.setDate(d.getDate()+days);
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+function dayKeyOf(dateStr){
+  return ['sun','mon','tue','wed','thu','fri','sat'][new Date(dateStr+'T00:00:00').getDay()];
+}
+function upcomingExams(){
+  return tlEvents().filter(e=>{
+    if(!isExam(e)) return false;
+    const d = daysUntil(e.date);
+    return d >= 0 && d <= EXAM_HORIZON_DAYS;
+  });
+}
+// The revision quests want the subject ("Physik revision"), the strip wants
+// whatever was actually typed ("Physik Klausur Nr. 2"). Two callers, two names.
+function examSubjectName(e){
+  const s = e.subjectId ? gradeSubject(e.subjectId) : null;
+  return s ? s.name : (e.title || 'Klausur');
+}
+function examLabel(e){
+  const t = String(e.title || '').trim();
+  if(t) return t;
+  const s = e.subjectId ? gradeSubject(e.subjectId) : null;
+  return (s ? s.name + ' ' : '') + 'Klausur';
+}
+
+/* Where a revision session could actually go on a given date. The timetable
+   already knows the answer for that weekday; this only phrases it. */
+function slotHintFor(dateStr){
+  const key = dayKeyOf(dateStr);
+  const sum = schoolSummaryFor(key);
+  if(!sum) return 'no school that day';
+  const free = (sum.freePeriods||[]).map(p=>p.n);
+  if(free.length) return 'free period '+free.slice(0,2).join(' or ');
+  const evening = EVENING.filter(e=>!focusAt(key, e.n));
+  if(evening.length) return 'evening, from '+evening[0].start;
+  return 'after '+sum.to;
+}
+
+/* Revision quests, backwards from the date at expanding intervals — the same
+   shape the card scheduler uses, for the same reason. Each one is pinned to a
+   date with plannedForDate, so it appears on the Tasks tab that morning and
+   nowhere else. Re-planning replaces the previous set rather than doubling it. */
+function planRevision(examId){
+  const ev = tlEvents().find(e=>e.id===examId);
+  if(!ev) return 0;
+  const name = examSubjectName(ev);
+  const left = daysUntil(ev.date);
+  if(left < 0) return 0;
+
+  state.dailies = state.dailies.filter(q=>q.examId !== examId);
+
+  const goal = (state.goals.find(g=>g.id==='school') || state.goals[0] || {}).id || null;
+  const dates = REVISION_OFFSETS
+    .map(off=>left - off)
+    .filter(d=>d >= 0 && d <= left)
+    .map(d=>dateStrPlus(d));
+  const unique = [...new Set(dates)].sort();
+  if(!unique.length) return 0;
+
+  // questExtras() first: it carries plannedForDate:null, so assigning it over
+  // the pinned date would quietly unpin every session.
+  unique.forEach((dateStr, i)=>{
+    state.dailies.push(Object.assign(questExtras(), {
+      id:'rv'+Date.now().toString(36)+i+Math.random().toString(36).slice(2,5),
+      goal, title: name+' revision · '+slotHintFor(dateStr),
+      xp: 25, gold: 12, lastDone:null, skipDate:null, steps:[], stepsDay:null, open:false,
+      plannedForDate: dateStr, examId
+    }));
+  });
+  saveState(); renderAll();
+  return unique.length;
+}
+
+function renderExamStrip(){
+  const host = document.getElementById('examStrip');
+  if(!host || isWidget) return;
+  const evs = upcomingExams();
+  if(!evs.length){ host.innerHTML = ''; return; }
+  host.innerHTML = evs.slice(0,4).map(e=>{
+    const d = daysUntil(e.date);
+    const when = d===0 ? 'today' : d===1 ? 'tomorrow' : 'in '+d+' days';
+    const planned = state.dailies.filter(q=>q.examId===e.id).length;
+    return '<div class="exam-chip'+(d<=2?' soon':'')+'" style="--markcolor:'+(e.color||'var(--gold)')+'">'+
+      '<span class="exam-dot"></span>'+
+      '<span class="exam-name">'+esc(examLabel(e))+'</span>'+
+      '<span class="exam-when">'+when+'</span>'+
+      '<button class="exam-plan" data-exam="'+esc(e.id)+'">'+
+        (planned ? planned+' sessions planned' : 'Plan revision')+'</button>'+
+    '</div>';
+  }).join('');
 }
 
 /* ============ GRADES: KLAUSUREN AND THE ABITUR PROJECTION ============
