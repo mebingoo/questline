@@ -1,0 +1,308 @@
+{
+  "schemaVersion": 1,
+  "questLineKey": "seminarfacharbeit",
+  "title": "Seminarfacharbeit — Teilarbeit 4: Optionsbewertung",
+  "grandGoal": "Teilarbeit 4 der Seminarfacharbeit fertigstellen: das Cox-Ross-Rubinstein-Binomialmodell und Finite-Differenzen-Verfahren zur Bewertung von Optionen herleiten, in Python implementieren, numerisch vergleichen und sauber verschriftlichen — abgabefertig, mit Kolloquium.",
+  "totalMonths": 7,
+  "weeklyHours": { "min": 3, "max": 6 },
+  "milestones": [
+    {
+      "order": 1,
+      "shortLabel": "T1",
+      "title": "Thema eingrenzen & Gliederung stehen",
+      "capability": "Du kannst in zwei Sätzen sagen, was deine Teilarbeit beantwortet und was sie bewusst nicht behandelt — und hast eine Gliederung, die der Betreuer abgenickt hat.",
+      "description": "Der teuerste Fehler bei einer Facharbeit passiert hier: ein Thema, das zu breit ist, frisst später jede Woche auf. Fragestellung scharf schneiden, Abgrenzung schriftlich festhalten, Gliederung absegnen lassen.",
+      "startDate": "2026-09-07",
+      "deadline": "2026-09-30",
+      "topics": [
+        "Fragestellung formulieren: eine Frage, kein Themengebiet",
+        "Abgrenzung: was gehört NICHT dazu (amerikanische Optionen? Dividenden? Volatilitätsmodelle?)",
+        "Gliederung auf zwei Ebenen, mit geschätzter Seitenzahl je Kapitel",
+        "Formale Vorgaben der Schule: Umfang, Zitierstil, Abgabeform, Deadline",
+        "Betreuer-Termin vereinbaren und Gliederung besprechen",
+        "Literaturliste anlegen (Zotero oder BibTeX), von Anfang an gepflegt"
+      ],
+      "resources": [
+        { "title": "Hull — Options, Futures, and Other Derivatives (Kap. 12-13, 21)", "url": "", "type": "book", "free": false },
+        { "title": "Zotero — Literaturverwaltung", "url": "https://www.zotero.org/", "type": "tool", "free": true },
+        { "title": "Vorgaben der Schule zur Seminarfacharbeit", "url": "", "type": "docs", "free": true }
+      ],
+      "gate": {
+        "challengeTitle": "Gliederung abgesegnet",
+        "difficulties": [
+          { "level": "easy", "description": "Gliederung steht und ist vom Betreuer abgenickt.", "xp": 200 },
+          { "level": "hard", "description": "Gliederung steht, plus eine einseitige Exposé-Zusammenfassung mit Fragestellung, Methode und Abgrenzung.", "xp": 350 }
+        ],
+        "criteria": [
+          { "text": "Fragestellung in einem Satz aufgeschrieben" },
+          { "text": "Abgrenzung schriftlich: mindestens drei Dinge, die bewusst wegfallen" },
+          { "text": "Gliederung auf zwei Ebenen mit Seitenschätzung je Kapitel" },
+          { "text": "Betreuer hat die Gliederung gesehen und zugestimmt" },
+          { "text": "Literaturverwaltung angelegt, mindestens fünf Quellen erfasst" }
+        ],
+        "verificationType": "checklist",
+        "proofRequired": true
+      }
+    },
+    {
+      "order": 2,
+      "shortLabel": "T2",
+      "title": "Arbitragefreiheit & risikoneutrale Bewertung",
+      "capability": "Du kannst am Ein-Perioden-Modell herleiten, warum der faire Preis einer Option nicht von der erwarteten Rendite des Basiswerts abhängt — und warum das kein Taschenspielertrick ist.",
+      "description": "Das theoretische Fundament. Wer das Replikationsportfolio einmal selbst aufgestellt hat, versteht den Rest der Arbeit; wer es überspringt, schreibt Formeln ab, die er nicht erklären kann.",
+      "startDate": "2026-10-01",
+      "deadline": "2026-10-24",
+      "topics": [
+        "Optionen: Call, Put, Payoff-Diagramme, europäisch vs. amerikanisch",
+        "Arbitrage, Gesetz des einheitlichen Preises, Put-Call-Parität",
+        "Ein-Perioden-Binomialmodell: Replikationsportfolio aus Aktie und Anleihe",
+        "Risikoneutrales Maß q = (e^{rΔt} − d)/(u − d) — Herleitung, nicht Behauptung",
+        "Warum μ nicht im Preis auftaucht: die Intuition dahinter",
+        "Kapitel 2 der Arbeit im Rohtext schreiben (~4-6 Seiten)"
+      ],
+      "resources": [
+        { "title": "Hull — Options, Futures, and Other Derivatives, Kap. 13", "url": "", "type": "book", "free": false },
+        { "title": "Shreve — Stochastic Calculus for Finance I (Binomial Asset Pricing)", "url": "", "type": "book", "free": false },
+        { "title": "MIT 18.S096 — Topics in Mathematics with Applications in Finance", "url": "https://ocw.mit.edu/courses/18-s096-topics-in-mathematics-with-applications-in-finance-fall-2013/", "type": "course", "free": true }
+      ],
+      "gate": {
+        "challengeTitle": "Herleitung ohne Vorlage",
+        "difficulties": [
+          { "level": "easy", "description": "Ein-Perioden-Herleitung sauber aufgeschrieben, mit einem durchgerechneten Zahlenbeispiel.", "xp": 300 },
+          { "level": "hard", "description": "Zusätzlich die Put-Call-Parität hergeleitet und an deinem Zahlenbeispiel verifiziert.", "xp": 450 }
+        ],
+        "criteria": [
+          { "text": "Replikationsportfolio (Δ und B) selbst hergeleitet, nicht abgeschrieben" },
+          { "text": "q = (e^{rΔt} − d)/(u − d) aus der Arbitragefreiheit gezeigt" },
+          { "text": "Zahlenbeispiel komplett durchgerechnet, Ergebnis per Hand geprüft" },
+          { "text": "In eigenen Worten erklärt, warum μ im Preis nicht vorkommt" },
+          { "text": "Kapitel 2 im Rohtext, mit Quellenangaben an Ort und Stelle" }
+        ],
+        "verificationType": "checklist",
+        "proofRequired": true
+      }
+    },
+    {
+      "order": 3,
+      "shortLabel": "T3",
+      "title": "CRR-Binomialmodell implementieren",
+      "capability": "Du hast einen eigenen CRR-Bewerter in Python, der einen europäischen Call und Put für beliebige N bewertet — und du kannst jede Zeile erklären.",
+      "description": "Vom Ein-Perioden-Modell zum Gitter. u = e^{σ√Δt}, d = 1/u, Rückwärtsinduktion. Der Code muss lesbar sein und getestet, nicht nur lauffähig — er kommt in den Anhang.",
+      "startDate": "2026-10-26",
+      "deadline": "2026-11-21",
+      "topics": [
+        "Mehr-Perioden-Gitter, Rekombination, warum das Gitter nur N+1 Endknoten hat",
+        "CRR-Parametrisierung: u = e^{σ√Δt}, d = 1/u, Herleitung der Wahl",
+        "Rückwärtsinduktion über das Gitter, vektorisiert mit NumPy",
+        "Amerikanische Optionen als Nebenbemerkung: max(Fortführungswert, innerer Wert)",
+        "Tests: Put-Call-Parität, N=1 gegen die Handrechnung, Randfälle σ→0",
+        "Sauberer Code: Docstrings, Typannotationen, ein Modul statt eines Notebooks"
+      ],
+      "resources": [
+        { "title": "NumPy — Dokumentation", "url": "https://numpy.org/doc/stable/", "type": "docs", "free": true },
+        { "title": "pytest — Dokumentation", "url": "https://docs.pytest.org/", "type": "docs", "free": true },
+        { "title": "Hull — Options, Futures, and Other Derivatives, Kap. 21", "url": "", "type": "book", "free": false }
+      ],
+      "gate": {
+        "challengeTitle": "Lauffähiger CRR-Bewerter",
+        "difficulties": [
+          { "level": "easy", "description": "Europäischer Call und Put, beliebiges N, mit Tests.", "xp": 400 },
+          { "level": "hard", "description": "Zusätzlich amerikanische Puts und eine vektorisierte Variante, die N = 10000 in unter einer Sekunde schafft.", "xp": 600 }
+        ],
+        "criteria": [
+          { "text": "Modul läuft und bewertet Call und Put für beliebiges N" },
+          { "text": "Test: N = 1 stimmt mit der Handrechnung aus T2 überein" },
+          { "text": "Test: Put-Call-Parität hält für zufällige Parameter" },
+          { "text": "Code hat Docstrings und ist ohne Kommentar von außen lesbar" },
+          { "text": "Ein Screenshot oder Plot des Preisgitters für kleines N" }
+        ],
+        "verificationType": "checklist",
+        "proofRequired": true
+      }
+    },
+    {
+      "order": 4,
+      "shortLabel": "T4",
+      "title": "Konvergenz gegen Black-Scholes",
+      "capability": "Du kannst zeigen — numerisch und mit Worten — dass der Binomialpreis für N → ∞ gegen die Black-Scholes-Formel läuft, und du kennst das Sägezahnmuster im Fehler.",
+      "description": "Der Punkt, an dem die Arbeit von 'implementiert' zu 'verstanden' wird. Der Fehler fällt nicht glatt, er oszilliert — und die Erklärung dafür ist ein eigener Absatz wert.",
+      "startDate": "2026-11-23",
+      "deadline": "2026-12-12",
+      "topics": [
+        "Black-Scholes-Formel: Aufbau, Bedeutung von d1 und d2 (ohne vollständige Herleitung)",
+        "Zentraler Grenzwertsatz als Brücke vom Gitter zur Lognormalverteilung",
+        "Konvergenzplot: |Binomial − Black-Scholes| gegen N, log-log",
+        "Das Sägezahnmuster: warum der Fehler oszilliert (Lage des Strikes zwischen Gitterknoten)",
+        "Konvergenzordnung ablesen und benennen",
+        "Kapitel 4 im Rohtext, mit den Plots als Abbildungen"
+      ],
+      "resources": [
+        { "title": "Hull — Options, Futures, and Other Derivatives, Kap. 15", "url": "", "type": "book", "free": false },
+        { "title": "Matplotlib — Dokumentation", "url": "https://matplotlib.org/stable/index.html", "type": "docs", "free": true },
+        { "title": "SciPy — scipy.stats.norm", "url": "https://docs.scipy.org/doc/scipy/reference/stats.html", "type": "docs", "free": true }
+      ],
+      "gate": {
+        "challengeTitle": "Konvergenz gezeigt",
+        "difficulties": [
+          { "level": "easy", "description": "Konvergenzplot für einen Parametersatz, mit erklärendem Text.", "xp": 350 },
+          { "level": "hard", "description": "Zusätzlich die Konvergenzordnung aus dem log-log-Plot geschätzt und das Sägezahnmuster erklärt.", "xp": 550 }
+        ],
+        "criteria": [
+          { "text": "Black-Scholes-Referenz implementiert und gegen eine externe Quelle geprüft" },
+          { "text": "Konvergenzplot erstellt, Achsen beschriftet, als Abbildung eingebunden" },
+          { "text": "Das Oszillieren des Fehlers benannt und erklärt" },
+          { "text": "Kapitel 4 im Rohtext" }
+        ],
+        "verificationType": "checklist",
+        "proofRequired": true
+      }
+    },
+    {
+      "order": 5,
+      "shortLabel": "T5",
+      "title": "Finite-Differenzen-Verfahren",
+      "capability": "Du kannst die Black-Scholes-PDE auf einem Gitter diskretisieren und explizit, implizit und mit Crank-Nicolson lösen — und weißt, warum das explizite Verfahren ohne Bedingung explodiert.",
+      "description": "Der zweite Hauptteil und der schwerere. Randbedingungen sind hier der Ort, an dem Arbeiten schiefgehen: sie brauchen eigene Sorgfalt und einen eigenen Absatz.",
+      "startDate": "2026-12-14",
+      "deadline": "2027-01-16",
+      "topics": [
+        "Die Black-Scholes-PDE, und was sie mit der Wärmeleitungsgleichung zu tun hat",
+        "Gitter in S und t, Rand- und Endbedingungen für Call und Put",
+        "Explizites Verfahren, Stabilitätsbedingung, was ohne sie passiert",
+        "Implizites Verfahren: Tridiagonalsystem, Thomas-Algorithmus",
+        "Crank-Nicolson als Mittelung der beiden, Genauigkeitsordnung",
+        "Implementierung in Python, gleiche Schnittstelle wie der CRR-Bewerter"
+      ],
+      "resources": [
+        { "title": "Wilmott, Howison, Dewynne — The Mathematics of Financial Derivatives", "url": "", "type": "book", "free": false },
+        { "title": "Duffy — Finite Difference Methods in Financial Engineering", "url": "", "type": "book", "free": false },
+        { "title": "SciPy — scipy.linalg.solve_banded", "url": "https://docs.scipy.org/doc/scipy/reference/generated/scipy.linalg.solve_banded.html", "type": "docs", "free": true }
+      ],
+      "gate": {
+        "challengeTitle": "Drei Verfahren, ein Ergebnis",
+        "difficulties": [
+          { "level": "easy", "description": "Explizites und implizites Verfahren implementiert, beide stimmen mit Black-Scholes überein.", "xp": 500 },
+          { "level": "hard", "description": "Zusätzlich Crank-Nicolson, und die Stabilitätsgrenze des expliziten Verfahrens experimentell gezeigt.", "xp": 750 }
+        ],
+        "criteria": [
+          { "text": "Diskretisierung im Text hergeleitet, nicht nur hingeschrieben" },
+          { "text": "Randbedingungen für Call und Put explizit begründet" },
+          { "text": "Alle implementierten Verfahren treffen Black-Scholes auf drei Nachkommastellen" },
+          { "text": "Ein Lauf jenseits der Stabilitätsgrenze dokumentiert (Plot der Explosion)" },
+          { "text": "Kapitel 5 im Rohtext" }
+        ],
+        "verificationType": "checklist",
+        "proofRequired": true
+      }
+    },
+    {
+      "order": 6,
+      "shortLabel": "T6",
+      "title": "Numerischer Vergleich & Auswertung",
+      "capability": "Du kannst begründet sagen, welches Verfahren wann das richtige ist — belegt mit Laufzeit- und Fehlermessungen, nicht mit Bauchgefühl.",
+      "description": "Der Teil, der eine Facharbeit von einer Zusammenfassung unterscheidet: eigene Messungen, eine eigene Aussage, und die Ehrlichkeit zu sagen, wo die Aussage endet.",
+      "startDate": "2027-01-18",
+      "deadline": "2027-01-30",
+      "topics": [
+        "Fehler gegen Rechenzeit für alle Verfahren, gemeinsame Achsen",
+        "Genauigkeit bei gleichem Zeitbudget statt bei gleicher Gitterweite",
+        "Wo das Binomialmodell gewinnt (amerikanische Optionen, Anschaulichkeit)",
+        "Wo Finite Differenzen gewinnen (viele Strikes auf einmal, exotische Randbedingungen)",
+        "Grenzen der eigenen Arbeit ehrlich benennen",
+        "Kapitel 6 und Fazit im Rohtext"
+      ],
+      "resources": [
+        { "title": "matplotlib — Vergleichsplots", "url": "https://matplotlib.org/stable/gallery/index.html", "type": "docs", "free": true },
+        { "title": "Python timeit / perf_counter", "url": "https://docs.python.org/3/library/time.html", "type": "docs", "free": true }
+      ],
+      "gate": {
+        "challengeTitle": "Eine begründete Aussage",
+        "difficulties": [
+          { "level": "easy", "description": "Vergleichstabelle plus ein Plot Fehler gegen Rechenzeit.", "xp": 400 },
+          { "level": "hard", "description": "Zusätzlich eine Empfehlung je Anwendungsfall, jeweils mit der Messung belegt, die sie stützt.", "xp": 600 }
+        ],
+        "criteria": [
+          { "text": "Laufzeiten reproduzierbar gemessen (gleiche Maschine, mehrere Läufe)" },
+          { "text": "Fehler-gegen-Zeit-Plot für alle Verfahren in einer Abbildung" },
+          { "text": "Mindestens eine Aussage, die aus den eigenen Zahlen folgt und nicht aus der Literatur" },
+          { "text": "Grenzen der Arbeit in einem eigenen Absatz benannt" },
+          { "text": "Kapitel 6 und Fazit im Rohtext" }
+        ],
+        "verificationType": "checklist",
+        "proofRequired": true
+      }
+    },
+    {
+      "order": 7,
+      "shortLabel": "T7",
+      "title": "Reinschrift, Zitation, Abgabe",
+      "capability": "Die Arbeit ist abgegeben — formal korrekt, vollständig zitiert, Korrektur gelesen, im geforderten Format.",
+      "description": "Harte Deadline, keine Verhandlung. Diese Phase ist absichtlich zwei Wochen lang: Formalia fressen mehr Zeit, als jeder vorher glaubt, und Korrekturlesen braucht Abstand.",
+      "startDate": "2027-02-01",
+      "deadline": "2027-02-26",
+      "topics": [
+        "Rohtext zu Reinschrift: Kapitelübergänge, einheitliche Notation, Abbildungsverweise",
+        "Zitation vollständig prüfen — jede Zahl, jede Formel, jede Abbildung",
+        "Formalia: Deckblatt, Inhaltsverzeichnis, Abbildungsverzeichnis, Anhang mit Code",
+        "Selbstständigkeitserklärung",
+        "Korrekturlesen: einmal selbst nach 48 Stunden Abstand, einmal von jemand anderem",
+        "Abgabe im geforderten Format, mit Sicherungskopie"
+      ],
+      "resources": [
+        { "title": "Zitierregeln der Schule", "url": "", "type": "docs", "free": true },
+        { "title": "LaTeX / Overleaf", "url": "https://www.overleaf.com/learn", "type": "docs", "free": true }
+      ],
+      "gate": {
+        "challengeTitle": "Abgegeben",
+        "difficulties": [
+          { "level": "easy", "description": "Arbeit fristgerecht abgegeben.", "xp": 700 },
+          { "level": "hard", "description": "Fristgerecht abgegeben, mindestens drei Tage vor Ablauf, mit Fremdkorrektur eingearbeitet.", "xp": 1000 }
+        ],
+        "criteria": [
+          { "text": "Jede Behauptung, die nicht von dir stammt, hat eine Quelle" },
+          { "text": "Notation im ganzen Dokument einheitlich" },
+          { "text": "Abbildungen nummeriert, beschriftet und im Text referenziert" },
+          { "text": "Code vollständig im Anhang, lauffähig aus dem Anhang heraus" },
+          { "text": "Von einer zweiten Person gelesen, Anmerkungen eingearbeitet" },
+          { "text": "Selbstständigkeitserklärung unterschrieben, Sicherungskopie abgelegt" }
+        ],
+        "verificationType": "checklist",
+        "proofRequired": true
+      }
+    },
+    {
+      "order": 8,
+      "shortLabel": "T8",
+      "title": "Kolloquium",
+      "capability": "Du kannst deine Teilarbeit in zehn Minuten frei erklären und die Nachfragen beantworten, die dir wirklich gestellt werden.",
+      "description": "Die Note hängt auch hieran. Wer die Herleitungen aus T2 und T5 selbst gemacht hat, hat hier wenig zu befürchten — wer sie abgeschrieben hat, merkt es genau jetzt.",
+      "startDate": "2027-03-01",
+      "deadline": "2027-03-19",
+      "topics": [
+        "Zehn Minuten Vortrag: eine Frage, ein Weg, ein Ergebnis",
+        "Folien, die den Vortrag stützen statt ihn zu wiederholen",
+        "Die drei Fragen vorbereiten, die sicher kommen: Warum risikoneutral? Warum CRR? Warum oszilliert der Fehler?",
+        "Einmal komplett laut vor jemandem proben, mit Uhr",
+        "Auf 'Das weiß ich nicht' vorbereitet sein, ohne es zu brauchen"
+      ],
+      "resources": [
+        { "title": "Eigene Arbeit — die Kapitel 2 und 5 noch einmal lesen", "url": "", "type": "docs", "free": true }
+      ],
+      "gate": {
+        "challengeTitle": "Verteidigt",
+        "difficulties": [
+          { "level": "easy", "description": "Kolloquium gehalten.", "xp": 600 },
+          { "level": "hard", "description": "Kolloquium gehalten, frei gesprochen, alle Nachfragen ohne Nachschlagen beantwortet.", "xp": 900 }
+        ],
+        "criteria": [
+          { "text": "Vortrag mindestens einmal laut und mit Uhr geprobt" },
+          { "text": "Folien fertig, unter zwölf Stück" },
+          { "text": "Die drei erwartbaren Nachfragen vorher beantwortet aufgeschrieben" },
+          { "text": "Kolloquium gehalten" }
+        ],
+        "verificationType": "checklist",
+        "proofRequired": false
+      }
+    }
+  ]
+}

@@ -452,6 +452,75 @@ async function run() {
     seenFaces.includes('notarealcommand') || seenFaces.includes('\\notarealcommand'),
     'the broken formula produced nothing');
 
+  /* ---- 26-28. image occlusion ---- */
+  await js(`(async ()=>{
+    // A 2x2 PNG is enough: the rectangles are stored as fractions, so the
+    // pixel size never enters into it.
+    const png = 'iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAIAAAD91JpzAAAAEklEQVR4nGP8z4APMOGV' +
+                'HcMSAAoAAdQBFgpqmRAAAAAASUVORK5CYII=';
+    const bin = atob(png); const arr = new Uint8Array(bin.length);
+    for(let i=0;i<bin.length;i++) arr[i] = bin.charCodeAt(i);
+    const db = await new Promise((res,rej)=>{ const r = indexedDB.open('questline-shots',1);
+      r.onupgradeneeded = ()=>{ if(!r.result.objectStoreNames.contains('shots')) r.result.createObjectStore('shots'); };
+      r.onsuccess = ()=>res(r.result); r.onerror = ()=>rej(r.error); });
+    await new Promise(res=>{ const tx = db.transaction('shots','readwrite');
+      tx.objectStore('shots').put(new Blob([arr], {type:'image/png'}), 'occ_img');
+      tx.oncomplete = ()=>res(); tx.onerror = ()=>res(); });
+
+    const s = JSON.parse(localStorage.getItem('questline_state_v2'));
+    const deck = s.srs.decks[0];
+    s.srs.notes = [{ id:'nt_occ', deckId:deck.id, kind:'occlusion', lang:'de-DE',
+      word:'Kräfte an der schiefen Ebene', translation:'', example:'', exampleTr:'',
+      imageId:'occ_img', subject:'Physik', tags:[], source:'', cefr:'', translationVi:'',
+      created:Date.now(),
+      masks:[ {id:'mk1', x:0.10, y:0.10, w:0.30, h:0.25, label:'Hangabtriebskraft'},
+              {id:'mk2', x:0.55, y:0.60, w:0.30, h:0.30, label:'Normalkraft'} ] }];
+    s.srs.cards = [
+      { id:'cd_o1', noteId:'nt_occ', type:'occlusion', maskId:'mk1', state:'new', due:Date.now()-1000,
+        stability:null, difficulty:null, reps:0, lapses:0, step:null, lastReview:null },
+      { id:'cd_o2', noteId:'nt_occ', type:'occlusion', maskId:'mk2', state:'new', due:Date.now()-1000,
+        stability:null, difficulty:null, reps:0, lapses:0, step:null, lastReview:null }
+    ];
+    s.activeTab = 'cards';
+    localStorage.setItem('questline_state_v2', JSON.stringify(s));
+  })()`);
+  await reload();
+  await click('[data-deck]');
+  await wait(600);
+
+  const occFront = await js(`(()=>{ const f = document.querySelector('#srsStage .occ-fig'); if(!f) return null;
+    return { masks:f.querySelectorAll('.occ-mask').length,
+             targets:f.querySelectorAll('.occ-mask.target').length,
+             lifted:f.querySelectorAll('.occ-mask.lifted').length,
+             img:(f.querySelector('.occ-img')||{}).src ? 'set' : 'empty' }; })()`);
+  // Everything stays covered so the surrounding labels cannot give it away.
+  check('26 an occlusion card covers the whole diagram and marks one box',
+    occFront && occFront.masks === 2 && occFront.targets === 1 && occFront.lifted === 0 && occFront.img === 'set',
+    JSON.stringify(occFront));
+
+  await js("(()=>{ const b=document.getElementById('srsShow'); if(b) b.click(); })()");
+  await wait(500);
+  const occBack = await js(`(()=>{ const f = document.querySelector('#srsStage .occ-fig'); if(!f) return null;
+    return { lifted:f.querySelectorAll('.occ-mask.lifted').length,
+             covered:f.querySelectorAll('.occ-mask:not(.lifted)').length,
+             label:(f.querySelector('.occ-mask.lifted i')||{}).textContent || '' }; })()`);
+  check('27 revealing lifts only the target box and names it',
+    occBack && occBack.lifted === 1 && occBack.covered === 1 &&
+    /Hangabtriebskraft|Normalkraft/.test(occBack.label), JSON.stringify(occBack));
+  // The picture must never end up in the synced blob — it lives in IndexedDB.
+  const occState = await save();
+  check('28 the diagram image is a reference, not the image itself',
+    JSON.stringify(occState.srs.notes).length < 1400 && !JSON.stringify(occState).includes('data:image'),
+    'note json is ' + JSON.stringify(occState.srs.notes).length + ' chars');
+
+  /* ---- 29. the Seminarfacharbeit seed ---- */
+  const seed = await js("window.roadmaps.loadSeed('seminarfacharbeit-optionspreise.json')");
+  check('29 the Seminarfacharbeit seed ships with eight gated, dated milestones',
+    seed && seed.milestones && seed.milestones.length === 8 &&
+    seed.milestones.every((m) => m.deadline && m.gate && (m.gate.criteria || []).length >= 4) &&
+    seed.milestones.every((m, i) => i === 0 || m.deadline > seed.milestones[i - 1].deadline),
+    seed && seed.milestones && JSON.stringify(seed.milestones.map((m) => m.deadline)));
+
   const afterGrades = await save();
   check('16 grades never touch XP, gold or the log',
     afterGrades.player.xp === xpBeforeGrades &&

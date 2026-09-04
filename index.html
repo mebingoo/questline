@@ -1475,6 +1475,33 @@
   .set-tab:hover{color:var(--text);}
   .set-tab.active{color:var(--gold); border-color:var(--gold); box-shadow:0 0 0 1px var(--gold-glow);}
   .set-body{max-width:1180px; margin:0 auto; padding:22px 26px 60px; border-top:1px solid var(--border-soft);}
+/* ---- Image occlusion ---- */
+  .occ-fig{position:relative; display:inline-block; max-width:100%; line-height:0;
+    border:1px solid var(--border); border-radius:var(--radius-s); overflow:hidden; background:var(--bg-2);}
+  .occ-fig .occ-img{display:block; max-width:100%; height:auto;}
+  .occ-mask{position:absolute; background:var(--gold-soft); opacity:0.94;
+    border:1px solid var(--gold); border-radius:1px; display:flex; align-items:center; justify-content:center;}
+  .occ-mask.target{background:var(--teal); border-color:var(--teal); box-shadow:0 0 0 2px var(--bg);}
+  /* Lifted, not removed: keeping the outline shows you WHERE the answer was. */
+  .occ-mask.lifted{background:transparent; opacity:1; border:2px dashed var(--teal);}
+  .occ-mask i{font-style:normal; font-family:var(--font-mono); font-size:11px; color:var(--bg);
+    line-height:1; padding:1px 3px;}
+  .occ-mask.lifted i{background:var(--teal); border-radius:1px;}
+  .occ-edit{position:relative; display:block; max-width:100%; margin:6px 0 4px; cursor:crosshair;
+    border:1px solid var(--border); border-radius:var(--radius-s); overflow:hidden;
+    background:var(--bg-2); min-height:80px; touch-action:none; line-height:0;}
+  .occ-edit .occ-img{display:block; max-width:100%; height:auto; pointer-events:none;}
+  .occ-mask.editable{cursor:pointer;}
+  .occ-mask.editable:hover{background:var(--danger); border-color:var(--danger);}
+  .occ-mask.drafting{background:var(--teal); opacity:0.45; border:1px dashed var(--teal); pointer-events:none;}
+  .occ-empty{padding:26px 14px; text-align:center; font-size:12px; color:var(--text-faint); line-height:1.6;}
+  .occ-list{display:flex; flex-wrap:wrap; gap:6px; margin:8px 0 4px;}
+  .occ-chip{display:flex; align-items:center; gap:6px; font-size:11.5px; color:var(--text-dim);
+    border:1px solid var(--border); border-radius:var(--radius-s); padding:3px 7px;}
+  .occ-chip input{background:none; border:none; color:var(--text); font-family:inherit; font-size:11.5px;
+    width:110px; outline:none;}
+  .occ-chip b{font-family:var(--font-mono); font-size:10px; color:var(--gold);}
+
 /* ---- Maths, rendered as native MathML (no library, no CDN) ---- */
   math{font-size:1.05em;}
   .srs-math{margin:10px 0 4px; font-size:26px; color:var(--text); line-height:1.5; overflow-x:auto; max-width:100%;}
@@ -2722,7 +2749,9 @@ function migrate(s){
   ['notes','cards','reviews','decks'].forEach(k=>{ if(!Array.isArray(s.srs[k])) s.srs[k] = []; });
   s.srs.notes.forEach(n=>{ if(n.translationVi===undefined) n.translationVi = ''; });
   // Every note written before there was more than one kind is vocabulary.
-  s.srs.notes.forEach(n=>{ if(!n.kind) n.kind = 'vocab'; });
+  s.srs.notes.forEach(n=>{ if(!n.kind) n.kind = 'vocab'; if(!Array.isArray(n.masks)) n.masks = []; });
+  // A card written before occlusion existed covers the whole note, not a box.
+  if(Array.isArray(s.srs.cards)) s.srs.cards.forEach(c=>{ if(c.maskId === undefined) c.maskId = null; });
   if(!s.srs.daily || typeof s.srs.daily !== 'object') s.srs.daily = {};
   if(!s.srs.config) s.srs.config = defaultSrs().config;
   if(!s.journal || !Array.isArray(s.journal.entries)) s.journal = { entries:[], lastXpDay:null };
@@ -7343,7 +7372,8 @@ function mathText(str){
 const NOTE_KINDS = [
   { id:'vocab',      name:'Vocabulary', hint:'a word and what it means' },
   { id:'formula',    name:'Formula',    hint:'a named formula, written in LaTeX' },
-  { id:'definition', name:'Definition', hint:'a term and what it means, for Physik and Informatik' }
+  { id:'definition', name:'Definition', hint:'a term and what it means, for Physik and Informatik' },
+  { id:'occlusion',  name:'Diagram',    hint:'an image with parts hidden — one card per hidden area' }
 ];
 const CARD_TYPES = [
   { id:'recognition', name:'Recognition', hint:'see the word, recall the meaning' },
@@ -7357,7 +7387,8 @@ const CARD_TYPES = [
   { id:'formula',     name:'Write it',    hint:'see the name, write the formula',  kind:'formula' },
   { id:'formulaRead', name:'Read it',     hint:'see the formula, name it and say what it is for', kind:'formula' },
   { id:'definition',  name:'Define it',   hint:'see the term, state the definition', kind:'definition' },
-  { id:'definitionRev', name:'Name it',   hint:'see the definition, name the term', kind:'definition' }
+  { id:'definitionRev', name:'Name it',   hint:'see the definition, name the term', kind:'definition' },
+  { id:'occlusion',   name:'Hidden area', hint:'one card per rectangle you draw', kind:'occlusion' }
 ];
 const noteKind = (n)=> (n && n.kind) || 'vocab';
 function typesForKind(kind){
@@ -7367,7 +7398,8 @@ function typesForKind(kind){
 const DEFAULT_TYPES_FOR_KIND = {
   vocab: ['recognition','translation','cloze','typing'],
   formula: ['formula','formulaRead'],
-  definition: ['definition','definitionRev']
+  definition: ['definition','definitionRev'],
+  occlusion: ['occlusion']
 };
 const CEFR = ['A1','A2','B1','B2','C1','C2'];
 /* Same reason as QUIZ_SCHEMA: handed to the provider so a local model is
@@ -7416,13 +7448,22 @@ const deckById = (id)=> srs().decks.find(d=>d.id===id) || null;
 const noteById = (id)=> srs().notes.find(n=>n.id===id) || null;
 
 /* ---------- building cards from a note ---------- */
-function makeCards(noteId, types){
-  const now = Date.now();
-  return types.map(t=>({
-    id:'cd'+Math.random().toString(36).slice(2,9), noteId, type:t,
-    state:'new', due:now, stability:null, difficulty:null,
+function newCard(noteId, type, maskId){
+  return {
+    id:'cd'+Math.random().toString(36).slice(2,9), noteId, type, maskId: maskId || null,
+    state:'new', due:Date.now(), stability:null, difficulty:null,
     reps:0, lapses:0, step:null, lastReview:null
-  }));
+  };
+}
+/* An occlusion note is one card per rectangle rather than one card per type:
+   each hidden area is its own thing to remember, on its own schedule. */
+function makeCards(noteId, types, masks){
+  const out = [];
+  types.forEach(t=>{
+    if(t === 'occlusion') (masks||[]).forEach(m=>out.push(newCard(noteId, t, m.id)));
+    else out.push(newCard(noteId, t, null));
+  });
+  return out;
 }
 const FLASHCARD_CREATE_XP = 8;
 /* A note's language (e.g. de-DE) is matched against quest-line names/ids so
@@ -7447,16 +7488,158 @@ function resolveLangGoal(langCode){
 function addNote(data, types){
   const note = Object.assign({
     id:'nt'+Date.now()+Math.random().toString(36).slice(2,5),
-    created: Date.now(), tags: [], source:'', cefr:'', imageId:null, translationVi:'', kind:'vocab'
+    created: Date.now(), tags: [], source:'', cefr:'', imageId:null, translationVi:'', kind:'vocab', masks:[]
   }, data);
   srs().notes.push(note);
   const usable = types.filter(t=>{
     const def = CARD_TYPES.find(x=>x.id===t);
     return !(def && def.needsExample) || (note.example||'').trim();
   });
-  srs().cards.push(...makeCards(note.id, usable.length ? usable : ['recognition']));
+  srs().cards.push(...makeCards(note.id, usable.length ? usable : ['recognition'], note.masks));
   saveState();
   return note;
+}
+
+/* ============ IMAGE OCCLUSION ============
+ * A diagram with rectangles drawn over it, one card per rectangle. For a
+ * Physik Kräftediagramm or a Mathe graph this is the closest thing to how the
+ * knowledge is actually used: you are shown the picture and have to know what
+ * belongs in the gap.
+ *
+ * The image goes into the same IndexedDB store the note screenshots already
+ * use (shotDb), so it is device-local, out of the synced blob, and already
+ * covered by the backup. Only the rectangles live in `state` — four numbers
+ * each, and worth syncing.
+ *
+ * Rectangles are normalised to 0..1, so the same note renders correctly in the
+ * editor, on the card, and on a phone, none of which agree on width.
+ */
+function occMasks(note){ return Array.isArray(note && note.masks) ? note.masks : []; }
+
+/* The picture plus its boxes. `revealId` is the one being asked about: on the
+   front it is highlighted and still covering, on the back it lifts. */
+function occFigureHtml(note, revealId, revealed){
+  return '<div class="occ-fig" data-note="'+esc(note.id)+'">'+
+    '<img class="occ-img" alt="">'+
+    occMasks(note).map(m=>{
+      const target = m.id === revealId;
+      const cls = 'occ-mask'+(target ? ' target' : '')+(target && revealed ? ' lifted' : '');
+      return '<span class="'+cls+'" style="'+occBoxStyle(m)+'">'+
+        (target && revealed && m.label ? '<i>'+esc(m.label)+'</i>' : '')+'</span>';
+    }).join('')+
+  '</div>';
+}
+function occBoxStyle(m){
+  return 'left:'+(m.x*100).toFixed(3)+'%; top:'+(m.y*100).toFixed(3)+'%; '+
+         'width:'+(m.w*100).toFixed(3)+'%; height:'+(m.h*100).toFixed(3)+'%';
+}
+
+/* The blob only exists in IndexedDB, so the <img> is filled in after the HTML
+   is already on the page. Object URLs are revoked once the image has loaded —
+   one figure can be drawn many times in a session and they would pile up. */
+function occFillImages(root){
+  (root || document).querySelectorAll('.occ-fig[data-note]').forEach(async fig=>{
+    if(fig.dataset.filled) return;
+    fig.dataset.filled = '1';
+    const note = noteById(fig.dataset.note);
+    const img = fig.querySelector('.occ-img');
+    if(!note || !note.imageId || !img) return;
+    const blob = await shotGet(note.imageId);
+    if(!blob) return;
+    const url = URL.createObjectURL(blob);
+    img.addEventListener('load', ()=>URL.revokeObjectURL(url), { once:true });
+    img.src = url;
+  });
+}
+
+/* ---------- the editor surface ----------
+ * Drag on the image to add a rectangle; click one to remove it. Every
+ * coordinate is taken from the figure's own box, so a rectangle drawn at any
+ * window size lands in the same place on the card.
+ */
+function occWireEditor(hostId, masks, onChange){
+  const host = document.getElementById(hostId);
+  if(!host) return;
+
+  const paint = ()=>{
+    // Nothing to draw on yet — say so rather than leaving an empty box.
+    if(!host.dataset.imageId){
+      host.innerHTML = '<div class="occ-empty">Pick an image below, then drag rectangles over the parts '+
+        'you want to be asked about.<br>Click a rectangle to remove it.</div>';
+      return;
+    }
+    host.innerHTML = '<img class="occ-img" alt="">'+
+      masks.map((m,i)=>'<span class="occ-mask editable" data-i="'+i+'" style="'+occBoxStyle(m)+'">'+
+        '<i>'+(i+1)+'</i></span>').join('')+
+      '<span class="occ-mask drafting" id="occDraft" style="display:none"></span>';
+    occFillHost();
+  };
+  const occFillHost = async ()=>{
+    const img = host.querySelector('.occ-img');
+    if(!img || !host.dataset.imageId) return;
+    const blob = await shotGet(host.dataset.imageId);
+    if(!blob) return;
+    const url = URL.createObjectURL(blob);
+    img.addEventListener('load', ()=>URL.revokeObjectURL(url), { once:true });
+    img.src = url;
+  };
+
+  const clamp01 = v => Math.max(0, Math.min(1, v));
+  const pointAt = (e)=>{
+    const r = host.getBoundingClientRect();
+    return { x: clamp01((e.clientX - r.left)/r.width), y: clamp01((e.clientY - r.top)/r.height) };
+  };
+  let start = null;
+
+  host.addEventListener('pointerdown', e=>{
+    // Clicking an existing box removes it rather than starting a new one on top.
+    const hit = e.target.closest('.occ-mask.editable');
+    if(hit){
+      masks.splice(parseInt(hit.dataset.i, 10), 1);
+      paint(); onChange();
+      return;
+    }
+    if(!host.dataset.imageId) return;
+    e.preventDefault();
+    start = pointAt(e);
+    try{ host.setPointerCapture(e.pointerId); }catch(err){}
+  });
+
+  host.addEventListener('pointermove', e=>{
+    if(!start) return;
+    const p = pointAt(e);
+    const d = host.querySelector('#occDraft');
+    if(!d) return;
+    d.style.display = '';
+    d.style.left   = (Math.min(start.x, p.x)*100)+'%';
+    d.style.top    = (Math.min(start.y, p.y)*100)+'%';
+    d.style.width  = (Math.abs(p.x - start.x)*100)+'%';
+    d.style.height = (Math.abs(p.y - start.y)*100)+'%';
+  });
+
+  const finish = (e)=>{
+    if(!start) return;
+    const p = pointAt(e);
+    const box = {
+      x: Math.min(start.x, p.x), y: Math.min(start.y, p.y),
+      w: Math.abs(p.x - start.x), h: Math.abs(p.y - start.y)
+    };
+    start = null;
+    try{ host.releasePointerCapture(e.pointerId); }catch(err){}
+    // A stray click is not a rectangle: under ~1% of an edge it was a slip.
+    if(box.w < 0.012 || box.h < 0.012){ paint(); return; }
+    masks.push(Object.assign({ id:'mk'+Date.now().toString(36)+Math.random().toString(36).slice(2,5), label:'' }, box));
+    paint(); onChange();
+  };
+  host.addEventListener('pointerup', finish);
+  host.addEventListener('pointercancel', ()=>{
+    start = null;
+    const d = host.querySelector('#occDraft');
+    if(d) d.style.display = 'none';
+  });
+
+  paint();
+  return { repaint: paint };
 }
 
 /* ---------- speech ---------- */
@@ -7677,10 +7860,17 @@ function srsRenderCard(){
   }else if(card.type==='definitionRev'){
     front = '<div class="srs-prompt small">'+mathText(note.translation)+'</div>'+
       '<div class="srs-sub">Which term is this?</div>';
+  }else if(card.type==='occlusion'){
+    // Everything stays covered and one box is picked out: the question is what
+    // is under THAT one, with the rest of the diagram still hidden so the
+    // surrounding labels cannot give it away.
+    front = (note.word ? '<div class="srs-sub">'+esc(note.word)+'</div>' : '')+
+      occFigureHtml(note, card.maskId, false);
   }
 
   stage.innerHTML = '<div class="srs-kind">'+esc(typeDef.name.toUpperCase())+'</div>'+front+
     (card.type==='typing' ? '<input class="srs-type" id="srsTypeIn" autocomplete="off" spellcheck="false" style="margin-top:22px">' : '');
+  if(card.type==='occlusion') occFillImages(stage);
 
   bottom.innerHTML = '<button class="srs-show" id="srsShow">Show answer</button>'+
     '<div class="srs-hint">Space or Enter to reveal · 1-4 to rate · Esc to stop</div>';
@@ -7732,6 +7922,13 @@ function srsReveal(){
     answer = card.type === 'definitionRev'
       ? '<div class="srs-answer">'+esc(note.word)+'</div>'
       : '<div class="srs-answer small">'+mathText(note.translation)+'</div>';
+  }else if(kind === 'occlusion'){
+    // The front figure is replaced rather than appended to, so the answer is
+    // in the same place on the page it was covering.
+    const fig = stage.querySelector('.occ-fig');
+    if(fig) fig.outerHTML = occFigureHtml(note, card.maskId, true);
+    occFillImages(stage);
+    answer = '';
   }else{
     answer = '<div class="srs-answer">'+
       esc(card.type==='translation'||card.type==='typing'||card.type==='listening' ? note.word : note.translation)+'</div>'+
@@ -7751,10 +7948,10 @@ function srsReveal(){
     (note.translationVi ? '<div class="srs-sub" style="color:var(--teal)">'+esc(note.translationVi)+
       ' <span style="color:var(--text-faint);font-size:10px">(VI)</span></div>' : '')+
     context +
-    (note.imageId ? '<img class="srs-img" id="srsImg" alt="">' : '')+
+    (note.imageId && kind !== 'occlusion' ? '<img class="srs-img" id="srsImg" alt="">' : '')+
     (tags.length ? '<div class="srs-tags">'+tags.map(t=>'<span class="srs-tag">'+esc(t)+'</span>').join('')+'</div>' : ''));
 
-  if(note.imageId) shotGet(note.imageId).then(b=>{ const el=document.getElementById('srsImg'); if(el&&b) el.src = URL.createObjectURL(b); });
+  if(note.imageId && kind !== 'occlusion') shotGet(note.imageId).then(b=>{ const el=document.getElementById('srsImg'); if(el&&b) el.src = URL.createObjectURL(b); });
   // Reading "backslash frac" aloud helps nobody, and a Physik term is not a
   // pronunciation drill either.
   if(card.type!=='listening' && kind==='vocab') speak(note.word, lang);
@@ -7902,6 +8099,8 @@ function openAddWord(noteId){
   const n = editing || { deckId: decks[0].id, word:'', translation:'', example:'', exampleTr:'', translationVi:'',
                          lang: decks[0].lang, cefr:'', tags:[], source:'', kind:'vocab' };
   let kind = noteKind(n);
+  // Copied, not aliased: cancelling the dialog must not have edited the note.
+  let masks = (n.masks || []).map(m=>Object.assign({}, m));
   let types = editing
     ? Array.from(new Set(srs().cards.filter(c=>c.noteId===editing.id).map(c=>c.type)))
     : (kind === 'vocab' ? [...srsPickedTypes] : DEFAULT_TYPES_FOR_KIND[kind].slice());
@@ -7916,6 +8115,10 @@ function openAddWord(noteId){
              tr:'The formula, in LaTeX', trPh:'x = \\frac{-b \\pm \\sqrt{b^2-4ac}}{2a}',
              ex:'When it applies', exPh:'Any quadratic ax² + bx + c = 0 with a ≠ 0.',
              exTr:'What the symbols mean', exTrPh:'a, b, c are the coefficients; the discriminant is b²−4ac.' },
+    occlusion: { title:'diagram', word:'What the diagram is', wordPh:'Kräfte an der schiefen Ebene',
+             tr:'', trPh:'',
+             ex:'Notes', exPh:'Hangabtriebskraft $F_H = m g \\sin\\alpha$',
+             exTr:'Anything worth remembering alongside', exTrPh:'Reibung hier vernachlässigt.' },
     definition: { title:'definition', word:'Term', wordPh:'Impuls',
              tr:'Definition', trPh:'Produkt aus Masse und Geschwindigkeit, $p = m v$',
              ex:'Example or where it matters', exPh:'Impulserhaltung beim elastischen Stoß.',
@@ -7938,13 +8141,21 @@ function openAddWord(noteId){
       '</div>'+
       '<label>'+esc(L.word)+'</label>'+
       '<input type="text" class="fld" id="wWord" value="'+esc(n.word)+'" placeholder="'+esc(L.wordPh)+'">'+
+      (kind==='occlusion'
+        ? '<label>The diagram</label>'+
+          '<div class="occ-edit" id="occEdit"'+(pendingImage?' data-image-id="'+esc(pendingImage)+'"':'')+'></div>'+
+          '<div class="occ-list" id="occList"></div>'+
+          '<div class="hint">One card per rectangle, each on its own schedule. '+
+            'Label a rectangle to have the label shown when it lifts.</div>'
+        : '')+
+      (kind==='occlusion' ? '' :
       '<label>'+esc(L.tr)+'</label>'+
       (kind==='formula'
         ? '<textarea class="fld" id="wTr" rows="2" spellcheck="false" placeholder="'+esc(L.trPh)+'">'+esc(n.translation)+'</textarea>'+
           '<div class="math-preview" id="wMathPrev"></div>'+
           '<div class="hint">LaTeX. \\frac \\sqrt \\int \\sum \\lim, ^ and _, Greek by name (\\lambda), '+
             '\\vec and \\text all work. Rendered natively — nothing is downloaded.</div>'
-        : '<input type="text" class="fld" id="wTr" value="'+esc(n.translation)+'" placeholder="'+esc(L.trPh)+'">')+
+        : '<input type="text" class="fld" id="wTr" value="'+esc(n.translation)+'" placeholder="'+esc(L.trPh)+'">'))+
       '<label>'+esc(L.ex)+'</label>'+
       '<input type="text" class="fld" id="wEx" value="'+esc(n.example||'')+'" placeholder="'+esc(L.exPh)+'">'+
       '<label>'+esc(L.exTr)+'</label>'+
@@ -7986,6 +8197,23 @@ function openAddWord(noteId){
       types = kept.length ? kept : DEFAULT_TYPES_FOR_KIND[kind].slice();
       paint();
     });
+    if(kind === 'occlusion'){
+      const paintList = ()=>{
+        const list = document.getElementById('occList'); if(!list) return;
+        list.innerHTML = masks.length
+          ? masks.map((m,i)=>'<span class="occ-chip"><b>'+(i+1)+'</b>'+
+              '<input type="text" data-mask="'+esc(m.id)+'" value="'+esc(m.label||'')+'" placeholder="label (optional)"></span>').join('')
+          : '<span class="occ-chip" style="border-style:dashed">no rectangles yet</span>';
+        list.querySelectorAll('input[data-mask]').forEach(inp=>{
+          inp.addEventListener('input', e=>{
+            const m = masks.find(x=>x.id === e.target.dataset.mask);
+            if(m) m.label = e.target.value;
+          });
+        });
+      };
+      occWireEditor('occEdit', masks, paintList);
+      paintList();
+    }
     const trBox = document.getElementById('wTr');
     if(kind === 'formula' && trBox){
       const prev = ()=>{
@@ -8006,7 +8234,11 @@ function openAddWord(noteId){
     document.getElementById('wImgFile').addEventListener('change', async e=>{
       const f = e.target.files && e.target.files[0]; e.target.value = '';
       if(!f || !f.type.startsWith('image/')) return;
-      const id = 'wi'+Date.now(); await shotPut(id, f); pendingImage = id; drawImg();
+      const id = 'wi'+Date.now(); await shotPut(id, f); pendingImage = id;
+      // The occlusion surface reads the image straight off the store, so it
+      // has to be repainted rather than just having a thumbnail redrawn.
+      if(kind === 'occlusion'){ masks = []; paint(); return; }
+      drawImg();
     });
     document.getElementById('wAi').addEventListener('click', fillWithAi);
     document.getElementById('wSave').addEventListener('click', save);
@@ -8062,16 +8294,24 @@ function openAddWord(noteId){
   }
 
   function save(){
-    const word = document.getElementById('wWord').value.trim();
-    const tr = document.getElementById('wTr').value.trim();
-    const L = LABELS[kind];
-    if(!word || !tr){ showToast({title:esc(L.word)+' and '+esc(L.tr)+' are both needed'}); return; }
-    if(!types.length){ showToast({title:'Pick at least one exercise type'}); return; }
+    // Every field is optional at the DOM level now: each kind renders a
+    // different subset of them, so reaching for one directly is a crash
+    // waiting for the kind that does not have it.
     const val = (id)=>{ const el = document.getElementById(id); return el ? el.value.trim() : ''; };
+    const word = val('wWord');
+    const tr = val('wTr');
+    const L = LABELS[kind];
+    if(kind !== 'occlusion' && (!word || !tr)){ showToast({title:esc(L.word)+' and '+esc(L.tr)+' are both needed'}); return; }
+    if(!types.length){ showToast({title:'Pick at least one exercise type'}); return; }
+    if(kind === 'occlusion'){
+      if(!word){ showToast({title:'Give the diagram a name'}); return; }
+      if(!pendingImage){ showToast({title:'Pick an image first'}); return; }
+      if(!masks.length){ showToast({title:'Draw at least one rectangle', sub:'Each one becomes a card.'}); return; }
+    }
     const data = {
       deckId: document.getElementById('wDeck').value,
       lang: document.getElementById('wLang').value,
-      kind,
+      kind, masks,
       word, translation: tr,
       example: val('wEx'),
       exampleTr: val('wExTr'),
@@ -8079,7 +8319,7 @@ function openAddWord(noteId){
       cefr: val('wCefr'),
       subject: val('wSubj'),
       source: val('wSrc'),
-      tags: document.getElementById('wTags').value.split(',').map(x=>x.trim()).filter(Boolean),
+      tags: val('wTags').split(',').map(x=>x.trim()).filter(Boolean),
       imageId: pendingImage
     };
     let xpGoal = null;
@@ -8091,7 +8331,13 @@ function openAddWord(noteId){
         srs().cards = srs().cards.filter(x=>x.id!==c.id);
       });
       const missing = types.filter(t=>!have.some(c=>c.type===t));
-      if(missing.length) srs().cards.push(...makeCards(editing.id, missing));
+      if(missing.length) srs().cards.push(...makeCards(editing.id, missing, masks));
+      if(kind === 'occlusion'){
+        const live = new Set(masks.map(m=>m.id));
+        srs().cards = srs().cards.filter(c=>c.noteId!==editing.id || c.type!=='occlusion' || live.has(c.maskId));
+        const covered = new Set(srs().cards.filter(c=>c.noteId===editing.id && c.type==='occlusion').map(c=>c.maskId));
+        masks.filter(m=>!covered.has(m.id)).forEach(m=>srs().cards.push(newCard(editing.id, 'occlusion', m.id)));
+      }
     }else{
       if(kind === 'vocab') srsPickedTypes = [...types];
       const newNote = addNote(data, types);
