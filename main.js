@@ -1350,6 +1350,12 @@ const AI_PROVIDERS = {
           num_predict: Math.max(128, Math.min(8192, parseInt(o.maxTokens, 10) || 1200))
         }
       };
+      /* Ollama defaults num_ctx to a few thousand tokens no matter how big the
+         model's window is, and silently drops whatever does not fit — from the
+         *front*, which is where the transcript lives. Asking for the window is
+         the difference between "128K context" being true and being a spec
+         sheet. Only sent when the caller worked out a size. */
+      if (o.numCtx) body.options.num_ctx = Math.max(2048, parseInt(o.numCtx, 10) || 0);
       /* Constrained decoding. Given a JSON schema, Ollama compiles it to a
          grammar and the model physically cannot emit anything that doesn't
          match — which is the difference between a 3B model being useless here
@@ -1369,6 +1375,22 @@ const AI_PROVIDERS = {
       const r = await httpJSON(cleanBase(o.baseUrl) + '/api/tags', { timeout: 8000 });
       if (r.status !== 200 || !r.json) return { ok: false, error: 'Could not list models (HTTP ' + r.status + ').' };
       return { ok: true, models: (r.json.models || []).map((m) => m.name || m.model).filter(Boolean) };
+    },
+    /* How much context this model can actually hold. /api/show reports it under
+       an architecture-prefixed key — llama.context_length, qwen2.context_length,
+       gemma3.context_length — so the key is found by suffix rather than named. */
+    async context(o) {
+      const model = String(o.model || '').trim();
+      if (!model) return { ok: false, error: 'No model selected.' };
+      const r = await httpJSON(cleanBase(o.baseUrl) + '/api/show', {
+        method: 'POST', body: { model }, timeout: 8000
+      });
+      if (r.status !== 200 || !r.json) return { ok: false, error: 'Could not read the model card (HTTP ' + r.status + ').' };
+      const info = r.json.model_info || {};
+      const key = Object.keys(info).find((k) => k.endsWith('.context_length'));
+      const n = key ? parseInt(info[key], 10) : 0;
+      if (!n) return { ok: false, error: 'The model card does not say how much context it holds.' };
+      return { ok: true, contextTokens: n, model };
     },
     async health(o) {
       const r = await httpJSON(cleanBase(o.baseUrl) + '/api/version', { timeout: 6000 });
@@ -1496,6 +1518,13 @@ ipcMain.handle('ai-complete', async (event, opts) => {
   if (bad) return bad;
   try { return await prov.complete(o); }
   catch (err) { return { ok: false, error: String((err && err.message) || err) }; }
+});
+
+ipcMain.handle('ai-context', async (event, opts) => {
+  const p = AI_PROVIDERS[(opts && opts.provider) || 'ollama'];
+  if (!p || !p.context) return { ok: false, error: 'That provider does not report a context size.' };
+  try { return await p.context(opts || {}); }
+  catch (e) { return { ok: false, error: e.message }; }
 });
 
 ipcMain.handle('ai-models', async (event, opts) => {

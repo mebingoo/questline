@@ -420,10 +420,15 @@ async function aiGenerate(request) {
 
   const count = Math.max(3, Math.min(20, parseInt(opts.count, 10) || 8));
   let transcript = String(opts.transcript);
-  const LIMIT = 48000;
+  /* Nothing calls this any more: the renderer builds quizzes itself through
+     /api/ai/complete, on the phone as much as on the desktop, and does its own
+     chunk-and-merge sized to the model's actual window. The endpoint stays for
+     any client that has not reloaded yet, but the old 48,000 cap belonged to
+     the 4K-context era, and cutting the middle out of a two-hour transcript
+     deleted exactly the part worth asking about. */
+  const LIMIT = 180000;
   if (transcript.length > LIMIT) {
-    transcript = transcript.slice(0, Math.floor(LIMIT * 0.6)) +
-      '\n...[middle of transcript trimmed for length]...\n' + transcript.slice(-Math.floor(LIMIT * 0.4));
+    transcript = transcript.slice(0, LIMIT) + '\n...[transcript truncated]...';
   }
   const prompt = buildPrompt(opts.title || 'Untitled video', transcript, count);
   const isAnthropic = key.startsWith('sk-ant-');

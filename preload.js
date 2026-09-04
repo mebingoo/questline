@@ -50,6 +50,9 @@ contextBridge.exposeInMainWorld('learn', {
 contextBridge.exposeInMainWorld('ai', {
   complete: (opts) => ipcRenderer.invoke('ai-complete', opts),
   models: (opts) => ipcRenderer.invoke('ai-models', opts),
+  // How much the selected model can actually hold, so prompts are sized from
+  // the model rather than from a constant.
+  context: (opts) => ipcRenderer.invoke('ai-context', opts),
   health: (opts) => ipcRenderer.invoke('ai-health', opts),
   status: (opts) => ipcRenderer.invoke('ai-status', opts),
   unload: (opts) => ipcRenderer.invoke('ai-unload', opts),

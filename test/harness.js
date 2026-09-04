@@ -20,6 +20,7 @@ const { app, BrowserWindow, dialog } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const os = require('os');
+const http = require('http');
 
 const RUN_DIR = fs.mkdtempSync(path.join(os.tmpdir(), 'questline-test-'));
 app.setPath('userData', path.join(RUN_DIR, 'userData'));
@@ -33,6 +34,42 @@ dialog.showOpenDialog = async () => ({ canceled: false, filePaths: [BACKUP_FILE]
 dialog.showMessageBox = async () => ({ response: 1 });
 
 require('../main.js');
+
+/* ---------------- a stub Ollama ----------------
+ * The AI path is the one place the app can be silently wrong — it used to cut
+ * the middle out of long transcripts and nobody could see it. Standing up a
+ * fake daemon makes the whole chain assertable offline: what context the model
+ * claims, what num_ctx the app asks for, and exactly which text went in. */
+const ollamaCalls = [];
+let stubContextTokens = 131072;
+function fakeQuiz(n) {
+  const questions = [];
+  for (let i = 0; i < n; i++) {
+    questions.push({ difficulty: 'easy', q: 'Q' + i, options: ['a', 'b', 'c', 'd'], correct: 0, why: 'because', t: 100 * i });
+  }
+  return JSON.stringify({ summary: 'A summary.', keyPoints: ['k1', 'k2', 'k3', 'k4'], questions });
+}
+const stubOllama = http.createServer((req, res) => {
+  let body = '';
+  req.on('data', (d) => { body += d; });
+  req.on('end', () => {
+    const j = body ? JSON.parse(body) : {};
+    res.setHeader('Content-Type', 'application/json');
+    if (req.url === '/api/show') {
+      res.end(JSON.stringify({ model_info: { 'qwen3.context_length': stubContextTokens } }));
+    } else if (req.url === '/api/generate') {
+      ollamaCalls.push({ numCtx: j.options && j.options.num_ctx, prompt: j.prompt || '' });
+      const q = j.format && j.format.properties && j.format.properties.questions;
+      res.end(JSON.stringify({ response: j.format ? fakeQuiz((q && q.minItems) || 8) : 'An answer.' }));
+    } else if (req.url === '/api/tags') {
+      res.end(JSON.stringify({ models: [{ name: 'qwen3:14b' }] }));
+    } else if (req.url === '/api/version') {
+      res.end(JSON.stringify({ version: '0.0.0-stub' }));
+    } else {
+      res.end('{}');
+    }
+  });
+});
 
 /* ---------------- assertions ---------------- */
 let passed = 0, failed = 0;
@@ -316,6 +353,59 @@ async function run() {
   // Expanding intervals, so the gaps shrink as the exam approaches.
   check('19 the sessions tighten as the Klausur approaches',
     revGaps.length > 1 && revGaps.every((g, i) => i === 0 || g <= revGaps[i - 1]), JSON.stringify(revGaps));
+
+  /* ---- 20-22. transcripts sized to the model, not to a 2023 constant ---- */
+  await new Promise((r) => stubOllama.listen(0, '127.0.0.1', r));
+  const ollamaUrl = 'http://127.0.0.1:' + stubOllama.address().port;
+  const clickGen = "(()=>{ const b = document.getElementById('goGen') || document.getElementById('regenBtn'); if(b) b.click(); })()";
+
+  // ~80,000 characters: comfortably past the old 24,000 cap, with a marker
+  // planted at the midpoint that the old head+tail trim would have deleted.
+  await js(`(()=>{
+    localStorage.setItem('questline_aicfg_v1', JSON.stringify(
+      {provider:'ollama', ollamaUrl:${JSON.stringify(ollamaUrl)}, model:'qwen3:14b', keepAlive:'10m'}));
+    const s = JSON.parse(localStorage.getItem('questline_state_v2'));
+    s.ai = {model:'qwen3:14b', count:8};
+    const cues = [];
+    for(let i=0;i<600;i++) cues.push({t:i*12, text:'Step '+i+' explains the modifier stack and how the marker '+
+      (i===300?'MIDPOINTMARKER':'ordinary')+' behaves when subdivided repeatedly in this section.'});
+    s.videos = [{ id:'vtest', title:'Long tutorial', goal:(s.goals[0]||{}).id||null, cues,
+      questions:[], chat:[], summary:'', keyPoints:[], addedAt:Date.now() }];
+    s.activeTab = 'learn';
+    localStorage.setItem('questline_state_v2', JSON.stringify(s)); })()`);
+  await reload();
+  await click('#vidGrid .vid-card');
+  ollamaCalls.length = 0;
+  await js(clickGen);
+  await wait(2500);
+
+  check('20 a long transcript goes in whole at a large context window',
+    ollamaCalls.length === 1 &&
+    ollamaCalls[0].prompt.includes('MIDPOINTMARKER') &&
+    !ollamaCalls[0].prompt.includes('middle trimmed'),
+    ollamaCalls.length + ' calls, ' + (ollamaCalls[0] ? ollamaCalls[0].prompt.length : 0) + ' chars');
+  // Ollama caps at its own small default unless told otherwise, and drops the
+  // front of the prompt — which is where the transcript is.
+  check('21 num_ctx is sent, sized to the prompt and inside the window',
+    ollamaCalls.length > 0 && ollamaCalls[0].numCtx > 8192 && ollamaCalls[0].numCtx <= stubContextTokens,
+    'num_ctx = ' + (ollamaCalls[0] || {}).numCtx);
+
+  // Shrink the window: the same video must now be chunked, and the middle must
+  // still reach the model in one of the passes.
+  stubContextTokens = 8192;
+  await js("(()=>{ const c = JSON.parse(localStorage.getItem('questline_aicfg_v1'));\n" +
+           "  c.model = 'qwen3:small'; localStorage.setItem('questline_aicfg_v1', JSON.stringify(c)); })()");
+  await reload();
+  await click('#vidGrid .vid-card');
+  ollamaCalls.length = 0;
+  await js(clickGen);
+  await wait(600);
+  if (await js("!!document.getElementById('mConfirm')")) await click('#mConfirm');
+  await wait(4000);
+  check('22 a small window chunks the video and still sees the middle',
+    ollamaCalls.length > 1 && ollamaCalls.some((c) => c.prompt.includes('MIDPOINTMARKER')),
+    ollamaCalls.length + ' passes, midpoint seen: ' + ollamaCalls.some((c) => c.prompt.includes('MIDPOINTMARKER')));
+  stubOllama.close();
 
   const afterGrades = await save();
   check('16 grades never touch XP, gold or the log',

@@ -691,6 +691,9 @@
   .sync-badge::before{content:""; width:6px;height:6px;border-radius:50%; background:var(--text-faint);}
   .sync-badge.ok{color:var(--success);} .sync-badge.ok::before{background:var(--success);}
   .sync-badge.warn{color:var(--danger);} .sync-badge.warn::before{background:var(--danger);}
+  .sync-size{font-family:var(--font-mono); font-size:10.5px; color:var(--text-faint); padding:0 2px; cursor:default;}
+  .sync-size.warn{color:var(--gold);}
+  .sync-size.crit{color:var(--danger);}
 
   /* Phone-only day view. Declared BEFORE the media query so the query wins —
      a same-specificity rule after it would silently cancel it out. */
@@ -1637,6 +1640,10 @@
         <div><div class="label">Focus</div><div class="value" id="timerVal">Start</div></div>
       </button>
       <button class="sync-badge" id="syncBadge" style="display:none"></button>
+      <!-- How big the encrypted blob actually is. Nothing breaks today; this is
+           the early warning, because journal, cards, focusSessions, videos and
+           courses all grow forever and only log and reviews are capped. -->
+      <span class="sync-size" id="syncSize" style="display:none"></span>
     </div>
   </div>
   <nav class="tabbar" id="tabbar">
@@ -2372,7 +2379,11 @@ let aiCfg = (function(){
   }catch(e){}
   return cfg;
 })();
-function saveAiCfg(){ try{ localStorage.setItem(AI_CFG_STORE, JSON.stringify(aiCfg)); }catch(e){} }
+function saveAiCfg(){
+  try{ localStorage.setItem(AI_CFG_STORE, JSON.stringify(aiCfg)); }catch(e){}
+  // A different model has a different window; the next prompt re-measures.
+  if(typeof invalidateContextCache==='function') invalidateContextCache();
+}
 const aiIsLocal = ()=> aiCfg.provider === 'ollama';
 
 /* ---------- Video library (device-local) ----------
@@ -2928,14 +2939,32 @@ async function pullState(silent){
   }
 }
 
+/* Cloudflare KV tops out at 25 MB a value, and the whole blob is re-encrypted
+   and re-uploaded on every save. Showing the number is the cheapest possible
+   early warning: by the time a sync starts failing it is too late to notice. */
+const KV_VALUE_LIMIT = 25*1024*1024;
+function setSyncSize(bytes){
+  const el = document.getElementById('syncSize');
+  if(!el) return;
+  if(bytes==null){ el.style.display = 'none'; return; }
+  el.style.display = '';
+  el.textContent = fmtBytes(bytes);
+  el.title = 'Encrypted blob pushed to sync. Cloudflare KV stops accepting a value at '+
+    fmtBytes(KV_VALUE_LIMIT)+'.';
+  el.className = 'sync-size'+(bytes > KV_VALUE_LIMIT*0.8 ? ' crit' : bytes > KV_VALUE_LIMIT*0.2 ? ' warn' : '');
+}
+
 async function pushState(force){
   if(!syncOn() || syncBusy) return;
   syncBusy = true;
   try{
     setSyncBadge('saving…');
+    const payload = await encryptState(state);
+    // base64 is 4 characters per 3 bytes, so this is the real size on the wire.
+    setSyncSize(Math.round((payload.ct||'').length * 3/4));
     const r = await apiCall('/api/state', {
       rev:(syncCfg.rev||0)+1, updatedAt: state.updatedAt||Date.now(),
-      data: await encryptState(state), force: !!force
+      data: payload, force: !!force
     }, 'PUT');
     if(r.conflictStatus){
       // Another device wrote first. Newest edit wins; ours is only re-sent if it is newer.
@@ -4437,7 +4466,110 @@ function openPasteTranscript(){
  * selected. The model has no memory of its own, so each turn resends the
  * transcript plus a short window of prior turns as plain text. */
 const CHAT_HISTORY_TURNS = 6;      // how many prior exchanges ride along in the prompt
-const CHAT_TRANSCRIPT_LIMIT = 20000;
+/* ============ HOW MUCH TRANSCRIPT ACTUALLY FITS ============
+ * The old limits — 24,000 chars for a local quiz, 20,000 for chat, 48,000 in
+ * the cloud — were sized when 4K context windows were normal, and all three
+ * cut the *middle* out: head 60% + "…middle trimmed…" + tail 40%. On a
+ * two-hour tutorial that throws away exactly the part where the technique is
+ * taught, and the quiz gets built from the intro and the outro.
+ *
+ * So the budget is derived from the model instead of hardcoded. For Ollama
+ * that means asking /api/show what the window is — and then passing num_ctx,
+ * because Ollama otherwise caps it at its own small default however capable
+ * the model is. Cloud models have published windows and no such trap.
+ *
+ * When a transcript still does not fit, it is chunked and the results merged,
+ * so every part of the video is seen by something.
+ */
+const CHARS_PER_TOKEN = 3.6;        // English + timestamps, measured, not guessed
+const CTX_SAFETY = 0.72;            // leave room for the prompt scaffold and the answer
+const CLOUD_CONTEXT_TOKENS = { anthropic: 200000, openai: 128000 };
+const FALLBACK_CONTEXT_TOKENS = 8192;
+
+let ctxCache = { key:null, tokens:null };
+
+/* Cached per provider+model, because /api/show is a real round trip and this is
+   asked on the way into every generation. */
+async function modelContextTokens(){
+  const key = aiCfg.provider+'|'+aiCfg.model+'|'+aiCfg.ollamaUrl;
+  if(ctxCache.key === key && ctxCache.tokens) return ctxCache.tokens;
+
+  let tokens = CLOUD_CONTEXT_TOKENS[aiCfg.provider] || FALLBACK_CONTEXT_TOKENS;
+  if(aiIsLocal() && window.ai && window.ai.context){
+    try{
+      const r = await window.ai.context(aiArgs({}));
+      if(r && r.ok && r.contextTokens) tokens = r.contextTokens;
+    }catch(e){ /* keep the fallback */ }
+  }
+  ctxCache = { key, tokens };
+  return tokens;
+}
+// The model changed under us; the next call re-asks.
+function invalidateContextCache(){ ctxCache = { key:null, tokens:null }; }
+
+/* Characters of transcript that will fit, once the prompt scaffold and the
+   room the answer needs are taken out. */
+async function transcriptBudget(reserveTokens){
+  const ctx = await modelContextTokens();
+  const usable = Math.max(1500, ctx * CTX_SAFETY - (reserveTokens || 1500));
+  return Math.floor(usable * CHARS_PER_TOKEN);
+}
+/* What to hand Ollama as num_ctx. Rounded up to the nearest 2K so the daemon
+   is not re-allocating a differently-sized cache on every single call. */
+async function numCtxFor(promptChars, reserveTokens){
+  if(!aiIsLocal()) return undefined;
+  const ctx = await modelContextTokens();
+  const need = Math.ceil(promptChars / CHARS_PER_TOKEN) + (reserveTokens || 1500);
+  return Math.min(ctx, Math.max(4096, Math.ceil(need / 2048) * 2048));
+}
+
+/* Split on cue boundaries, never mid-line: every line starts with the timestamp
+   the answer's `t` field is supposed to point at. */
+function chunkTranscript(text, budgetChars){
+  const lines = String(text||'').split('\n');
+  const chunks = [];
+  let cur = [], len = 0;
+  for(const line of lines){
+    if(len + line.length + 1 > budgetChars && cur.length){
+      chunks.push(cur.join('\n')); cur = []; len = 0;
+    }
+    cur.push(line); len += line.length + 1;
+  }
+  if(cur.length) chunks.push(cur.join('\n'));
+  return chunks.length ? chunks : [''];
+}
+
+/* For chat, "merge the chunks" makes no sense — you cannot merge answers. What
+   the question needs is the parts of the video it is about, so chunks are
+   ranked by how many of the question's own words they contain. Crude next to an
+   embedding, but it costs nothing, runs offline, and beats deleting the middle
+   by a distance. */
+const CHAT_STOPWORDS = new Set(('a an the and or but if of to in on at for with from by is are was were be been '+
+  'do does did how what why when where which who this that it its as can could should would i you he she they we '+
+  'me my your his her their our not no yes').split(' '));
+function pickRelevantChunks(text, question, budgetChars){
+  if(text.length <= budgetChars) return text;
+  const chunks = chunkTranscript(text, Math.max(2000, Math.floor(budgetChars/4)));
+  const words = String(question||'').toLowerCase().match(/[a-zà-ÿ0-9]{3,}/g) || [];
+  const terms = [...new Set(words)].filter(w=>!CHAT_STOPWORDS.has(w));
+  const scored = chunks.map((c, i)=>{
+    const low = c.toLowerCase();
+    let score = 0;
+    terms.forEach(t=>{ const n = low.split(t).length - 1; if(n) score += 1 + Math.log(n); });
+    return { i, c, score };
+  });
+  // The opening is always kept: it is where the video says what it is about.
+  const keep = [scored[0]];
+  scored.slice(1).sort((a,b)=>b.score-a.score).forEach(x=>{
+    const used = keep.reduce((a,k)=>a+k.c.length, 0);
+    if(used + x.c.length <= budgetChars) keep.push(x);
+  });
+  keep.sort((a,b)=>a.i-b.i);
+  // Say where the gaps are, so the model knows it is not looking at everything.
+  return keep.map((k, n)=> (n && keep[n-1].i !== k.i-1 ? '\n...[section skipped]...\n' : '') + k.c).join('\n');
+}
+
+
 
 function renderChat(){
   const v = currentVideo; if(!v) return;
@@ -4484,11 +4616,10 @@ async function sendChatMessage(){
   list.scrollTop = list.scrollHeight;
   document.getElementById('chatSend').disabled = true;
 
-  let transcript = v.cues.map(c=>c.t+'s: '+c.text).join('\n');
-  if(transcript.length > CHAT_TRANSCRIPT_LIMIT){
-    transcript = transcript.slice(0, Math.floor(CHAT_TRANSCRIPT_LIMIT*0.7)) +
-      '\n...[middle trimmed]...\n' + transcript.slice(-Math.floor(CHAT_TRANSCRIPT_LIMIT*0.3));
-  }
+  const fullTranscript = v.cues.map(c=>c.t+'s: '+c.text).join('\n');
+  // Room for the conversation so far and a ~200 word answer.
+  const chatBudget = await transcriptBudget(1800);
+  const transcript = pickRelevantChunks(fullTranscript, question, chatBudget);
   const priorTurns = v.chat.slice(0, -1).slice(-CHAT_HISTORY_TURNS*2);
   const history = priorTurns.map(m=>(m.role==='user'?'Student: ':'Tutor: ')+m.text).join('\n');
 
@@ -4503,7 +4634,10 @@ async function sendChatMessage(){
     'Tutor:';
 
   try{
-    const res = await api.aiComplete(aiArgs({ prompt, maxTokens: 500, temperature: 0.4 }));
+    const res = await api.aiComplete(aiArgs({
+      prompt, maxTokens: 500, temperature: 0.4,
+      numCtx: await numCtxFor(prompt.length, 800)
+    }));
     if(!res || !res.ok) throw new Error((res && res.error) || 'No answer.');
     v.chat.push({role:'ai', text:String(res.text).trim(), ts:Date.now()});
   }catch(err){
@@ -4540,10 +4674,19 @@ function genPromptHtml(what){
   return '<div class="gen-box">Ready to generate from '+v.cues.length+' transcript lines.'+
     '<br><button class="btn-primary" id="goGen">Generate summary &amp; quiz</button></div>';
 }
+/* #summaryBox and #quizBox both render genPromptHtml(), so these ids exist
+   twice on the page. getElementById returns only the first, and this is called
+   from both renderers — so the first button collected two listeners and one
+   click ran the whole generation twice: two full round trips to the model, two
+   waits, for one click. Bind every match, and each of them only once. */
 function wireGenButton(){
-  const t = document.getElementById('goTr'); if(t) t.addEventListener('click', ()=>{ setSubTab('transcript'); fetchTranscript(); });
-  const a = document.getElementById('goAi'); if(a) a.addEventListener('click', ()=>openAiSettings());
-  const g = document.getElementById('goGen'); if(g) g.addEventListener('click', ()=>generateAll(false));
+  document.querySelectorAll('[id="goTr"],[id="goAi"],[id="goGen"]').forEach(el=>{
+    if(el.dataset.bound) return;
+    el.dataset.bound = '1';
+    if(el.id === 'goTr')      el.addEventListener('click', ()=>{ setSubTab('transcript'); fetchTranscript(); });
+    else if(el.id === 'goAi') el.addEventListener('click', ()=>openAiSettings());
+    else                      el.addEventListener('click', ()=>generateAll(false));
+  });
 }
 /* The shape the quiz must come back in.
  *
@@ -4582,15 +4725,15 @@ function quizSchema(count){
 
 /* The quiz prompt and its parsing live here rather than in the main process, so
    they run through whichever provider is selected — including a local one. */
-async function aiQuizFromTranscript(v, transcript){
-  const count = Math.max(3, Math.min(20, (state.ai && state.ai.count) || 8));
-  const LIMIT = 24000;
-  let text = transcript;
-  if(text.length > LIMIT){
-    text = text.slice(0, Math.floor(LIMIT*0.6)) + '\n...[middle trimmed]...\n' + text.slice(-Math.floor(LIMIT*0.4));
-  }
+/* One pass over one piece of transcript. Split out of aiQuizFromTranscript so a
+   video too long for the window can be done in pieces and merged, rather than
+   having its middle deleted — which on a two-hour tutorial threw away exactly
+   the part where the technique is taught. */
+async function aiQuizPass(v, text, count, partLabel){
   const prompt = 'You are helping a student actively learn from a video tutorial.\n\n'+
-    'VIDEO TITLE: '+(v.title||'Untitled')+'\n\nTRANSCRIPT (each line starts with its timestamp in seconds):\n'+text+'\n\n'+
+    'VIDEO TITLE: '+(v.title||'Untitled')+'\n'+
+    (partLabel ? 'This is '+partLabel+' of the video. Ask only about what is in this part.\n' : '')+
+    '\nTRANSCRIPT (each line starts with its timestamp in seconds):\n'+text+'\n\n'+
     'Produce a JSON object with EXACTLY this shape and nothing else:\n'+
     '{"summary":"3-5 sentence plain-English summary","keyPoints":["4-7 short takeaways"],'+
     '"questions":[{"difficulty":"easy","q":"question","options":["A","B","C","D"],"correct":0,"why":"why that is right","t":123}]}\n\n'+
@@ -4603,9 +4746,11 @@ async function aiQuizFromTranscript(v, transcript){
 
   // A constrained answer is longer than an unconstrained one — it cannot stop
   // early — so give it enough room for `count` full questions.
+  const answerTokens = Math.min(8000, 1200 + count * 320);
   const res = await api.aiComplete(aiArgs({
     prompt, temperature: 0.4, format: quizSchema(count),
-    maxTokens: Math.min(8000, 1200 + count * 320)
+    maxTokens: answerTokens,
+    numCtx: await numCtxFor(prompt.length, answerTokens + 400)
   }));
   if(!res || !res.ok) return res || { ok:false, error:'No answer' };
   let parsed;
@@ -4623,6 +4768,60 @@ async function aiQuizFromTranscript(v, transcript){
   return { ok:true, summary:String(parsed.summary||''), keyPoints:(parsed.keyPoints||[]).map(String).slice(0,10), questions };
 }
 
+/* A ceiling on passes, because each one is a full round trip to the model.
+   Only reached by a very long video on a very small window; when it is, the
+   passes are spread evenly across the video rather than taken from the front —
+   otherwise this would just relocate the bug it exists to fix, throwing the end
+   away instead of the middle. */
+const MAX_QUIZ_PASSES = 12;
+const PER_PASS_QUESTIONS = 3;
+
+async function aiQuizFromTranscript(v, transcript){
+  const count = Math.max(3, Math.min(20, (state.ai && state.ai.count) || 8));
+  // Reserve what the answer needs, then see how much transcript is left over.
+  const answerTokens = Math.min(8000, 1200 + count * 320);
+  const budget = await transcriptBudget(answerTokens + 600);
+
+  if(transcript.length <= budget) return aiQuizPass(v, transcript, count, null);
+
+  // Too long for one pass. Every part gets its share of the questions, so the
+  // quiz covers the whole video instead of its first and last few minutes.
+  /* A chunked pass writes three questions, not all of them, so it needs far
+     less room reserved for the answer than a single pass would. Budgeting for
+     the whole quiz on every chunk made the chunks small enough that an 8K
+     window needed fifteen passes for a video that fits in eight. */
+  const chunkBudget = await transcriptBudget(1200 + PER_PASS_QUESTIONS*320 + 600);
+  let chunks = chunkTranscript(transcript, chunkBudget);
+  const covered = chunks.length;
+  if(chunks.length > MAX_QUIZ_PASSES){
+    const step = chunks.length / MAX_QUIZ_PASSES;
+    chunks = Array.from({length:MAX_QUIZ_PASSES}, (_, i)=>chunks[Math.floor(i*step)]);
+  }
+  const per = Math.max(2, Math.round(count / chunks.length));
+  const parts = [];
+  for(let i=0;i<chunks.length;i++){
+    const want = i === chunks.length-1
+      ? Math.max(2, count - parts.reduce((a,p)=>a+p.questions.length, 0))
+      : per;
+    const r = await aiQuizPass(v, chunks[i], want, 'part '+(i+1)+' of '+chunks.length);
+    if(r && r.ok) parts.push(r);
+  }
+  if(!parts.length) return { ok:false, error:'No usable questions came back from any part of the video.' };
+
+  // Merge: questions in timestamp order so the quiz walks the video, key points
+  // deduplicated, summaries joined in order.
+  const questions = parts.flatMap(p=>p.questions).sort((a,b)=>(a.t||0)-(b.t||0)).slice(0, count);
+  const keyPoints = [...new Set(parts.flatMap(p=>p.keyPoints))].slice(0, 10);
+  return {
+    ok: true,
+    summary: parts.map(p=>p.summary).filter(Boolean).join(' '),
+    keyPoints, questions,
+    parts: parts.length,
+    // How many pieces the video really came to, when more than the pass ceiling.
+    sampled: covered > MAX_QUIZ_PASSES ? covered : 0
+  };
+}
+
 /* Small models like to wrap JSON in prose or a fence; dig it out either way. */
 function aiParseJson(text){
   let t = String(text||'').trim().replace(/^```(?:json)?\s*/i,'').replace(/\s*```$/,'');
@@ -4631,8 +4830,12 @@ function aiParseJson(text){
   return JSON.parse(t.slice(a, b+1));
 }
 
+// Belt and braces on the same problem: a local generation can take a minute or
+// more, and a second click during it would start a whole parallel run.
+let generating = false;
 async function generateAll(force){
   const v = currentVideo; if(!v) return;
+  if(generating) return;
   if(!v.cues.length){ setSubTab('transcript'); fetchTranscript(); return; }
   if(!aiIsLocal() && !aiKey){ openAiSettings(); return; }
   if(v.questions.length && !force){
@@ -4651,6 +4854,7 @@ async function generateAll(force){
   document.getElementById('summaryBox').innerHTML = busy;
 
   const transcript = v.cues.map(c=>c.t+'s: '+c.text).join('\n');
+  generating = true;
   try{
     const r = await aiQuizFromTranscript(v, transcript);
     if(!r || !r.ok) throw new Error((r && r.error) || 'Unknown error');
@@ -4666,6 +4870,8 @@ async function generateAll(force){
     document.getElementById('quizBox').innerHTML = fail;
     document.getElementById('summaryBox').innerHTML = fail;
     wireGenButton();
+  }finally{
+    generating = false;
   }
 }
 
