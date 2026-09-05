@@ -211,6 +211,29 @@ annotated (Courses item vs Learn video) and every note function works off it.
 Theater mode pins the stage with a CSS class and never re-parents the
 `<video>` — moving one drops its buffer and orphans every listener.
 
+## Statistics
+
+`state.history` is a small row per day (`xp`, `gold`, `dailies`, `weeklies`,
+`done`, per-goal xp), written by `logDay()` and kept forever — the same shape
+`srs.daily` already used. Quests previously stored only `lastDone`, so there
+was no way to ask what a month looked like; that history therefore starts at
+v1.12 and cannot be backfilled.
+
+**Only what is not already dated goes in `history`.** Flashcards
+(`srs.daily`), focus sessions and journal entries carry their own dates, so
+`statsByDay()` reads those at source. Keeping a second copy would drift.
+Because of that, the grid shows real history for those three from day one.
+
+`grant()` is the single hook for everything paying XP outside the quest
+lists. Dailies and weeklies do their XP inline, so they call `logDay()`
+themselves — including in their undo paths, or an undone quest still counts.
+
+Beware `dayKeyOf` — it already exists and returns a *weekday* from a date
+string. The stats helper is `tsDayKey`, and day offsets reuse `dateStrPlus`.
+A second `function dayKeyOf` silently replaced the first (declarations hoist,
+last one wins) and broke the whole tab; that is the third time this file has
+been bitten by a duplicate top-level name.
+
 ## Reference board
 
 A PureRef-style board (`Refs` tab) plus an always-on-top window meant to sit

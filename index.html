@@ -1306,6 +1306,59 @@
     .tree-side{width:auto; border-left:none; border-top:1px solid var(--border); max-height:44vh;}
   }
 
+  /* ============ STATS ============ */
+  .st-cards{display:grid; grid-template-columns:repeat(auto-fit, minmax(148px,1fr)); gap:12px; margin-bottom:22px;}
+  .st-card{background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-m); padding:14px 15px;}
+  .st-card .stv{font-family:var(--font-display); font-size:26px; color:var(--text); line-height:1.1;}
+  .st-card .stl{font-size:10.5px; letter-spacing:0.05em; color:var(--text-faint); text-transform:uppercase; margin-top:6px;}
+  .st-card .sts{font-size:11px; color:var(--text-dim); margin-top:4px;}
+  .st-card.accent .stv{color:var(--gold);}
+  .st-card.teal .stv{color:var(--teal);}
+
+  .st-sec{margin-bottom:26px;}
+  .st-sec-head{display:flex; align-items:baseline; justify-content:space-between; gap:12px; margin-bottom:11px;}
+  .st-sec-head h3{font-family:var(--font-display); font-size:12px; letter-spacing:0.07em;
+    text-transform:uppercase; color:var(--text-dim); margin:0;}
+  .st-sec-head span{font-size:11px; color:var(--text-faint);}
+  .st-box{background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-m); padding:15px;}
+
+  /* Consistency grid — a year of days, one column per week. */
+  .st-heat{display:flex; gap:3px; overflow-x:auto; padding-bottom:4px;}
+  .st-heat-col{display:flex; flex-direction:column; gap:3px;}
+  .st-cell{width:11px; height:11px; border-radius:2px; background:var(--surface-3); flex:0 0 auto;}
+  .st-cell.l1{background:color-mix(in srgb, var(--gold) 22%, var(--surface-3));}
+  .st-cell.l2{background:color-mix(in srgb, var(--gold) 45%, var(--surface-3));}
+  .st-cell.l3{background:color-mix(in srgb, var(--gold) 70%, var(--surface-3));}
+  .st-cell.l4{background:var(--gold);}
+  .st-cell.future{background:transparent;}
+  .st-cell.today{box-shadow:0 0 0 1.5px var(--teal);}
+  .st-heat-legend{display:flex; align-items:center; gap:6px; justify-content:flex-end;
+    margin-top:9px; font-size:10px; color:var(--text-faint);}
+  .st-heat-months{display:flex; gap:3px; margin-bottom:5px; font-size:9.5px; color:var(--text-faint);}
+  .st-heat-months span{flex:0 0 auto; width:14px;}
+
+  /* Simple bar chart, drawn as divs so there is no chart library to load. */
+  .st-bars{display:flex; align-items:flex-end; gap:3px; height:130px;}
+  .st-bar{flex:1 1 0; min-width:3px; display:flex; flex-direction:column; justify-content:flex-end; height:100%;}
+  .st-bar i{display:block; width:100%; background:linear-gradient(180deg,var(--gold),var(--gold-soft));
+    border-radius:2px 2px 0 0; min-height:2px;}
+  .st-bar.empty i{background:var(--surface-3);}
+  .st-bar-axis{display:flex; justify-content:space-between; font-size:10px; color:var(--text-faint); margin-top:7px;}
+
+  .st-goal{display:flex; align-items:center; gap:10px; margin-bottom:9px;}
+  .st-goal-name{flex:0 0 130px; font-size:12px; color:var(--text-dim); overflow:hidden;
+    text-overflow:ellipsis; white-space:nowrap;}
+  .st-goal-track{flex:1; height:8px; border-radius:4px; background:var(--surface-3); overflow:hidden;}
+  .st-goal-track i{display:block; height:100%; border-radius:4px;}
+  .st-goal-val{flex:0 0 78px; text-align:right; font-family:var(--font-mono); font-size:11px; color:var(--text-faint);}
+
+  .st-split{display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:16px;}
+  .st-rows{display:flex; flex-direction:column; gap:8px;}
+  .st-row{display:flex; align-items:baseline; justify-content:space-between; gap:10px; font-size:12.5px;}
+  .st-row span:first-child{color:var(--text-dim);}
+  .st-row span:last-child{font-family:var(--font-mono); font-size:11.5px; color:var(--text);}
+  .st-note{font-size:10.5px; color:var(--text-faint); margin-top:10px; line-height:1.5;}
+
   /* ============ REFERENCE BOARD ============ */
   /* An infinite canvas: .ref-stage is the fixed viewport, .ref-world is an
      unbounded plane inside it that gets panned and zoomed by one transform.
@@ -1693,6 +1746,7 @@
     <button class="tab" data-tab="journal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4h11a2 2 0 0 1 2 2v14H7a2 2 0 0 1-2-2z"/><path d="M9 8h6M9 12h6M9 16h3"/></svg> Journal <span class="tabcount" id="tabJournalCount">0</span></button>
     <button class="tab" data-tab="cards"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="6" width="14" height="13" rx="2"/><path d="M7 3h12a2 2 0 0 1 2 2v11"/></svg> Cards <span class="tabcount" id="tabCardsCount">0</span></button>
     <button class="tab" data-tab="refs"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="13" height="10" rx="1.5"/><rect x="8" y="10" width="13" height="10" rx="1.5"/></svg> Refs <span class="tabcount" id="tabRefsCount">0</span></button>
+    <button class="tab" data-tab="stats"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg> Stats</button>
   </nav>
   <button class="tl-bar" id="tlBar" title="Manage your timeline"></button>
 </header>
@@ -1963,6 +2017,16 @@
       </div>
       <div class="srs-stats" id="srsStats"></div>
       <div class="srs-decks" id="srsDecks"></div>
+    </section>
+  </div>
+
+  <div class="tabpanel" id="panel-stats">
+    <section style="margin-top:0;">
+      <div class="section-head">
+        <h2>Statistics</h2>
+        <div class="section-sub"><span id="stRange"></span></div>
+      </div>
+      <div id="statsBody"></div>
     </section>
   </div>
 
@@ -2609,6 +2673,7 @@ function freshState(){
     timeline: defaultTimeline(),
     journal: { entries:[], lastXpDay:null },
     grades: defaultGrades(),
+    history: {},
     refs: defaultRefs(),
     srs: defaultSrs(),
     focusSessions: [], questFavorites: [],
@@ -2758,6 +2823,7 @@ function migrate(s){
   s.journal.entries.forEach(e=>{ if(!Array.isArray(e.images)) e.images = []; });
   if(!s.timeline || !Array.isArray(s.timeline.events)) s.timeline = defaultTimeline();
   if(!s.timeline.start) s.timeline.start = todayStr();
+  if(!s.history || typeof s.history !== 'object' || Array.isArray(s.history)) s.history = {};
   if(!s.refs || !Array.isArray(s.refs.boards) || !s.refs.boards.length) s.refs = defaultRefs();
   s.refs.boards.forEach(b=>{
     if(!Array.isArray(b.items)) b.items = [];
@@ -3170,6 +3236,17 @@ function setTab(name){
   state.activeTab = name;
   document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active', t.dataset.tab===name));
   document.querySelectorAll('.tabpanel').forEach(p=>p.classList.toggle('active', p.id==='panel-'+name));
+  // Stats are read on demand rather than recomputed on every save. It runs
+  // after the panel is shown, and inside a guard: a sum that throws must not
+  // be able to stop the tab from opening.
+  if(name === 'stats' && typeof renderStats === 'function'){
+    try{ renderStats(); }
+    catch(e){
+      console.error('renderStats failed: ' + (e && e.stack ? e.stack : e));
+      const b = document.getElementById('statsBody');
+      if(b) b.innerHTML = '<div class="empty-row" style="color:var(--danger)">Could not build the stats: '+esc(String(e && e.message || e))+'</div>';
+    }
+  }
   saveState();
 }
 document.getElementById('tabbar').addEventListener('click', e=>{
@@ -5415,6 +5492,7 @@ function renderAll(){
   if(typeof renderSrs==='function') renderSrs();
   // Picks up board edits made in the other window, which shares this save.
   if(typeof refRenderAll==='function') refRenderAll();
+  if(state.activeTab==='stats' && typeof renderStats==='function') renderStats();
   renderHeader();
   if(typeof renderCourseLibrary==='function' && !activeCourseId) renderCourseLibrary();
   renderRadar();
@@ -5518,11 +5596,39 @@ function reconcile(){
 }
 
 /* ============ COMPLETION ============ */
+/* ---------- The daily ledger ----------
+ * Quests only ever recorded "last done", so there was no way to ask what a
+ * month looked like. This keeps one small row per day, forever — the same
+ * trick srs.daily already uses, and small enough that years of it stay well
+ * inside the sync limit.
+ *
+ * Only what is not already dated somewhere else goes here. Flashcards
+ * (srs.daily), focus sessions and journal entries all carry their own dates
+ * already, so the stats read those at source rather than keeping a second,
+ * driftable copy. */
+function dayRec(day){
+  const d = day || todayStr();
+  if(!state.history[d]) state.history[d] = { xp:0, gold:0, dailies:0, weeklies:0, done:0, goals:{} };
+  const r = state.history[d];
+  if(!r.goals) r.goals = {};
+  return r;
+}
+function logDay({ xp=0, gold=0, dailies=0, weeklies=0, done=0, goalId=null }){
+  const r = dayRec();
+  r.xp += xp; r.gold += gold;
+  r.dailies += dailies; r.weeklies += weeklies; r.done += done;
+  if(goalId && xp) r.goals[goalId] = (r.goals[goalId]||0) + xp;
+  return r;
+}
+
 function grant(xp, goalId){
   const g = goalById(goalId);
   state.player.xp += xp;
   state.player.gold += Math.round(xp/2);
   if(g) g.xp += xp;
+  // Everything that pays XP outside the quest lists — objectives, course
+  // videos, skill-tree nodes, journal, flashcards — comes through here.
+  logDay({ xp, gold:Math.round(xp/2), done:1, goalId });
 }
 function completeDaily(id){
   const q = state.dailies.find(x=>x.id===id);
@@ -5537,6 +5643,7 @@ function completeDaily(id){
   state.player.xp += q.xp; state.player.gold += q.gold;
   if(g) g.xp += q.xp;
   q.lastDone = today;
+  logDay({ xp:q.xp, gold:q.gold, dailies:1, done:1, goalId:q.goal });
   if(state.player.lastActiveDate!==today){
     const diff = daysBetween(state.player.lastActiveDate, today);
     state.player.streak = (diff===1) ? state.player.streak+1 : 1;
@@ -5554,6 +5661,8 @@ function completeDaily(id){
       state.player.xp=snap.xp; state.player.gold=snap.gold; state.player.streak=snap.streak;
       state.player.lastActiveDate=snap.last; state.player.longestStreak=snap.longest;
       if(g) g.xp=snap.gxp; q.lastDone=snap.was; state.log.pop();
+      // Take it back out of the ledger too, or an undone quest still counts.
+      logDay({ xp:-q.xp, gold:-q.gold, dailies:-1, done:-1, goalId:q.goal });
       saveState(); renderAll();
     }
   });
@@ -5572,6 +5681,7 @@ function completeWeekly(id, silent){
   state.player.xp += q.xp; state.player.gold += q.gold;
   if(g) g.xp += q.xp;
   q.lastDoneWeek = wk;
+  logDay({ xp:q.xp, gold:q.gold, weeklies:1, done:1, goalId:q.goal });
   pushLog('Weekly quest complete: <b>'+esc(q.title)+'</b>', '+'+q.xp+'xp', 'weekly', q.goal);
   renderAll(); checkAchievements();
   burst(window.innerWidth/2, window.innerHeight/3, g?g.color:'#ff2ea6');
@@ -5580,6 +5690,7 @@ function completeWeekly(id, silent){
     undo:()=>{
       state.player.xp=snap.xp; state.player.gold=snap.gold;
       if(g) g.xp=snap.gxp; q.lastDoneWeek=snap.was; state.log.pop();
+      logDay({ xp:-q.xp, gold:-q.gold, weeklies:-1, done:-1, goalId:q.goal });
       saveState(); renderAll();
     }
   });
@@ -9329,6 +9440,223 @@ document.addEventListener('keydown', e=>{
   if(e.key==='Escape' && document.getElementById('treeVeil').classList.contains('open')) closeSkillTree();
 });
 
+
+/* ============ STATISTICS ============ *
+ * Everything here is read from data that already exists rather than kept as
+ * a second copy: quests come from state.history, flashcards from srs.daily,
+ * focus from focusSessions and journal entries from their own dates. Nothing
+ * is counted twice and nothing can drift out of step.
+ * ================================================================ */
+
+/* Turns a Date or a timestamp into 'YYYY-MM-DD'.
+ *
+ * Deliberately NOT called dayKeyOf: that name is already taken further down
+ * by a function returning a weekday ('mon', 'tue'), and a second declaration
+ * would silently replace it — function declarations hoist, so the last one
+ * defined wins wherever it sits in the file. */
+function tsDayKey(ts){
+  const d = (ts instanceof Date) ? ts : new Date(ts);
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+// n days ago. dateStrPlus() already does this, so don't write a second one.
+const dayOffsetStr = (n)=> dateStrPlus(-n);
+
+/* One row per day, merged from every source that records a date. */
+function statsByDay(){
+  const map = {};
+  const get = d => map[d] || (map[d] = { xp:0, dailies:0, weeklies:0, done:0, cards:0, focusMin:0, journal:0 });
+
+  Object.keys(state.history||{}).forEach(d=>{
+    const r = state.history[d] || {}, m = get(d);
+    m.xp += r.xp||0; m.dailies += r.dailies||0; m.weeklies += r.weeklies||0; m.done += r.done||0;
+  });
+  const sd = (state.srs && state.srs.daily) || {};
+  Object.keys(sd).forEach(d=>{ get(d).cards += (sd[d].rev||0); });
+  (state.focusSessions||[]).forEach(s=>{
+    const ts = s.endedAt || s.startedAt;
+    if(ts) get(tsDayKey(ts)).focusMin += Math.round((s.durationSec||0)/60);
+  });
+  ((state.journal && state.journal.entries) || []).forEach(e=>{
+    const d = e.day || (e.ts ? tsDayKey(e.ts) : null);
+    if(d) get(d).journal += 1;
+  });
+  return map;
+}
+
+/* One number standing for "how much happened", so the grid can shade a day
+   without pretending an hour of focus and one flashcard are the same thing. */
+function activityScore(m){
+  if(!m) return 0;
+  return (m.dailies*2) + (m.weeklies*3) + m.done + (m.cards/10) + (m.focusMin/15) + (m.journal*2);
+}
+
+function statStreaks(map){
+  let cur = 0;
+  for(let i=0; i<3660; i++){
+    const m = map[dayOffsetStr(i)];
+    if(m && activityScore(m) > 0) cur++;
+    else if(i > 0) break;          // today still counts as open, not as broken
+  }
+  const days = Object.keys(map).filter(d=>activityScore(map[d]) > 0).sort();
+  let best = 0, run = 0, prev = null;
+  days.forEach(d=>{
+    run = (prev && daysBetween(prev, d) === 1) ? run+1 : 1;
+    if(run > best) best = run;
+    prev = d;
+  });
+  return { cur, best, activeDays: days.length };
+}
+
+const MONTH_ABBR = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+function renderStats(){
+  const host = document.getElementById('statsBody');
+  if(!host) return;
+  const map = statsByDay();
+  const streak = statStreaks(map);
+  const lvl = levelFromXP(state.player.xp, 150);
+
+  const sum = (fn, days)=> days.reduce((t,d)=> t + fn(map[d]||{}), 0);
+  const last = (n)=> Array.from({length:n}, (_,i)=>dayOffsetStr(i));
+  const d30 = last(30), d7 = last(7);
+
+  const cards = srsStats();
+  const focus = (state.focusSessions||[]);
+  const focusSec = focus.reduce((t,s)=>t+(s.durationSec||0), 0);
+  const jEntries = ((state.journal && state.journal.entries) || []).length;
+  const courseDone = (state.courses||[]).reduce((t,c)=>
+    t + Object.keys(c.items||{}).filter(k=>c.items[k].done).length, 0);
+  const videosDone = (state.videos||[]).filter(v=>v.duration>0 && v.lastPos/v.duration >= 0.9).length;
+  const quizzed = (state.videos||[]).filter(v=>v.quizBest!=null).length;
+
+  const fmtH = (sec)=>{
+    const h = Math.floor(sec/3600), m = Math.round((sec%3600)/60);
+    return h ? h+'h '+m+'m' : m+'m';
+  };
+
+  /* ---- headline ---- */
+  const headline =
+    '<div class="st-cards">'+
+      card(streak.cur+'<span style="font-size:14px;color:var(--text-faint)">d</span>', 'Current streak',
+           streak.cur ? 'Keep it alive today' : 'Do anything to start one', 'accent')+
+      card(streak.best+'<span style="font-size:14px;color:var(--text-faint)">d</span>', 'Longest streak', '')+
+      card(streak.activeDays, 'Active days', 'since you started')+
+      card(lvl, 'Level', state.player.xp+' XP total', 'teal')+
+      card(sum(m=>m.xp||0, d7), 'XP this week', sum(m=>m.xp||0, d30)+' in 30 days')+
+      card(sum(m=>m.done||0, d30), 'Things finished', 'last 30 days')+
+    '</div>';
+
+  function card(value, label, sub, cls){
+    return '<div class="st-card'+(cls?' '+cls:'')+'">'+
+      '<div class="stv">'+value+'</div><div class="stl">'+esc(label)+'</div>'+
+      (sub?'<div class="sts">'+esc(sub)+'</div>':'')+'</div>';
+  }
+
+  /* ---- consistency grid ---- */
+  const WEEKS = 52;   // a full year; cell+gap is 14px, so it lands ~728px wide
+  const today = new Date();
+  const dow = (today.getDay()+6)%7;                    // 0 = Monday
+  const start = new Date(today);
+  start.setDate(start.getDate() - dow - (WEEKS-1)*7);  // Monday of the first column
+  const todayKeyStr = todayStr();
+
+  let cols = '', months = '', prevMonth = -1;
+  for(let w=0; w<WEEKS; w++){
+    const colStart = new Date(start); colStart.setDate(colStart.getDate()+w*7);
+    months += '<span>'+(colStart.getMonth()!==prevMonth ? MONTH_ABBR[colStart.getMonth()] : '')+'</span>';
+    if(colStart.getMonth()!==prevMonth) prevMonth = colStart.getMonth();
+    let cells = '';
+    for(let r=0; r<7; r++){
+      const d = new Date(colStart); d.setDate(d.getDate()+r);
+      const key = tsDayKey(d);
+      if(d > today){ cells += '<div class="st-cell future"></div>'; continue; }
+      const m = map[key];
+      const s = activityScore(m);
+      const lv = s === 0 ? '' : s < 3 ? ' l1' : s < 6 ? ' l2' : s < 11 ? ' l3' : ' l4';
+      const title = key + (m
+        ? ' · '+[m.dailies?m.dailies+' dailies':'', m.weeklies?m.weeklies+' weeklies':'',
+                 m.cards?m.cards+' cards':'', m.focusMin?m.focusMin+'m focus':'',
+                 m.journal?m.journal+' journal':''].filter(Boolean).join(', ')
+        : ' · nothing');
+      cells += '<div class="st-cell'+lv+(key===todayKeyStr?' today':'')+'" title="'+esc(title)+'"></div>';
+    }
+    cols += '<div class="st-heat-col">'+cells+'</div>';
+  }
+  const heat =
+    '<div class="st-sec"><div class="st-sec-head"><h3>Consistency</h3><span>last 12 months · hover a day</span></div>'+
+      '<div class="st-box">'+
+        '<div class="st-heat-months">'+months+'</div>'+
+        '<div class="st-heat">'+cols+'</div>'+
+        '<div class="st-heat-legend">less'+
+          '<span class="st-cell"></span><span class="st-cell l1"></span><span class="st-cell l2"></span>'+
+          '<span class="st-cell l3"></span><span class="st-cell l4"></span>more</div>'+
+      '</div></div>';
+
+  /* ---- 30-day XP ---- */
+  const series = d30.slice().reverse().map(d=>({ d, v:(map[d]||{}).xp||0 }));
+  const peak = Math.max(1, ...series.map(s=>s.v));
+  const bars = series.map(s=>
+    '<div class="st-bar'+(s.v?'':' empty')+'" title="'+esc(s.d+' · '+s.v+' XP')+'">'+
+      '<i style="height:'+(s.v ? Math.max(4, Math.round(s.v/peak*100)) : 2)+'%"></i></div>').join('');
+  const trend =
+    '<div class="st-sec"><div class="st-sec-head"><h3>XP per day</h3><span>last 30 days · peak '+peak+'</span></div>'+
+      '<div class="st-box"><div class="st-bars">'+bars+'</div>'+
+      '<div class="st-bar-axis"><span>'+esc(series[0].d.slice(5))+'</span><span>today</span></div></div></div>';
+
+  /* ---- where the effort went ---- */
+  const goals = (state.goals||[]).slice().sort((a,b)=>(b.xp||0)-(a.xp||0));
+  const goalMax = Math.max(1, ...goals.map(g=>g.xp||0));
+  const goalRows = goals.length ? goals.map(g=>
+    '<div class="st-goal">'+
+      '<span class="st-goal-name">'+esc(g.name)+'</span>'+
+      '<span class="st-goal-track"><i style="width:'+Math.round((g.xp||0)/goalMax*100)+'%; background:'+g.color+'"></i></span>'+
+      '<span class="st-goal-val">'+(g.xp||0)+' XP</span></div>'
+  ).join('') : '<div class="empty-row">No quest lines yet.</div>';
+  const byGoal =
+    '<div class="st-sec"><div class="st-sec-head"><h3>Where the effort went</h3><span>XP per quest line, all time</span></div>'+
+      '<div class="st-box">'+goalRows+'</div></div>';
+
+  /* ---- breakdowns ---- */
+  const row = (a,b)=>'<div class="st-row"><span>'+esc(a)+'</span><span>'+esc(String(b))+'</span></div>';
+  const breakdown =
+    '<div class="st-sec"><div class="st-sec-head"><h3>By area</h3><span>all time unless noted</span></div>'+
+    '<div class="st-split">'+
+      '<div class="st-box"><div class="st-sec-head"><h3>Flashcards</h3></div><div class="st-rows">'+
+        row('Reviews, last 30 days', sum(m=>m.cards||0, d30))+
+        row('Cards in the deck', cards.totalCards)+
+        row('Words learned', cards.totalNotes)+
+        row('Mature (21d+)', cards.mature)+
+        row('Still learning', cards.learning + cards.fresh)+
+        row('Retention, 30 days', cards.retention == null ? '—' : cards.retention+'%')+
+        row('Study streak', cards.streak+'d')+
+      '</div></div>'+
+      '<div class="st-box"><div class="st-sec-head"><h3>Focus</h3></div><div class="st-rows">'+
+        row('Total focused', fmtH(focusSec))+
+        row('Sessions', focus.length)+
+        row('Average session', focus.length ? fmtH(Math.round(focusSec/focus.length)) : '—')+
+        row('Last 7 days', sum(m=>m.focusMin||0, d7)+'m')+
+      '</div></div>'+
+      '<div class="st-box"><div class="st-sec-head"><h3>Learning</h3></div><div class="st-rows">'+
+        row('Videos finished', videosDone)+
+        row('Quizzes taken', quizzed)+
+        row('Course videos done', courseDone)+
+        row('Saved to library', (state.videos||[]).length)+
+      '</div></div>'+
+      '<div class="st-box"><div class="st-sec-head"><h3>Journal</h3></div><div class="st-rows">'+
+        row('Entries', jEntries)+
+        row('Days written on', Object.keys(map).filter(d=>(map[d].journal||0)>0).length)+
+        row('This week', sum(m=>m.journal||0, d7))+
+      '</div></div>'+
+    '</div></div>';
+
+  const oldest = Object.keys(map).sort()[0];
+  const rangeEl = document.getElementById('stRange');
+  if(rangeEl) rangeEl.textContent = oldest ? 'since '+oldest : '';
+
+  host.innerHTML = headline + heat + trend + byGoal + breakdown +
+    '<div class="st-note">Flashcards, focus sessions and journal entries were already dated, so their history is real. '+
+    'Quest completions only started being recorded per-day in v1.12 &mdash; that part of the grid fills in from here on.</div>';
+}
 
 /* ============ REFERENCE BOARD ============ *
  * A PureRef-style board: images on an unbounded plane you pan and zoom.
