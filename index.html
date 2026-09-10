@@ -801,6 +801,25 @@
   .nudge-x:hover{color:var(--text);}
 
   /* ---------- Focus timer ---------- */
+  /* Focus panel: hourglass beside the readout. */
+  .focus-stage{display:flex; align-items:center; justify-content:center; gap:18px; margin:10px 0 4px;}
+  .focus-read{min-width:0;}
+  .hourglass{flex:0 0 auto; width:58px;}
+  .hourglass svg{width:100%; height:auto; display:block;}
+  .hg-glass{fill:var(--surface-2); stroke:var(--border); stroke-width:2; stroke-linejoin:round;}
+  .hg-frame{stroke:var(--text-faint); stroke-width:3; stroke-linecap:round; opacity:0.7;}
+  .hg-sand{fill:var(--gold); transition:y .9s linear, height .9s linear;}
+  .hg-stream{stroke:var(--gold); stroke-width:1.6; opacity:0; transition:opacity .3s;}
+  /* Freeform has no end to drain towards, so it breathes rather than lying. */
+  .hourglass.freeform .hg-sand{animation:hgBreathe 2.6s ease-in-out infinite;}
+  .hourglass.paused .hg-sand{fill:var(--text-faint);}
+  .hourglass.paused .hg-stream{opacity:0 !important;}
+  @keyframes hgBreathe{0%,100%{opacity:1} 50%{opacity:0.45}}
+  @media (prefers-reduced-motion: reduce){
+    .hg-sand{transition:none;}
+    .hourglass.freeform .hg-sand{animation:none;}
+  }
+
   .timer-display{font-family:var(--font-mono); font-size:42px; text-align:center; margin:6px 0 2px; color:var(--text); font-variant-numeric:tabular-nums;}
   .timer-sub{text-align:center; font-size:11.5px; color:var(--text-faint); margin-bottom:16px;}
   .timer-controls{display:flex; gap:8px; justify-content:center; margin-bottom:14px; flex-wrap:wrap;}
@@ -4156,6 +4175,7 @@ function showLevelUp(lvl){
   document.getElementById('levelUpSub').textContent = titleForLevel(lvl)+' rank reached. Keep going.';
   document.getElementById('levelUpVeil').classList.add('open');
   burst(window.innerWidth/2, window.innerHeight/2, '#ff2ea6');
+  sfx('levelup');
 }
 document.getElementById('levelUpClose').addEventListener('click', ()=>document.getElementById('levelUpVeil').classList.remove('open'));
 
@@ -4248,6 +4268,7 @@ function completeDaily(id){
 
   const row = document.querySelector('.quest-item[data-id="'+id+'"]');
   if(row){ const r = row.getBoundingClientRect(); burst(r.left+24, r.top+r.height/2, g?g.color:'#ff2ea6'); }
+  sfx('complete');
   showToast({
     title:'+'+q.xp+' XP · +'+q.gold+' gold', sub:q.title,
     undo:()=>{
@@ -4278,6 +4299,7 @@ function completeWeekly(id, silent){
   pushLog('Weekly quest complete: <b>'+esc(q.title)+'</b>', '+'+q.xp+'xp', 'weekly', q.goal);
   renderAll(); checkAchievements();
   burst(window.innerWidth/2, window.innerHeight/3, g?g.color:'#ff2ea6');
+  sfx('weekly');
   showToast({
     title:'Weekly complete · +'+q.xp+' XP', sub:q.title, big:true,
     undo:()=>{
@@ -4659,6 +4681,7 @@ function openMilestoneGate(goalId, msId){
       pushLog('Milestone complete: <b>'+esc(ms.title)+'</b> ('+esc(g.name)+')', '+'+opt.xp+'xp', 'complete', goalId);
       saveState(); renderAll(); checkAchievements();
       burst(window.innerWidth/2, window.innerHeight/3, g.color);
+      sfx('weekly');
       showToast({title:'Milestone complete &middot; +'+opt.xp+' XP', sub:ms.title, big:true});
       if(levelFromXP(state.player.xp,150)>prevLevel) setTimeout(()=>showLevelUp(levelFromXP(state.player.xp,150)), 350);
       openQuestLineDetail(goalId, 'roadmap');
@@ -4996,6 +5019,69 @@ function openQuickMenu(kind, qid){
   renderMenu();
   document.getElementById('modalVeil').classList.add('open');
 }
+/* ============ SOUND ============ *
+ * Synthesised, not sampled. Audio files would mean shipping binaries, a CSP
+ * change and a bundle that grows with every cue; a few oscillators cost
+ * nothing, work offline and can be retuned by editing numbers.
+ *
+ * The context is created on the first real gesture — browsers refuse to start
+ * one before that, and building it at load leaves a permanently suspended
+ * context behind. */
+const SFX_STORE = 'questline_sfx_v1';
+let sfxCfg = (function(){
+  try{ const s = JSON.parse(localStorage.getItem(SFX_STORE)); if(s) return Object.assign({on:true, vol:0.5}, s); }catch(e){}
+  return { on:true, vol:0.5 };
+})();
+function saveSfxCfg(){ try{ localStorage.setItem(SFX_STORE, JSON.stringify(sfxCfg)); }catch(e){} }
+
+let audioCtx = null;
+function ac(){
+  if(!sfxCfg.on) return null;
+  try{
+    if(!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if(audioCtx.state === 'suspended') audioCtx.resume();
+    return audioCtx;
+  }catch(e){ return null; }
+}
+
+/* One note. `type` shapes the timbre, the gain envelope keeps it from clicking. */
+function tone(freq, startAt, dur, gain, type){
+  const c = ac(); if(!c) return;
+  const o = c.createOscillator(), g = c.createGain();
+  o.type = type || 'sine';
+  o.frequency.setValueAtTime(freq, c.currentTime + startAt);
+  const peak = Math.max(0.0001, gain * sfxCfg.vol);
+  g.gain.setValueAtTime(0.0001, c.currentTime + startAt);
+  g.gain.exponentialRampToValueAtTime(peak, c.currentTime + startAt + 0.012);
+  g.gain.exponentialRampToValueAtTime(0.0001, c.currentTime + startAt + dur);
+  o.connect(g); g.connect(c.destination);
+  o.start(c.currentTime + startAt);
+  o.stop(c.currentTime + startAt + dur + 0.02);
+}
+
+/* Named cues rather than notes at the call sites, so the feel can be changed
+   in one place. Frequencies are a pentatonic-ish set — nothing lands sour
+   however two cues overlap. */
+const SFX = {
+  complete: ()=>{ tone(659.25, 0, 0.16, 0.20, 'triangle'); tone(987.77, 0.075, 0.26, 0.16, 'triangle'); },
+  weekly:   ()=>{ tone(523.25, 0, 0.16, 0.18, 'triangle'); tone(783.99, 0.08, 0.18, 0.17, 'triangle');
+                  tone(1046.5, 0.16, 0.34, 0.15, 'triangle'); },
+  levelup:  ()=>{ [523.25, 659.25, 783.99, 1046.5].forEach((f,i)=>tone(f, i*0.09, 0.32, 0.17, 'triangle')); },
+  reward:   ()=>{ tone(880, 0, 0.10, 0.16, 'sine'); tone(1318.5, 0.07, 0.30, 0.14, 'sine'); },
+  start:    ()=>{ tone(392, 0, 0.10, 0.13, 'sine'); tone(587.33, 0.06, 0.16, 0.11, 'sine'); },
+  pause:    ()=>{ tone(392, 0, 0.14, 0.10, 'sine'); },
+  // End of a pomodoro: a warm bell, repeated, so it carries across a room.
+  done:     ()=>{ [0, 0.42, 0.84].forEach(t=>{ tone(880, t, 0.5, 0.20, 'sine'); tone(1318.5, t+0.01, 0.42, 0.10, 'sine'); }); },
+  card:     ()=>{ tone(740, 0, 0.07, 0.10, 'sine'); },
+  wrong:    ()=>{ tone(233.08, 0, 0.18, 0.12, 'sine'); },
+  tick:     ()=>{ tone(1200, 0, 0.02, 0.05, 'square'); }
+};
+function sfx(name){
+  if(!sfxCfg.on) return;
+  const f = SFX[name];
+  if(f){ try{ f(); }catch(e){} }
+}
+
 /* ============ FOCUS TIMER ============ */
 function fmtMMSS(sec){
   sec = Math.max(0, Math.floor(sec));
@@ -5071,12 +5157,16 @@ function timerTick(){
     if(timerElapsedSec(t) >= t.plannedSec){
       t.notifiedDone = true; saveState();
       const result = stopTimer();
+      sfx('done');
       showToast({title:'Pomodoro complete', sub:'25 minutes done — nice work.', big:true});
       offerCompleteIfLinked(result);
     }
   }
   renderTimerPill();
   renderWidgetUI();
+  // The focus panel is structure-once, numbers-on-tick; without this the big
+  // countdown sits frozen while the timer underneath it runs.
+  paintTimerControl();
 }
 /* An idle app has no reason to wake up once a second. The interval is
    reconciled from renderTimerPill() rather than from start/stop/pause/resume,
@@ -5130,42 +5220,110 @@ function openTimerPicker(kind, questId){
     return {kind:k, questId:id};
   };
   document.getElementById('tpFreeform').addEventListener('click', ()=>{
-    const t = resolveTarget(); startTimer(t.kind, t.questId, 'freeform'); closeModal(); openTimerControl();
+    const t = resolveTarget(); startTimer(t.kind, t.questId, 'freeform'); closeModal(); sfx('start'); openTimerControl();
   });
   document.getElementById('tpPomodoro').addEventListener('click', ()=>{
-    const t = resolveTarget(); startTimer(t.kind, t.questId, 'pomodoro'); closeModal(); openTimerControl();
+    const t = resolveTarget(); startTimer(t.kind, t.questId, 'pomodoro'); closeModal(); sfx('start'); openTimerControl();
   });
   document.getElementById('modalVeil').classList.add('open');
 }
+/* The focus panel.
+ *
+ * Structure is drawn once and the numbers are repainted on the tick. It used
+ * to render only on a button press, which is why the big countdown sat frozen
+ * while the timer underneath it was running perfectly well. */
 function openTimerControl(){
   const t = state.activeTimer; if(!t) return;
   const m = document.getElementById('modalBody');
+
   const render = ()=>{
     const cur = state.activeTimer;
     if(!cur){ closeModal(); return; }
-    const elapsed = timerElapsedSec(cur);
-    const remaining = cur.plannedSec!=null ? Math.max(0, cur.plannedSec-elapsed) : null;
     m.innerHTML = '<h3>'+(cur.type==='pomodoro'?'Pomodoro':'Freeform Focus')+'</h3>'+
-      '<div class="timer-display">'+fmtMMSS(remaining!=null?remaining:elapsed)+'</div>'+
-      '<div class="timer-sub">'+esc(cur.questTitle)+(cur.paused?' &middot; paused':'')+(cur.interruptions?' &middot; '+cur.interruptions+' distraction'+(cur.interruptions===1?'':'s'):'')+'</div>'+
+      '<div class="focus-stage">'+
+        hourglassHtml()+
+        '<div class="focus-read">'+
+          '<div class="timer-display" id="tcTime">--:--</div>'+
+          '<div class="timer-sub" id="tcSub"></div>'+
+        '</div>'+
+      '</div>'+
       '<div class="timer-controls">'+
-        '<button class="btn-text" id="tcPauseResume">'+(cur.paused?'Resume':'Pause')+'</button>'+
+        '<button class="btn-text" id="tcPauseResume">Pause</button>'+
         '<button class="btn-text" id="tcDistracted">Distracted</button>'+
         '<button class="btn-primary" id="tcStop">Stop</button>'+
       '</div>'+
       '<div class="actions"><button class="btn-text" id="mCancel">Close (keeps running)</button></div>';
     document.getElementById('mCancel').addEventListener('click', closeModal);
-    document.getElementById('tcPauseResume').addEventListener('click', ()=>{ cur.paused?resumeTimer():pauseTimer(); render(); });
-    document.getElementById('tcDistracted').addEventListener('click', ()=>{ addInterruption(); render(); });
+    document.getElementById('tcPauseResume').addEventListener('click', ()=>{
+      const c = state.activeTimer; if(!c) return;
+      if(c.paused){ resumeTimer(); sfx('start'); } else { pauseTimer(); sfx('pause'); }
+      paintTimerControl();
+    });
+    document.getElementById('tcDistracted').addEventListener('click', ()=>{ addInterruption(); sfx('wrong'); paintTimerControl(); });
     document.getElementById('tcStop').addEventListener('click', ()=>{
       const result = stopTimer();
       closeModal();
+      sfx('pause');
       showToast({title:'Focus session logged', sub:fmtMMSS(result.elapsed)+' focused'});
       offerCompleteIfLinked(result);
     });
+    paintTimerControl();
   };
   render();
   document.getElementById('modalVeil').classList.add('open');
+}
+
+/* An hourglass whose sand actually tracks the session: the top drains and the
+   bottom fills. A freeform timer has no end to drain towards, so it breathes
+   instead of pretending to have a target. */
+function hourglassHtml(){
+  return '<div class="hourglass" id="tcGlass">'+
+    '<svg viewBox="0 0 60 96" aria-hidden="true">'+
+      '<defs><clipPath id="hgTop"><path d="M8 6 L52 6 L34 46 L26 46 Z"/></clipPath>'+
+      '<clipPath id="hgBot"><path d="M26 50 L34 50 L52 90 L8 90 Z"/></clipPath></defs>'+
+      '<path class="hg-glass" d="M8 6 L52 6 L34 46 L34 50 L52 90 L8 90 L26 50 L26 46 Z"/>'+
+      '<g clip-path="url(#hgTop)"><rect class="hg-sand" id="hgSandTop" x="0" y="6" width="60" height="40"/></g>'+
+      '<g clip-path="url(#hgBot)"><rect class="hg-sand" id="hgSandBot" x="0" y="90" width="60" height="0"/></g>'+
+      '<line class="hg-stream" id="hgStream" x1="30" y1="46" x2="30" y2="50"/>'+
+      '<path class="hg-frame" d="M6 4 h48 M6 92 h48"/>'+
+    '</svg></div>';
+}
+
+/* Repaints only what changes. Called from the tick, so it must be cheap and
+   must not care whether the panel is still on screen. */
+function paintTimerControl(){
+  const timeEl = document.getElementById('tcTime');
+  if(!timeEl) return;                        // panel closed — nothing to do
+  const cur = state.activeTimer;
+  if(!cur){ closeModal(); return; }
+
+  const elapsed = timerElapsedSec(cur);
+  const remaining = cur.plannedSec!=null ? Math.max(0, cur.plannedSec-elapsed) : null;
+  timeEl.textContent = fmtMMSS(remaining!=null ? remaining : elapsed);
+
+  const sub = document.getElementById('tcSub');
+  if(sub) sub.textContent = cur.questTitle +
+    (cur.paused ? ' · paused' : '') +
+    (cur.interruptions ? ' · '+cur.interruptions+' distraction'+(cur.interruptions===1?'':'s') : '');
+
+  const btn = document.getElementById('tcPauseResume');
+  if(btn) btn.textContent = cur.paused ? 'Resume' : 'Pause';
+
+  const glass = document.getElementById('tcGlass');
+  const top = document.getElementById('hgSandTop'), bot = document.getElementById('hgSandBot');
+  if(glass && top && bot){
+    const timed = cur.plannedSec != null && cur.plannedSec > 0;
+    glass.classList.toggle('freeform', !timed);
+    glass.classList.toggle('paused', !!cur.paused);
+    const done = timed ? Math.min(1, elapsed/cur.plannedSec) : 0;
+    // Top chamber empties from the top down; the bottom grows to match.
+    top.setAttribute('y', String(6 + 40*done));
+    top.setAttribute('height', String(40*(1-done)));
+    bot.setAttribute('y', String(90 - 40*done));
+    bot.setAttribute('height', String(40*done));
+    const stream = document.getElementById('hgStream');
+    if(stream) stream.style.opacity = (!cur.paused && timed && done < 1) ? '1' : '0';
+  }
 }
 document.getElementById('timerPill').addEventListener('click', ()=>{
   if(state.activeTimer) openTimerControl(); else openTimerPicker(null, null);
@@ -5515,6 +5673,7 @@ document.getElementById('rewardGrid').addEventListener('click', e=>{
       renderAll(); checkAchievements();
       showToast({title:'Reward redeemed', sub:r.name, big:true});
       burst(window.innerWidth/2, window.innerHeight/3, '#14e6ff');
+      sfx('reward');
       saveState();
     }
     return;
@@ -10603,6 +10762,31 @@ function renderAdvancedTab(host){
       '<div class="d">Clears your levels, streak, gold, quests, timetable and achievements, and restores the defaults. This cannot be undone.</div>'+
     '</div><div class="set-row-ctl"><button class="btn-danger" id="setReset">Reset everything</button></div></div></div>';
   openWidgetSettings(document.getElementById('setHost'));
+
+  // Sound lives in Advanced rather than Appearance: it is a behaviour, and it
+  // is the first thing anyone wants to switch off.
+  const sndHost = document.createElement('div');
+  sndHost.innerHTML = '<div class="set-sub"><div class="set-row"><div class="set-row-main">'+
+      '<div class="t">Sound effects</div>'+
+      '<div class="d">Short synthesised cues when you finish something, level up, or a pomodoro ends. '+
+        'Nothing is downloaded — they are generated on the spot.</div>'+
+    '</div><div class="set-row-ctl">'+
+      '<input type="range" class="set-range" id="sfxVol" min="0" max="100" step="5" value="'+Math.round(sfxCfg.vol*100)+'" '+
+        (sfxCfg.on?'':'disabled')+' style="max-width:110px">'+
+      '<button class="ghost-btn" id="sfxToggle">'+(sfxCfg.on?'On':'Off')+'</button>'+
+    '</div></div></div>';
+  host.insertBefore(sndHost.firstChild, host.querySelector('.set-sub'));
+  const volEl = document.getElementById('sfxVol');
+  document.getElementById('sfxToggle').addEventListener('click', (e)=>{
+    sfxCfg.on = !sfxCfg.on; saveSfxCfg();
+    e.currentTarget.textContent = sfxCfg.on ? 'On' : 'Off';
+    volEl.disabled = !sfxCfg.on;
+    if(sfxCfg.on) sfx('complete');
+  });
+  volEl.addEventListener('change', ()=>{
+    sfxCfg.vol = Math.max(0, Math.min(1, (parseInt(volEl.value,10)||0)/100));
+    saveSfxCfg(); sfx('complete');
+  });
 
   const paintFolder = ()=>{
     const el = document.getElementById('bkFolder');

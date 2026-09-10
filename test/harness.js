@@ -439,6 +439,30 @@ async function run() {
     afterGrades.player.xp === xpBeforeGrades &&
     !afterGrades.log.some((l) => /klausur|abitur|notenpunkt/i.test(l.text)),
     'xp went ' + xpBeforeGrades + ' -> ' + afterGrades.player.xp);
+
+  /* ---- 30-31. the focus panel ----
+     Its countdown used to be painted once and then only on a button press, so
+     the big number sat frozen while the timer underneath ran perfectly well. */
+  await js(`(()=>{ const s = JSON.parse(localStorage.getItem('questline_state_v2'));
+    s.activeTimer = { id:'tfocus', kind:'daily', questId:null, questTitle:'Focus test',
+      type:'pomodoro', plannedSec:1500, startedAt:Date.now(), accumulatedSec:0,
+      paused:false, interruptions:0, notifiedDone:false };
+    localStorage.setItem('questline_state_v2', JSON.stringify(s)); })()`);
+  await reload();
+  await click('#timerPill');
+  await wait(300);
+  const focusA = await js("(document.getElementById('tcTime')||{}).textContent || ''");
+  const sand0 = await js("(document.getElementById('hgSandTop')||{}).getAttribute && document.getElementById('hgSandTop').getAttribute('height')");
+  await wait(2600);
+  const focusB = await js("(document.getElementById('tcTime')||{}).textContent || ''");
+  const sand1 = await js("(document.getElementById('hgSandTop')||{}).getAttribute && document.getElementById('hgSandTop').getAttribute('height')");
+
+  check('30 the focus panel counts down while it is open',
+    /^\d\d:\d\d$/.test(focusA) && /^\d\d:\d\d$/.test(focusB) && focusA !== focusB, focusA + ' -> ' + focusB);
+  check('31 the hourglass drains with the session',
+    sand0 != null && sand1 != null && parseFloat(sand1) < parseFloat(sand0),
+    'top chamber ' + sand0 + ' -> ' + sand1);
+  await js("(()=>{ const b=document.getElementById('tcStop'); if(b) b.click(); })()");
 }
 
 app.whenReady().then(async () => {
