@@ -16,34 +16,10 @@ contextBridge.exposeInMainWorld('courses', {
   reveal: (target) => ipcRenderer.invoke('courses-reveal', target)
 });
 
-// Downloading YouTube videos through yt-dlp so they can be owned locally:
-// check the tooling, pick a library folder, run/cancel a download, and read
-// the subtitles back off disk afterwards.
-contextBridge.exposeInMainWorld('vidlib', {
-  check: (refresh) => ipcRenderer.invoke('dl-check', refresh),
-  pickFolder: () => ipcRenderer.invoke('dl-pick-folder'),
-  allow: (dir) => ipcRenderer.invoke('dl-allow', dir),
-  start: (opts) => ipcRenderer.invoke('dl-start', opts),
-  cancel: (jobId) => ipcRenderer.invoke('dl-cancel', jobId),
-  remove: (folder) => ipcRenderer.invoke('dl-remove', folder),
-  subs: (opts) => ipcRenderer.invoke('dl-subs', opts),
-  // Retry only the subtitles when the video downloaded but captions were
-  // rate-limited — no need to fetch the whole video again.
-  fetchSubs: (opts) => ipcRenderer.invoke('dl-fetch-subs', opts),
-  // Progress arrives as events rather than a return value, so the renderer
-  // can draw a live bar instead of waiting for the whole download.
-  onProgress: (cb) => {
-    const fn = (_e, data) => { try { cb(data); } catch (err) {} };
-    ipcRenderer.on('dl-progress', fn);
-    return () => ipcRenderer.removeListener('dl-progress', fn);
-  }
-});
-
+// All that is left of the Learn tab: a quest can carry a resource link, and a
+// YouTube one gets its real title looked up instead of showing the raw URL.
 contextBridge.exposeInMainWorld('learn', {
-  meta: (videoId) => ipcRenderer.invoke('yt-meta', videoId),
-  transcript: (videoId) => ipcRenderer.invoke('yt-transcript', videoId),
-  generate: (opts) => ipcRenderer.invoke('ai-generate', opts),
-  complete: (opts) => ipcRenderer.invoke('ai-complete', opts)
+  meta: (videoId) => ipcRenderer.invoke('yt-meta', videoId)
 });
 
 // The AI provider layer. Ollama is the default and runs on this machine.
@@ -76,6 +52,7 @@ contextBridge.exposeInMainWorld('refsCtl', {
 // restarts the app.
 contextBridge.exposeInMainWorld('backup', {
   version: () => ipcRenderer.invoke('app-version'),
+  pickFolder: () => ipcRenderer.invoke('backup-pick-folder'),
   save: (name, text) => ipcRenderer.invoke('backup-save', { name, text }),
   open: () => ipcRenderer.invoke('backup-open'),
   auto: (opts) => ipcRenderer.invoke('backup-auto-write', opts),
