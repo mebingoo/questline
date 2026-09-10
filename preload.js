@@ -64,6 +64,13 @@ contextBridge.exposeInMainWorld('backup', {
   }
 });
 
+// How big the interface is drawn. Auto ties it to the window's own width so
+// shrinking the window shows more rather than clipping it.
+contextBridge.exposeInMainWorld('uiScale', {
+  get: () => ipcRenderer.invoke('ui-scale-get'),
+  set: (opts) => ipcRenderer.invoke('ui-scale-set', opts)
+});
+
 // Read-only: lists/loads the roadmap.json files bundled under data/roadmaps.
 contextBridge.exposeInMainWorld('roadmaps', {
   listSeeds: () => ipcRenderer.invoke('roadmap-list-seeds'),

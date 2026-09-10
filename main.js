@@ -163,6 +163,63 @@ ipcMain.handle('courses-reveal', async (event, target) => {
   return true;
 });
 
+/* ------------------------------------------------------------------ *
+ * UI scale
+ *
+ * The app is laid out in pixels — a thousand-odd rules of them — so making
+ * it "scale with the window" by converting every size to relative units
+ * would be a rewrite. Chromium already has exactly this mechanism: zoom.
+ * Setting the zoom factor scales the whole page, layout included, and
+ * viewport units resolve correctly against it (which is why this is done
+ * here rather than with a CSS `zoom` on <body>, where 100vh would not).
+ *
+ * The factor is computed from the window's *content* size, which zoom does
+ * not affect — computing it from innerWidth would feed its own output back
+ * in and oscillate.
+ * ------------------------------------------------------------------ */
+const UI_DESIGN_WIDTH = 1400;     // the width the layout was drawn for
+const UI_MIN = 0.65, UI_MAX = 1.15;
+const uiScalePrefs = new WeakMap();   // win -> { mode:'auto'|'fixed', factor }
+
+function applyUiZoom(win) {
+  if (!win || win.isDestroyed()) return;
+  const pref = uiScalePrefs.get(win) || { mode: 'auto', factor: 1 };
+  let z = pref.factor;
+  if (pref.mode === 'auto') {
+    const [w] = win.getContentSize();
+    z = Math.max(UI_MIN, Math.min(UI_MAX, w / UI_DESIGN_WIDTH));
+  }
+  try { win.webContents.setZoomFactor(z); } catch (e) {}
+  return z;
+}
+
+function trackUiZoom(win) {
+  uiScalePrefs.set(win, { mode: 'auto', factor: 1 });
+  const onResize = () => applyUiZoom(win);
+  win.on('resize', onResize);
+  win.on('maximize', onResize);
+  win.on('unmaximize', onResize);
+  win.webContents.on('did-finish-load', () => applyUiZoom(win));
+}
+
+ipcMain.handle('ui-scale-set', (event, opts) => {
+  const win = BrowserWindow.fromWebContents(event.sender);
+  if (!win) return { ok: false };
+  const o = opts || {};
+  uiScalePrefs.set(win, {
+    mode: o.mode === 'fixed' ? 'fixed' : 'auto',
+    factor: Math.max(UI_MIN, Math.min(UI_MAX, Number(o.factor) || 1))
+  });
+  return { ok: true, applied: applyUiZoom(win) };
+});
+ipcMain.handle('ui-scale-get', (event) => {
+  const win = BrowserWindow.fromWebContents(event.sender);
+  const pref = (win && uiScalePrefs.get(win)) || { mode: 'auto', factor: 1 };
+  let applied = 1;
+  try { applied = win ? win.webContents.getZoomFactor() : 1; } catch (e) {}
+  return { ok: true, mode: pref.mode, factor: pref.factor, applied };
+});
+
 // Where the automatic backups go. Somewhere the user would think to look,
 // rather than buried in AppData.
 ipcMain.handle('backup-pick-folder', async () => {
@@ -223,6 +280,7 @@ function createWindow() {
   });
   mainWin = win;
   hardenWindow(win);
+  trackUiZoom(win);
   win.on('closed', () => { if (mainWin === win) mainWin = null; });
 
   Menu.setApplicationMenu(null);

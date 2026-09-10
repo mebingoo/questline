@@ -2,7 +2,7 @@
 
 A personal RPG-style life tracker. Grand goals are "quest lines"; daily/weekly
 quests earn XP and gold; there are skill trees, a course video player, a
-timetable, and an AI quiz builder for downloaded YouTube tutorials.
+timetable, spaced-repetition cards and an Abitur grade projection.
 
 Single user (Phuc). Not a product — optimise for his workflow, not generality.
 
@@ -14,10 +14,10 @@ before any new feature.
 
 | Path | What it is |
 |---|---|
-| `index.html` | **The entire app** — UI, CSS and logic in one file, ~10,500 lines. Vanilla JS, no framework, no build step. |
-| `main.js` | Electron main process: windows, WebUntis/YouTube/AI proxies, course-media protocol, auto-update. |
+| `index.html` | **The entire app** — UI, CSS and logic in one file, ~10,900 lines. Vanilla JS, no framework, no build step. |
+| `main.js` | Electron main process: windows, UI zoom, WebUntis/AI proxies, course-media protocol, backups, auto-update. |
 | `preload.js` | The only bridge between page and Node. Everything exposed is explicit. |
-| `server/src/worker.js` | Cloudflare Worker: serves the phone PWA, holds synced state in KV, proxies WebUntis/YouTube/AI. |
+| `server/src/worker.js` | Cloudflare Worker: serves the phone PWA, holds synced state in KV, proxies WebUntis and the AI. |
 | `server/public/` | **Generated and gitignored.** Copy of `index.html` + roadmap seeds, written by `npm run predeploy` at deploy time. Never edit by hand, never commit it — 24 committed copies of a 520 KB file were half the repo. |
 | `data/roadmaps/*.json` | Roadmap seeds. `*-tree.json` are skill trees (schemaVersion 2, a node graph); the others are linear milestone lists (v1). |
 | `test/harness.js` | The test suite (`npm test`). Boots the real app on a temp `userData` and drives the DOM. |
@@ -168,48 +168,68 @@ passes spread evenly across the video — taking the first N would just move the
 old "deleted the middle" bug to the end. Chat cannot merge answers, so it keeps
 the opening plus the sections whose words overlap the question.
 
-## Learn videos — downloaded, not embedded
+## The Learn tab is gone (v1.13)
 
-Embedding failed too often: uploaders disable it, and since mid-2026 YouTube
-refuses caption requests from anything that isn't a real browser session
-(`timedtext` answers 200 with an empty body, `get_transcript` answers
-`FAILED_PRECONDITION`, and the watch page's SPA never hydrates in an automated
-window). All three were verified dead before this was rebuilt — don't try to
-revive them.
+Removed at Phuc's request. Do not rebuild it; Courses covers local video.
 
-So a Learn video is **downloaded** with `yt-dlp` and owned locally:
+Three pieces survived because other things depend on them, and deleting them
+later will break something that looks unrelated:
 
-- `main.js` shells out to `yt-dlp` and `ffmpeg`, both looked up on PATH and
-  reported as missing rather than assumed (`whichTool` — Node does no PATHEXT
-  resolution on Windows, so `spawn('yt-dlp')` alone would ENOENT).
-- One folder per video under the library folder: `video.mp4`, `video.jpg`,
-  `video.<lang>.json3`, `video.info.json`.
-- Format choice is `-f "bv*+ba/b" -S "res,fps,vcodec:h264,acodec:m4a"`:
-  resolution wins first, so 4K VP9 beats 1080p h264, but h264/AAC breaks ties
-  and stays hardware-decodable.
-- **Subtitles are the transcript.** They arrive with the download in `json3`,
-  which parses to the same `{t, text}` cues the old scraper produced, so
-  summary/quiz/chat needed no changes.
-- **Subtitles are fetched in a second yt-dlp run, never with the video.**
-  yt-dlp pulls captions *before* the media and treats a failed caption fetch as
-  fatal, so one HTTP 429 on the second language throws the whole video download
-  away. Pass 1 gets the video; pass 2 asks one language at a time and stops at
-  the first hit, so a rate limit costs at most the transcript. `dl-fetch-subs`
-  retries just the captions afterwards.
-- Ask for few subtitle languages. `--sub-langs "en.*"` pulls dozens of machine
-  translations at once and YouTube answers **HTTP 429**.
-- yt-dlp goes stale fast. A version a few months old fails with 403 on the
-  media stream while still listing formats — if downloads break, update it
-  first (`python -m pip install --upgrade yt-dlp`).
+- `parseVideoId` + `learn.meta` + the `yt-meta` handler — a **quest's resource
+  link** gets a real title instead of showing a raw URL. Tasks tab, not Learn.
+- `fmtTime` — course note timestamps and the focus timer.
+- Theater mode and `noteCtx()` — the Courses player.
+- `aiParseJson` and the whole AI provider layer — flashcards and the tutor.
 
-Playback reuses the course path exactly: `qlmedia://` with real byte ranges.
-Videos added before this rebuild have no local file and still use the old
-embed, so nothing that already worked broke.
+`state.videos` is deliberately still written by `migrate()`. It costs almost
+nothing and it means a backup taken before the removal still restores.
 
-Notes are one system, not two. `noteCtx()` resolves which video is being
-annotated (Courses item vs Learn video) and every note function works off it.
-Theater mode pins the stage with a CSS class and never re-parents the
-`<video>` — moving one drops its buffer and orphans every listener.
+## Sound and animation
+
+Cues are **synthesised with WebAudio, never shipped as files** — no binaries in
+the repo, no CSP change, works offline, and retuning one is editing numbers.
+`SFX` maps names to note sequences; call `sfx('complete')`, not oscillators.
+The context is built on the first real gesture because browsers refuse to
+start one before that. Off switch and volume live in Settings → Advanced.
+
+The focus panel draws its structure once and repaints only the numbers from
+`timerTick()`. It used to re-render only on a button press, which is why the
+big countdown sat frozen while the timer underneath it ran fine. Its hourglass
+drains from `plannedSec`; a freeform timer has no end to drain towards, so it
+breathes instead of pretending to.
+
+## Subjects and perks
+
+A quest's **quest line** answers "which part of my life"; its optional
+**subject** answers "which lesson". Subjects come from the grade tracker (so,
+from the WebUntis sync) and fall back to `FALLBACK_SUBJECTS`. `subjectFilter`
+is deliberately *not* in `state` — syncing a view would mean the phone hiding
+quests because the desktop was filtered.
+
+`PERKS` are the gold sinks with teeth from Phase 2. Two things to keep right:
+
+- **Insurance is spent in `reconcile()`**, at the moment the streak would
+  break, not when it is bought. It is worth nothing until that day.
+- **Double XP has to be applied in three places.** `grant()` covers objectives,
+  courses and milestones, but `completeDaily`/`completeWeekly` do their XP
+  inline and do not call it. The undo paths must refund what was actually paid
+  (`payXp`), not the quest's face value.
+
+## Interface scale
+
+`main.js` sets the **zoom factor** from the window's content width
+(`UI_DESIGN_WIDTH` 1400, clamped 0.65–1.15). The layout is a thousand rules of
+pixels, so making it fluid by hand would be a rewrite; zoom scales all of it,
+and viewport units resolve correctly against it — which is why this is *not* a
+CSS `zoom` on `<body>`, where `100vh` would not.
+
+Compute it from `getContentSize()`, never `innerWidth`: zoom changes
+`innerWidth`, so that would feed its own output back in and oscillate.
+Settings → Appearance can pin a fixed size instead.
+
+Grid tracks use `minmax(min(250px,100%),1fr)`. A bare `minmax(250px,1fr)`
+cannot get narrower than 250px, so a narrow window scrolls sideways instead of
+reflowing.
 
 ## Statistics
 

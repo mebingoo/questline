@@ -126,6 +126,29 @@ would be too empty to say anything and you'd tune them against noise.
 
 ---
 
+## Out of band — 2026-09-10 (v1.13.0)
+
+Requested directly, so done ahead of the phase order. Recorded here because the
+roadmap is meant to reflect the app, not an intention.
+
+- [x] **The Learn tab removed entirely.** Back to eight tabs, which is what
+      "Explicitly not doing → a ninth tab" wanted anyway. See CLAUDE.md for the
+      four pieces that survived because Tasks/Courses/Cards depend on them.
+- [x] **Focus panel fixed.** Its countdown was painted once and then only on a
+      button press, so it sat frozen while the timer ran. Structure once,
+      numbers on the tick; plus an hourglass that drains with the session.
+- [x] **Sound.** Synthesised with WebAudio, so no files, no CSP change, offline.
+- [x] **Subjects on quests.** A second axis beside the quest line, sourced from
+      the grade tracker. Directly serves the Abitur block.
+- [x] **Gold sinks with teeth** — pulled forward from Phase 2 below: streak
+      insurance, a skip token, two hours of double XP. The XP *curve* is still
+      Phase 2 work; only the sinks are done.
+- [x] **Interface scales with the window** via the Chromium zoom factor, from
+      `getContentSize()`. Grid tracks reflow instead of overflowing.
+
+Still Phase 2's, still not done: the Insights tab, achievements for the
+mechanics that matter, and the superlinear XP curve.
+
 ## Phase 2 — Insights (Dec 2026, ~10-14h)
 
 Deliberately not earlier: before December the charts would be too empty to say

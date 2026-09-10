@@ -95,7 +95,7 @@
   ::selection{background:var(--gold-glow); color:var(--text);}
   :focus-visible{outline:2px solid var(--teal); outline-offset:2px; border-radius:4px;}
 
-  .wrap{max-width:1240px; margin:0 auto; padding:0 20px 80px;}
+  .wrap{max-width:1240px; margin:0 auto; padding:0 clamp(10px, 1.6vw, 20px) 80px;}
 
   /* ---------- Header ---------- */
   header.hud{
@@ -107,7 +107,7 @@
     padding:14px 0 0;
   }
   .hud-inner{
-    max-width:1240px; margin:0 auto; padding:0 20px;
+    max-width:1240px; margin:0 auto; padding:0 clamp(10px, 1.6vw, 20px);
     display:flex; align-items:center; justify-content:space-between; gap:18px; flex-wrap:wrap;
   }
   .brand{display:flex; align-items:center; gap:10px;}
@@ -116,7 +116,7 @@
     display:flex;align-items:center;justify-content:center; color:var(--gold);
     background:rgba(255,46,166,0.1); box-shadow:0 0 12px rgba(255,46,166,0.35); flex:none;
   }
-  .brand h1{font-family:var(--font-display); font-weight:700; font-size:19px; letter-spacing:0.09em; margin:0; color:var(--text); text-shadow:0 0 14px var(--logo-glow);}
+  .brand h1{font-family:var(--font-display); font-weight:700; font-size:clamp(15px, 1.35vw, 19px); letter-spacing:0.09em; margin:0; color:var(--text); text-shadow:0 0 14px var(--logo-glow);}
   .brand .sub{font-size:11px; color:var(--text-faint); letter-spacing:0.08em; text-transform:uppercase; margin-top:1px;}
 
   .stat-row{display:flex; align-items:center; gap:10px; flex-wrap:wrap;}
@@ -141,7 +141,7 @@
 
   /* ---------- Tab bar ---------- */
   .tabbar{
-    max-width:1240px; margin:16px auto 0; padding:0 20px;
+    max-width:1240px; margin:16px auto 0; padding:0 clamp(10px, 1.6vw, 20px);
     display:flex; align-items:flex-end; gap:3px;
     border-bottom:1px solid var(--border);
   }
@@ -376,9 +376,8 @@
 
   /* ---------- Learn: library ---------- */
   .addbar{display:flex; gap:8px; margin-bottom:18px; flex-wrap:wrap;}
-  .addbar .fld{flex:1; min-width:240px;}
+  .addbar .fld{flex:1; min-width:min(240px,100%);}
   .vbadge.ok{color:var(--success);} .vbadge.q{color:var(--teal);} .vbadge.done{color:var(--gold);}
-  @media (max-width:1120px){ }
   .subtab.active{background:var(--surface); border-color:var(--border); color:var(--text);}
   .subpanel.active{display:block;}
   .theater-btn{
@@ -441,7 +440,7 @@
   @keyframes spin{to{transform:rotate(360deg);}}
 
   /* ---------- Disciplines ---------- */
-  .disc-grid{display:grid; grid-template-columns:repeat(auto-fill, minmax(250px,1fr)); gap:14px;}
+  .disc-grid{display:grid; grid-template-columns:repeat(auto-fill, minmax(min(250px,100%),1fr)); gap:14px;}
   .disc-card{background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-l); padding:16px; position:relative; overflow:hidden;}
   .disc-del{position:absolute; top:12px; right:12px; background:none; border:none; color:var(--text-faint); cursor:pointer; padding:4px; opacity:0; z-index:1;}
   .disc-card:hover .disc-del{opacity:0.7;} .disc-del:hover{opacity:1 !important; color:var(--danger);}
@@ -869,7 +868,7 @@
   .qtimer-btn:hover{opacity:1 !important; color:var(--gold);}
 
   /* ============ COURSES ============ */
-  .course-grid{display:grid; grid-template-columns:repeat(auto-fill, minmax(250px,1fr)); gap:14px;}
+  .course-grid{display:grid; grid-template-columns:repeat(auto-fill, minmax(min(250px,100%),1fr)); gap:14px;}
   .course-card{background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-m);
     padding:15px; cursor:pointer; position:relative; transition:border-color .15s, transform .1s;}
   .course-card:hover{border-color:var(--gold); transform:translateY(-1px);}
@@ -947,7 +946,7 @@
   .srs-stat .s{font-size:10px; color:var(--text-faint); margin-top:1px;}
   .srs-stat.go .v{color:var(--gold);}
 
-  .srs-decks{display:grid; grid-template-columns:repeat(auto-fill,minmax(240px,1fr)); gap:12px;}
+  .srs-decks{display:grid; grid-template-columns:repeat(auto-fill,minmax(min(240px,100%),1fr)); gap:12px;}
   .srs-deck{background:var(--surface); border:1px solid var(--border); border-left-width:3px; border-left-color:var(--deckcolor);
     border-radius:var(--radius-m); padding:14px; cursor:pointer; position:relative; transition:transform .1s, border-color .15s;}
   .srs-deck:hover{transform:translateY(-1px); border-color:var(--deckcolor);}
@@ -1105,9 +1104,9 @@
     display:block; width:100%; text-align:left; border-left:none; border-right:none; border-bottom:none;}
   .tl-bar:hover{background:var(--hover-tint);}
   body.widget-mode .tl-bar{display:none;}
-  .tl-inner{max-width:1240px; margin:0 auto; padding:0 20px; display:flex; align-items:center; gap:18px;}
+  .tl-inner{max-width:1240px; margin:0 auto; padding:0 clamp(10px, 1.6vw, 20px); display:flex; align-items:center; gap:clamp(10px, 1.4vw, 18px);}
 
-  .tl-next{flex:none; min-width:212px;}
+  .tl-next{flex:none; min-width:min(212px,100%);}
   .tl-next .tl-lab{font-family:var(--font-display); font-size:8.5px; letter-spacing:0.16em; color:var(--text-faint);}
   .tl-next .tl-name{font-family:var(--font-display); font-size:11.5px; color:var(--text); margin:1px 0 2px;
     white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
@@ -1233,7 +1232,7 @@
   }
 
   /* ============ STATS ============ */
-  .st-cards{display:grid; grid-template-columns:repeat(auto-fit, minmax(148px,1fr)); gap:12px; margin-bottom:22px;}
+  .st-cards{display:grid; grid-template-columns:repeat(auto-fit, minmax(min(148px,100%),1fr)); gap:12px; margin-bottom:22px;}
   .st-card{background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-m); padding:14px 15px;}
   .st-card .stv{font-family:var(--font-display); font-size:26px; color:var(--text); line-height:1.1;}
   .st-card .stl{font-size:10.5px; letter-spacing:0.05em; color:var(--text-faint); text-transform:uppercase; margin-top:6px;}
@@ -1278,7 +1277,7 @@
   .st-goal-track i{display:block; height:100%; border-radius:4px;}
   .st-goal-val{flex:0 0 78px; text-align:right; font-family:var(--font-mono); font-size:11px; color:var(--text-faint);}
 
-  .st-split{display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:16px;}
+  .st-split{display:grid; grid-template-columns:repeat(auto-fit,minmax(min(260px,100%),1fr)); gap:16px;}
   .st-rows{display:flex; flex-direction:column; gap:8px;}
   .st-row{display:flex; align-items:baseline; justify-content:space-between; gap:10px; font-size:12.5px;}
   .st-row span:first-child{color:var(--text-dim);}
@@ -10070,6 +10069,15 @@ function renderAppearanceTab(host){
   apMediaAction = null;
 
   host.innerHTML = '<div class="set-panel-title">Appearance</div>'+
+    settingsGroup('uiscale', 'Interface size',
+      settingsRow('Scale with the window',
+        'Auto keeps the whole interface proportional to the window, so making it smaller shows '+
+        'everything at a smaller size instead of cutting it off. Pick a fixed size to override.',
+        '<select class="fld" id="apScale" style="max-width:150px">'+
+          ['auto','0.75','0.85','1','1.1'].map(v=>'<option value="'+v+'">'+
+            (v==='auto'?'Auto (recommended)':Math.round(parseFloat(v)*100)+'%')+'</option>').join('')+
+        '</select><span class="set-hex" id="apScaleNow"></span>')
+    )+
     settingsGroup('colors', 'Colors',
       settingsRow('Accent color', 'The main color for buttons, highlights, and icons.',
         '<input type="color" class="set-swatch" id="apAccent" value="'+esc(a.accent)+'">'+
@@ -10114,6 +10122,28 @@ function renderAppearanceTab(host){
   // Editing only updates the draft and its own read-out. The app itself is left
   // alone until Apply, so dragging a slider can never reflow this page.
   const stage = (patch)=>{ Object.assign(apDraft, patch); apSyncButtons(); };
+
+  /* Interface size. The zoom itself lives in the main process — the renderer
+     only says what it wants, because a page cannot zoom the frame it is in. */
+  const scaleSel = document.getElementById('apScale');
+  const scaleNow = document.getElementById('apScaleNow');
+  const showScale = (r)=>{ if(scaleNow && r) scaleNow.textContent = 'now ' + Math.round((r.applied||1)*100) + '%'; };
+  if(scaleSel){
+    if(!window.uiScale){
+      scaleSel.disabled = true;
+      if(scaleNow) scaleNow.textContent = 'desktop app only';
+    }else{
+      window.uiScale.get().then(r=>{
+        scaleSel.value = (r && r.mode === 'fixed') ? String(r.factor) : 'auto';
+        showScale(r);
+      });
+      scaleSel.addEventListener('change', async ()=>{
+        const v = scaleSel.value;
+        const r = await window.uiScale.set(v === 'auto' ? { mode:'auto' } : { mode:'fixed', factor:parseFloat(v) });
+        showScale(r);
+      });
+    }
+  }
 
   document.getElementById('apAccent').addEventListener('input', e=>{
     document.getElementById('apAccentHex').textContent = e.target.value.toUpperCase();
