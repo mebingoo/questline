@@ -242,6 +242,21 @@
   .quest-item.done .qtitle{text-decoration:line-through; text-decoration-color:var(--text-faint);}
   .qtag{display:inline-flex; align-items:center; gap:5px; font-size:10.5px; color:var(--text-faint); margin-top:3px;}
   .qtag i{width:6px;height:6px;border-radius:50%; display:inline-block;}
+  /* The second axis: which lesson, next to which part of life. */
+  .qsubject{
+    display:inline-block; margin-left:7px; padding:1px 7px; border-radius:999px;
+    font-size:9.5px; letter-spacing:0.03em; white-space:nowrap;
+    color:var(--scolor, var(--text-faint));
+    border:1px solid color-mix(in srgb, var(--scolor, var(--text-faint)) 45%, transparent);
+    background:color-mix(in srgb, var(--scolor, var(--text-faint)) 12%, transparent);
+  }
+  .subj-bar{display:flex; gap:6px; flex-wrap:wrap; margin-bottom:14px;}
+  .subj-chip{
+    padding:4px 11px; border-radius:999px; cursor:pointer; font-size:11px;
+    background:var(--surface-2); border:1px solid var(--border); color:var(--text-faint);
+  }
+  .subj-chip:hover{color:var(--text-dim);}
+  .subj-chip.on{border-color:var(--gold); color:var(--gold); background:var(--surface);}
   .qreward{font-family:var(--font-mono); font-size:11px; color:var(--gold); white-space:nowrap; text-align:right; display:flex; flex-direction:column; gap:1px; align-items:flex-end;}
   .qreward .g{color:var(--teal);}
   .qdel{background:none; border:none; color:var(--text-faint); cursor:pointer; padding:3px; border-radius:4px; opacity:0; transition:opacity .15s, color .15s; flex:none;}
@@ -494,6 +509,29 @@
   .reward-redeem:disabled{opacity:0.35; cursor:not-allowed;}
   .reward-del{align-self:flex-end; background:none; border:none; color:var(--text-faint); cursor:pointer; font-size:10.5px; margin-top:-6px;}
   .reward-del:hover{color:var(--danger);}
+
+  /* Perks read as a different kind of thing from a bar of chocolate. */
+  .reward-card.perk{border-color:color-mix(in srgb, var(--teal) 38%, var(--border)); gap:7px;}
+  .reward-card.perk.live{border-color:var(--gold); box-shadow:0 0 0 1px var(--gold) inset;}
+  .perk-top{display:flex; align-items:center; gap:7px; color:var(--teal);}
+  .perk-top .reward-name{color:var(--text);}
+  .perk-held{margin-left:auto; font-family:var(--font-mono); font-size:11px; color:var(--teal);}
+  .perk-blurb{font-size:11px; color:var(--text-dim); line-height:1.45;}
+  .perk-live{font-family:var(--font-mono); font-size:11px; color:var(--gold);}
+  .perk-actions{display:flex; gap:6px;}
+  .perk-actions .reward-redeem{flex:1;}
+  .perk-actions .reward-redeem.use{border-color:var(--teal); color:var(--teal);}
+
+  /* Tiers, so a 250-gold reward doesn't look like a 20-gold one. */
+  .reward-tier{font-family:var(--font-display); font-size:9px; letter-spacing:0.09em;
+    text-transform:uppercase; color:var(--text-faint);}
+  .reward-card.tier2{border-color:color-mix(in srgb, var(--gold) 22%, var(--border));}
+  .reward-card.tier3{border-color:color-mix(in srgb, var(--gold) 55%, var(--border));
+    background:linear-gradient(160deg, color-mix(in srgb, var(--gold) 7%, var(--surface)), var(--surface));}
+  .reward-card.tier3 .reward-tier{color:var(--gold);}
+  /* How close you are, when you cannot afford it yet. */
+  .reward-gap{height:3px; border-radius:2px; background:var(--surface-3); overflow:hidden;}
+  .reward-gap i{display:block; height:100%; background:var(--gold-soft);}
   .add-reward-card{border:1px dashed var(--border); border-radius:var(--radius-m); display:flex; align-items:center; justify-content:center; color:var(--text-faint); font-size:12px; cursor:pointer; min-height:90px; background:none; transition:border-color .15s, color .15s;}
   .add-reward-card:hover{border-color:var(--gold-soft); color:var(--gold);}
 
@@ -1703,6 +1741,7 @@
           <button class="ghost-btn" id="focusToggle">Focus only</button>
         </div>
       </div>
+      <div class="subj-bar" id="subjBar"></div>
       <div class="quest-cols">
         <div class="quest-card">
           <h3>Today <span class="count" id="dailyCount">0/0</span></h3>
@@ -1714,6 +1753,7 @@
               <div class="vague-hint" id="dailyVagueHint">Too vague — what exactly will you do?</div>
               <div class="row2">
                 <select class="fld" id="dailyGoal"></select>
+                <select class="fld" id="dailySubject"></select>
                 <input type="number" class="fld" id="dailyXp" placeholder="XP" value="12" min="1" max="200">
               </div>
               <div id="dailySuggest"></div>
@@ -1736,6 +1776,7 @@
               <input type="text" class="fld" id="weeklySteps" placeholder="Steps, separated by commas (optional)" maxlength="240">
               <div class="row2">
                 <select class="fld" id="weeklyGoal"></select>
+                <select class="fld" id="weeklySubject"></select>
                 <input type="number" class="fld" id="weeklyXp" placeholder="XP" value="50" min="1" max="500">
               </div>
               <div id="weeklySuggest"></div>
@@ -2110,6 +2151,57 @@ function subjectColor(code){
   return 'hsl('+h+' 42% 52%)';
 }
 
+/* Subjects a quest can be filed under.
+ *
+ * Quest lines answer "which part of my life"; a subject answers "which lesson".
+ * Both matter for school work — "Abitur / Physik" says more than either alone —
+ * so this is a second, optional axis rather than a pile of new quest lines.
+ *
+ * The list is whatever the grade tracker already knows (which comes from the
+ * WebUntis sync), falling back to the usual Oberstufe set so it is useful
+ * before a timetable has ever been synced. */
+const FALLBACK_SUBJECTS = ['Mathe','Physik','Informatik','Englisch','Deutsch','Erdkunde',
+                           'Chemie','Biologie','Geschichte','Sport','Seminarfach'];
+function questSubjects(){
+  const fromGrades = ((state.grades && state.grades.subjects) || []).map(s=>s.name).filter(Boolean);
+  const seen = new Set(), out = [];
+  fromGrades.concat(FALLBACK_SUBJECTS).forEach(n=>{
+    const k = n.toLowerCase();
+    if(!seen.has(k)){ seen.add(k); out.push(n); }
+  });
+  return out;
+}
+function subjectOptionsHtml(selected){
+  return '<option value="">No subject</option>' + questSubjects().map(n=>
+    '<option value="'+esc(n)+'"'+(n===selected?' selected':'')+'>'+esc(n)+'</option>').join('');
+}
+/* Which subject the Tasks tab is filtered to, or null for all. Deliberately
+   not in `state`: it is a view, and syncing it would mean the phone silently
+   hiding quests because the desktop was filtered. */
+let subjectFilter = null;
+function subjectFilterFn(){
+  return (q)=> !subjectFilter || q.subject === subjectFilter;
+}
+function renderSubjectBar(){
+  const bar = document.getElementById('subjBar');
+  if(!bar) return;
+  // Only offer subjects actually in use — an empty filter is a dead end.
+  const used = [];
+  [].concat(state.dailies||[], state.weeklies||[]).forEach(q=>{
+    if(q.subject && !used.includes(q.subject)) used.push(q.subject);
+  });
+  if(!used.length){ bar.innerHTML = ''; return; }
+  used.sort();
+  bar.innerHTML = '<button class="subj-chip'+(subjectFilter?'':' on')+'" data-subj="">All</button>'+
+    used.map(n=>'<button class="subj-chip'+(subjectFilter===n?' on':'')+'" data-subj="'+esc(n)+'" '+
+      'style="--scolor:'+subjectColor(n.slice(0,2))+'">'+esc(n)+'</button>').join('');
+}
+
+function subjectChipHtml(name){
+  if(!name) return '';
+  return '<span class="qsubject" style="--scolor:'+subjectColor(name.slice(0,2))+'">'+esc(name)+'</span>';
+}
+
 /* ============ DEFAULTS ============ */
 const DEFAULT_GOALS = [
   { id:'creative', name:'Creative Craft', icon:'cube', color:'#d97d4a',
@@ -2149,12 +2241,38 @@ const DEFAULT_WEEKLIES = [
 ];
 
 const DEFAULT_REWARDS = [
-  {name:'20 min guilt-free gaming', cost:25},
-  {name:'Watch an episode of something', cost:40},
-  {name:'A treat / good snack', cost:20},
-  {name:'Something new for your hobby', cost:120},
-  {name:'A full rest day, no guilt', cost:60}
+  {name:'20 min guilt-free gaming', cost:25, tier:1},
+  {name:'A treat / good snack', cost:20, tier:1},
+  {name:'Watch an episode of something', cost:40, tier:2},
+  {name:'A full rest day, no guilt', cost:60, tier:2},
+  {name:'An evening entirely off, phone included', cost:150, tier:3},
+  {name:'Something new for your hobby', cost:250, tier:3}
 ];
+
+/* Perks — the half of the shop that has teeth.
+ *
+ * Gold used to buy only permission to do something you were going to do
+ * anyway, which is why it piled up. These do something inside the app, so
+ * spending has a real trade-off: insurance costs less than the streak it
+ * saves, and a skip costs less than the guilt of breaking one.
+ *
+ * They are separate from `state.rewards` because those are the user's own
+ * list and get edited freely; a perk's id has to keep meaning something. */
+const PERKS = [
+  { id:'insurance', name:'Streak insurance', cost:80, icon:'shield',
+    blurb:'One missed day does not break your streak. Used automatically.' },
+  { id:'skip', name:'Skip token', cost:35, icon:'check',
+    blurb:'Skip one daily without it counting against you.' },
+  { id:'boost', name:'Double XP · 2 hours', cost:120, icon:'bolt',
+    blurb:'Everything you finish in the next two hours pays twice.' }
+];
+const BOOST_MS = 2*60*60*1000;
+function perkById(id){ return PERKS.find(p=>p.id===id) || null; }
+function perkCount(id){ return (state.inventory && state.inventory[id]) || 0; }
+function boostActive(){ return !!(state.boostUntil && state.boostUntil > Date.now()); }
+/* Applied wherever XP is granted, so a perk cannot be worked around by
+   finishing a different kind of thing. */
+function xpWithBoost(xp){ return boostActive() ? xp*2 : xp; }
 
 /* Empty by default — filled in by editing slots or by a WebUntis sync. */
 function defaultSchool(){
@@ -2482,6 +2600,8 @@ function freshState(){
     journal: { entries:[], lastXpDay:null },
     grades: defaultGrades(),
     history: {},
+    inventory: { insurance:0, skip:0, boost:0 },
+    boostUntil: 0,
     refs: defaultRefs(),
     srs: defaultSrs(),
     focusSessions: [], questFavorites: [],
@@ -2631,6 +2751,12 @@ function migrate(s){
   s.journal.entries.forEach(e=>{ if(!Array.isArray(e.images)) e.images = []; });
   if(!s.timeline || !Array.isArray(s.timeline.events)) s.timeline = defaultTimeline();
   if(!s.timeline.start) s.timeline.start = todayStr();
+  // Quests gained an optional subject in v1.13; older ones simply have none.
+  [].concat(s.dailies||[], s.weeklies||[]).forEach(q=>{ if(q.subject === undefined) q.subject = null; });
+  if(!s.inventory || typeof s.inventory !== 'object') s.inventory = { insurance:0, skip:0, boost:0 };
+  PERKS.forEach(p=>{ if(typeof s.inventory[p.id] !== 'number') s.inventory[p.id] = 0; });
+  if(typeof s.boostUntil !== 'number') s.boostUntil = 0;
+  (s.rewards||[]).forEach(r=>{ if(typeof r.tier !== 'number') r.tier = r.cost >= 120 ? 3 : (r.cost >= 40 ? 2 : 1); });
   if(!s.history || typeof s.history !== 'object' || Array.isArray(s.history)) s.history = {};
   if(!s.refs || !Array.isArray(s.refs.boards) || !s.refs.boards.length) s.refs = defaultRefs();
   s.refs.boards.forEach(b=>{
@@ -3571,9 +3697,11 @@ function renderTodayStrip(){
 
 function renderDailies(){
   const today = todayStr();
-  const all = state.dailies.filter(q=>!q.plannedForDate || q.plannedForDate===today);
+  const all = state.dailies.filter(q=>!q.plannedForDate || q.plannedForDate===today)
+                           .filter(subjectFilterFn());
   const focus = todaysFocusGoals();
   const list = state.showAllQuests ? all : all.filter(q=>focus.has(q.goal));
+  renderSubjectBar();
   const doneCount = list.filter(q=>q.lastDone===today).length;
 
   document.getElementById('dailyCount').textContent = doneCount+'/'+list.length;
@@ -3590,6 +3718,8 @@ function renderDailies(){
     el.innerHTML = list.map(q=>dailyItemHtml(q, q.lastDone===today)).join('');
   }
   document.getElementById('dailyGoal').innerHTML = goalOptionsHtml();
+  const dSub = document.getElementById('dailySubject');
+  if(dSub){ const keep = dSub.value; dSub.innerHTML = subjectOptionsHtml(keep); dSub.value = keep; }
 }
 function stepRowsHtml(steps){
   return (steps||[]).map(s=>
@@ -3627,9 +3757,10 @@ function dailyItemHtml(q, done){
       '<div class="qmeta"><div class="qtitle">'+esc(q.title)+'</div>'+
         (steps.length
           ? '<div class="wprog"><span class="qtag"><i style="background:'+g.color+'"></i>'+esc(g.name)+'</span>'+
+            subjectChipHtml(q.subject)+
             '<div class="wprog-track"><i style="width:'+pct+'%"></i></div>'+
             '<span class="wprog-text">'+doneSteps+'/'+steps.length+' steps</span></div>'
-          : '<div class="qtag"><i style="background:'+g.color+'"></i>'+esc(g.name)+'</div>')+
+          : '<div class="qtag"><i style="background:'+g.color+'"></i>'+esc(g.name)+subjectChipHtml(q.subject)+'</div>')+
       '</div>'+
       '<div class="qreward"><span>+'+q.xp+' xp</span><span class="g">+'+q.gold+' g</span>'+
         (!done && q.skipDate===todayStr() ? '<span class="qskip-tag">Skipped</span>' : '')+
@@ -3648,13 +3779,15 @@ function dailyItemHtml(q, done){
 
 function renderWeeklies(){
   const wk = isoWeekKey();
-  const list = state.weeklies;
+  const list = state.weeklies.filter(subjectFilterFn());
   const doneCount = list.filter(q=>q.lastDoneWeek===wk).length;
   document.getElementById('weeklyCount').textContent = doneCount+'/'+list.length;
   const el = document.getElementById('weeklyList');
   if(list.length===0){ el.innerHTML = '<div class="empty-row">No weekly quests yet. Add one below.</div>'; }
   else { el.innerHTML = list.map(q=>weeklyItemHtml(q, q.lastDoneWeek===wk)).join(''); }
   document.getElementById('weeklyGoal').innerHTML = goalOptionsHtml();
+  const wSub = document.getElementById('weeklySubject');
+  if(wSub){ const keep = wSub.value; wSub.innerHTML = subjectOptionsHtml(keep); wSub.value = keep; }
 }
 function weeklyItemHtml(q, done){
   const g = goalById(q.goal) || {name:'General', color:'#8b93b0'};
@@ -3670,9 +3803,10 @@ function weeklyItemHtml(q, done){
         '<div class="qtitle">'+esc(q.title)+'</div>'+
         (steps.length
           ? '<div class="wprog"><span class="qtag"><i style="background:'+g.color+'"></i>'+esc(g.name)+'</span>'+
+            subjectChipHtml(q.subject)+
             '<div class="wprog-track"><i style="width:'+pct+'%"></i></div>'+
             '<span class="wprog-text">'+doneSteps+'/'+steps.length+' steps</span></div>'
-          : '<div class="qtag"><i style="background:'+g.color+'"></i>'+esc(g.name)+'</div>')+
+          : '<div class="qtag"><i style="background:'+g.color+'"></i>'+esc(g.name)+subjectChipHtml(q.subject)+'</div>')+
       '</div>'+
       '<div class="qreward"><span>+'+q.xp+' xp</span><span class="g">+'+q.gold+' g</span>'+
         (!done && q.skipWeek===isoWeekKey() ? '<span class="qskip-tag">Skipped</span>' : '')+
@@ -4027,17 +4161,80 @@ function renderAchievements(){
   }).join('');
 }
 function renderRewards(){
-  let html = state.rewards.map(r=>{
-    const afford = state.player.gold >= r.cost;
-    return '<div class="reward-card" data-id="'+r.id+'">'+
-      '<button class="reward-del" data-action="delreward" data-id="'+r.id+'">remove</button>'+
-      '<div class="reward-name">'+esc(r.name)+'</div>'+
-      '<div class="reward-cost">'+icon('bolt','style="width:12px;height:12px"')+' '+r.cost+' gold</div>'+
-      '<button class="reward-redeem" data-action="redeem" data-id="'+r.id+'"'+(afford?'':' disabled')+'>Redeem</button>'+
+  const gold = state.player.gold;
+
+  /* Perks first: they are the reason gold is worth keeping. Each shows what it
+     does and how many you are holding, so buying a second one is a decision
+     rather than an accident. */
+  const perkHtml = PERKS.map(p=>{
+    const afford = gold >= p.cost;
+    const held = perkCount(p.id);
+    const live = p.id==='boost' && boostActive();
+    return '<div class="reward-card perk'+(live?' live':'')+'" data-id="'+p.id+'">'+
+      '<div class="perk-top">'+icon(p.icon,'style="width:14px;height:14px"')+
+        '<span class="reward-name">'+esc(p.name)+'</span>'+
+        (held?'<span class="perk-held">×'+held+'</span>':'')+'</div>'+
+      '<div class="perk-blurb">'+esc(p.blurb)+'</div>'+
+      (live ? '<div class="perk-live">Active · '+fmtMMSS(Math.max(0,Math.round((state.boostUntil-Date.now())/1000)))+' left</div>' : '')+
+      '<div class="reward-cost">'+icon('bolt','style="width:12px;height:12px"')+' '+p.cost+' gold</div>'+
+      '<div class="perk-actions">'+
+        (held && p.id!=='insurance'
+          ? '<button class="reward-redeem use" data-action="useperk" data-id="'+p.id+'">Use</button>' : '')+
+        '<button class="reward-redeem" data-action="buyperk" data-id="'+p.id+'"'+(afford?'':' disabled')+'>'+
+          (afford?'Buy':(p.cost-gold)+' more')+'</button>'+
+      '</div>'+
     '</div>';
   }).join('');
-  html += '<button class="add-reward-card" id="addRewardBtn">+ Add a reward</button>';
-  document.getElementById('rewardGrid').innerHTML = html;
+
+  /* The user's own list, sorted by tier so the big one reads as a big one. */
+  const tiers = { 1:'Small', 2:'Evening', 3:'Proper' };
+  const own = state.rewards.slice().sort((a,b)=>(a.tier||1)-(b.tier||1) || a.cost-b.cost);
+  const ownHtml = own.map(r=>{
+    const afford = gold >= r.cost;
+    const t = r.tier || 1;
+    return '<div class="reward-card tier'+t+'" data-id="'+r.id+'">'+
+      '<button class="reward-del" data-action="delreward" data-id="'+r.id+'">remove</button>'+
+      '<div class="reward-tier">'+tiers[t]+'</div>'+
+      '<div class="reward-name">'+esc(r.name)+'</div>'+
+      '<div class="reward-cost">'+icon('bolt','style="width:12px;height:12px"')+' '+r.cost+' gold</div>'+
+      (afford ? '' : '<div class="reward-gap"><i style="width:'+Math.min(100,Math.round(gold/r.cost*100))+'%"></i></div>')+
+      '<button class="reward-redeem" data-action="redeem" data-id="'+r.id+'"'+(afford?'':' disabled')+'>'+
+        (afford?'Redeem':(r.cost-gold)+' more')+'</button>'+
+    '</div>';
+  }).join('');
+
+  document.getElementById('rewardGrid').innerHTML =
+    perkHtml + ownHtml + '<button class="add-reward-card" id="addRewardBtn">+ Add a reward</button>';
+}
+
+/* Buying and spending perks. Kept next to the render so the two stay honest
+   about what a perk costs and what it does. */
+function buyPerk(id){
+  const p = perkById(id); if(!p) return;
+  if(state.player.gold < p.cost){ showToast({title:'Not enough gold', sub:(p.cost-state.player.gold)+' more needed'}); return; }
+  state.player.gold -= p.cost;
+  state.inventory[id] = perkCount(id) + 1;
+  pushLog('Bought <b>'+esc(p.name)+'</b>', '-'+p.cost+'g', 'redeem');
+  sfx('reward');
+  showToast({title:p.name+' bought', sub:p.id==='insurance'?'It will be used the next time you miss a day.':'Use it whenever you like.'});
+  saveState(); renderAll();
+}
+function usePerk(id){
+  if(perkCount(id) <= 0) return;
+  if(id === 'boost'){
+    state.inventory.boost--;
+    // Extends rather than restarts, so a second one is never wasted.
+    state.boostUntil = Math.max(Date.now(), state.boostUntil||0) + BOOST_MS;
+    pushLog('Double XP active for two hours', '2x', 'redeem');
+    sfx('levelup');
+    showToast({title:'Double XP running', sub:'Everything you finish for the next two hours pays twice.', big:true});
+    saveState(); renderAll();
+    return;
+  }
+  if(id === 'skip'){
+    // Spent from the quest row; here it just explains itself.
+    showToast({title:'Skip token ready', sub:'Open a daily and choose Skip — the token covers it.'});
+  }
 }
 function renderLog(){
   const el = document.getElementById('logList');
@@ -4195,8 +4392,21 @@ function checkAchievements(){
 function reconcile(){
   const today = todayStr();
   if(state.player.lastActiveDate && state.player.lastActiveDate!==today){
-    if(daysBetween(state.player.lastActiveDate, today) > 1) state.player.streak = 0;
+    if(daysBetween(state.player.lastActiveDate, today) > 1){
+      // Insurance is spent here rather than at purchase: it is worth nothing
+      // until the day it saves, and it should cost nothing until then either.
+      if(perkCount('insurance') > 0 && state.player.streak > 0){
+        state.inventory.insurance--;
+        state.player.lastActiveDate = today;
+        pushLog('Streak insurance used — <b>'+state.player.streak+' days</b> saved', '-1', 'redeem');
+        setTimeout(()=>showToast({ title:'Streak insurance used',
+          sub:'Your '+state.player.streak+'-day streak survived a missed day.', big:true }), 700);
+      }else{
+        state.player.streak = 0;
+      }
+    }
   }
+  if(state.boostUntil && state.boostUntil <= Date.now()) state.boostUntil = 0;
   const wk = isoWeekKey();
   state.weeklies.forEach(q=>{
     if(q.stepsWeek && q.stepsWeek !== wk) (q.steps||[]).forEach(s=>s.done=false);
@@ -4235,6 +4445,7 @@ function logDay({ xp=0, gold=0, dailies=0, weeklies=0, done=0, goalId=null }){
 }
 
 function grant(xp, goalId){
+  xp = xpWithBoost(xp);
   const g = goalById(goalId);
   state.player.xp += xp;
   state.player.gold += Math.round(xp/2);
@@ -4253,10 +4464,11 @@ function completeDaily(id){
   const snap = {xp:state.player.xp, gold:state.player.gold, streak:state.player.streak,
     last:state.player.lastActiveDate, longest:state.player.longestStreak, gxp:g?g.xp:0, was:q.lastDone};
 
-  state.player.xp += q.xp; state.player.gold += q.gold;
-  if(g) g.xp += q.xp;
+  const payXp = xpWithBoost(q.xp), payGold = q.gold;
+  state.player.xp += payXp; state.player.gold += payGold;
+  if(g) g.xp += payXp;
   q.lastDone = today;
-  logDay({ xp:q.xp, gold:q.gold, dailies:1, done:1, goalId:q.goal });
+  logDay({ xp:payXp, gold:payGold, dailies:1, done:1, goalId:q.goal });
   if(state.player.lastActiveDate!==today){
     const diff = daysBetween(state.player.lastActiveDate, today);
     state.player.streak = (diff===1) ? state.player.streak+1 : 1;
@@ -4270,13 +4482,13 @@ function completeDaily(id){
   if(row){ const r = row.getBoundingClientRect(); burst(r.left+24, r.top+r.height/2, g?g.color:'#ff2ea6'); }
   sfx('complete');
   showToast({
-    title:'+'+q.xp+' XP · +'+q.gold+' gold', sub:q.title,
+    title:'+'+payXp+' XP · +'+payGold+' gold'+(boostActive()?' ·2x':''), sub:q.title,
     undo:()=>{
       state.player.xp=snap.xp; state.player.gold=snap.gold; state.player.streak=snap.streak;
       state.player.lastActiveDate=snap.last; state.player.longestStreak=snap.longest;
       if(g) g.xp=snap.gxp; q.lastDone=snap.was; state.log.pop();
       // Take it back out of the ledger too, or an undone quest still counts.
-      logDay({ xp:-q.xp, gold:-q.gold, dailies:-1, done:-1, goalId:q.goal });
+      logDay({ xp:-payXp, gold:-payGold, dailies:-1, done:-1, goalId:q.goal });
       saveState(); renderAll();
     }
   });
@@ -4292,20 +4504,21 @@ function completeWeekly(id, silent){
   const g = goalById(q.goal);
   const snap = {xp:state.player.xp, gold:state.player.gold, gxp:g?g.xp:0, was:q.lastDoneWeek};
 
-  state.player.xp += q.xp; state.player.gold += q.gold;
-  if(g) g.xp += q.xp;
+  const payXp = xpWithBoost(q.xp), payGold = q.gold;
+  state.player.xp += payXp; state.player.gold += payGold;
+  if(g) g.xp += payXp;
   q.lastDoneWeek = wk;
-  logDay({ xp:q.xp, gold:q.gold, weeklies:1, done:1, goalId:q.goal });
+  logDay({ xp:payXp, gold:payGold, weeklies:1, done:1, goalId:q.goal });
   pushLog('Weekly quest complete: <b>'+esc(q.title)+'</b>', '+'+q.xp+'xp', 'weekly', q.goal);
   renderAll(); checkAchievements();
   burst(window.innerWidth/2, window.innerHeight/3, g?g.color:'#ff2ea6');
   sfx('weekly');
   showToast({
-    title:'Weekly complete · +'+q.xp+' XP', sub:q.title, big:true,
+    title:'Weekly complete · +'+payXp+' XP'+(boostActive()?' ·2x':''), sub:q.title, big:true,
     undo:()=>{
       state.player.xp=snap.xp; state.player.gold=snap.gold;
       if(g) g.xp=snap.gxp; q.lastDoneWeek=snap.was; state.log.pop();
-      logDay({ xp:-q.xp, gold:-q.gold, weeklies:-1, done:-1, goalId:q.goal });
+      logDay({ xp:-payXp, gold:-payGold, weeklies:-1, done:-1, goalId:q.goal });
       saveState(); renderAll();
     }
   });
@@ -5008,8 +5221,14 @@ function openQuickMenu(kind, qid){
   const doSkip = ()=>{
     if(kind==='daily'){
       const prev = q.skipDate; q.skipDate = todayStr();
+      // A token turns a skip from something you feel bad about into something
+      // you paid for.
+      const usedToken = perkCount('skip') > 0;
+      if(usedToken) state.inventory.skip--;
       closeModal(); renderAll(); saveState();
-      showToast({title:'Skipped for today', sub:q.title, undo:()=>{ q.skipDate = prev; saveState(); renderAll(); }});
+      showToast({title:usedToken?'Skipped — token used':'Skipped for today',
+        sub:usedToken ? q.title+' · '+perkCount('skip')+' token'+(perkCount('skip')===1?'':'s')+' left' : q.title,
+        undo:()=>{ q.skipDate = prev; if(usedToken) state.inventory.skip++; saveState(); renderAll(); }});
     } else {
       const prev = q.skipWeek; q.skipWeek = isoWeekKey();
       closeModal(); renderAll(); saveState();
@@ -5664,6 +5883,10 @@ document.getElementById('discGrid').addEventListener('click', e=>{
 });
 document.getElementById('rewardGrid').addEventListener('click', e=>{
   if(e.target.id==='addRewardBtn'){ openAddReward(); return; }
+  const buy = e.target.closest('[data-action="buyperk"]');
+  if(buy && !buy.disabled){ buyPerk(buy.dataset.id); return; }
+  const use = e.target.closest('[data-action="useperk"]');
+  if(use){ usePerk(use.dataset.id); return; }
   const redeem = e.target.closest('[data-action="redeem"]');
   if(redeem && !redeem.disabled){
     const r = state.rewards.find(x=>x.id===redeem.dataset.id);
@@ -5709,7 +5932,8 @@ document.getElementById('dailySubmit').addEventListener('click', ()=>{
   const xp = Math.max(1, Math.min(200, parseInt(document.getElementById('dailyXp').value,10)||12));
   const goalId = document.getElementById('dailyGoal').value;
   const curMs = currentMilestone(goalById(goalId)||{});
-  state.dailies.push({id:'d'+Date.now(), goal:goalId, title, xp, gold:Math.round(xp/2), lastDone:null, skipDate:null,
+  state.dailies.push({id:'d'+Date.now(), goal:goalId, subject:(document.getElementById('dailySubject')||{}).value||null,
+    title, xp, gold:Math.round(xp/2), lastDone:null, skipDate:null,
     steps:[], stepsDay:null, open:false, ...questExtras(), milestoneId: curMs ? curMs.id : null});
   document.getElementById('dailyTitle').value='';
   document.getElementById('dailyVagueHint').classList.remove('show');
@@ -5723,13 +5947,19 @@ document.getElementById('weeklySubmit').addEventListener('click', ()=>{
   const steps = raw ? raw.split(',').map(s=>s.trim()).filter(Boolean).map((t,i)=>({id:'s'+Date.now()+'_'+i, title:t, done:false})) : [];
   const goalId = document.getElementById('weeklyGoal').value;
   const curMs = currentMilestone(goalById(goalId)||{});
-  state.weeklies.push({id:'w'+Date.now(), goal:goalId, title, xp, gold:Math.round(xp/2),
+  state.weeklies.push({id:'w'+Date.now(), goal:goalId, subject:(document.getElementById('weeklySubject')||{}).value||null,
+    title, xp, gold:Math.round(xp/2),
     steps, stepsWeek:isoWeekKey(), lastDoneWeek:null, skipWeek:null, open:steps.length>0, ...questExtras(), milestoneId: curMs ? curMs.id : null});
   document.getElementById('weeklyTitle').value='';
   document.getElementById('weeklySteps').value='';
   document.getElementById('weeklyVagueHint').classList.remove('show');
   document.getElementById('weeklyForm').classList.remove('open');
   renderAll(); saveState();
+});
+document.getElementById('subjBar').addEventListener('click', e=>{
+  const chip = e.target.closest('.subj-chip'); if(!chip) return;
+  subjectFilter = chip.dataset.subj || null;
+  renderDailies(); renderWeeklies();
 });
 document.getElementById('focusToggle').addEventListener('click', ()=>{
   state.showAllQuests = !state.showAllQuests;

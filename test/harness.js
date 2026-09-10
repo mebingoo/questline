@@ -463,6 +463,48 @@ async function run() {
     sand0 != null && sand1 != null && parseFloat(sand1) < parseFloat(sand0),
     'top chamber ' + sand0 + ' -> ' + sand1);
   await js("(()=>{ const b=document.getElementById('tcStop'); if(b) b.click(); })()");
+
+  /* ---- 32-34. perks: the gold sinks that actually do something ---- */
+  // Insurance is spent when the streak would break, not when it is bought.
+  await js(`(()=>{ const s = JSON.parse(localStorage.getItem('questline_state_v2'));
+    const d = new Date(); d.setDate(d.getDate()-3);
+    s.player.lastActiveDate = d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+    s.player.streak = 9;
+    s.inventory = { insurance:1, skip:0, boost:0 };
+    s.activeTimer = null;
+    localStorage.setItem('questline_state_v2', JSON.stringify(s)); })()`);
+  await reload();
+  const insured = await save();
+  check('32 streak insurance saves a broken streak and is spent',
+    insured.player.streak === 9 && insured.inventory.insurance === 0,
+    'streak ' + insured.player.streak + ', insurance left ' + insured.inventory.insurance);
+
+  // Without one, the same gap breaks it — otherwise assertion 32 proves nothing.
+  await js(`(()=>{ const s = JSON.parse(localStorage.getItem('questline_state_v2'));
+    const d = new Date(); d.setDate(d.getDate()-3);
+    s.player.lastActiveDate = d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+    s.player.streak = 9;
+    s.inventory = { insurance:0, skip:0, boost:0 };
+    localStorage.setItem('questline_state_v2', JSON.stringify(s)); })()`);
+  await reload();
+  const uninsured = await save();
+  check('33 without insurance the same gap still breaks the streak',
+    uninsured.player.streak === 0, 'streak ' + uninsured.player.streak);
+
+  // Double XP has to reach the inline daily payout, not just grant().
+  await js(`(()=>{ const s = JSON.parse(localStorage.getItem('questline_state_v2'));
+    s.boostUntil = Date.now() + 60*60*1000;
+    s.showAllQuests = true;
+    s.dailies = [{ id:'dboost', goal:(s.goals[0]||{}).id||null, title:'Boost test', xp:30, gold:15,
+      lastDone:null, skipDate:null, steps:[], stepsDay:null, open:false, subject:null, milestoneId:null }];
+    localStorage.setItem('questline_state_v2', JSON.stringify(s)); })()`);
+  await reload();
+  const beforeBoost = await save();
+  await click('#dailyList .quest-item[data-id="dboost"] .qcheck[data-action="complete"]');
+  const afterBoost = await save();
+  check('34 double XP pays twice on a daily',
+    afterBoost.player.xp === beforeBoost.player.xp + 60,
+    'xp ' + beforeBoost.player.xp + ' -> ' + afterBoost.player.xp + ' (expected +60 for a 30 XP quest)');
 }
 
 app.whenReady().then(async () => {
